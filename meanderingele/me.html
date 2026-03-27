@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Meandering Ele</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<script type="text/javascript" src="me.js"></script>
+<style>
+:root {
+  --finalDeg: 90deg;
+}
+body{
+	height: 90vh;
+	width: 90vw;
+
+}
+	.me{
+		background-image: url(ele.png);
+		height: 100px;
+		width:100px;
+		position: absolute;
+	}
+
+	.me2{
+		background-image: url(ele.png);
+		height: 100px;
+		width:100px;
+		position: absolute;
+		animation-name: rotateEle;
+		animation-duration: 2s;
+		animation-timing-function: linear;
+		animation-fill-mode: forwards;
+	}
+	
+	@keyframes rotateEle{
+		from {transform: rotate(0deg)}
+		to {transform: rotate(var(--finalDeg))}
+	}
+	
+	footer{
+	    position: absolute;
+		bottom: 0px;
+		font-family: monospace;
+	}
+	
+	
+</style>
+</head>
+<body onload="onBodyLoad();">
+<div id="me" class="me"></div>
+<!--<div id="rs" style="width:10px; height:10px; background-color:red; position:absolute"></div>-->
+<footer>icon Created by Andrejs Kirma
+from Noun Project
+ </footer>
+</body>
+</html>
