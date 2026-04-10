@@ -191,9 +191,6 @@
         </section>
     </main>
 
-    <audio id="silentAudio" preload="auto" src="silent1min.mp3"></audio>
-    <audio id="chimeAudio" preload="auto" src="chime.mp3"></audio>
-
     <script>
         const minutesSelect = document.getElementById("minutesSelect");
         const repeatsSelect = document.getElementById("repeatsSelect");
@@ -203,8 +200,8 @@
         const stopBtn = document.getElementById("stopBtn");
         const countdown = document.getElementById("countdown");
         const statusText = document.getElementById("status");
-        const silentAudio = document.getElementById("silentAudio");
-        const chimeAudio = document.getElementById("chimeAudio");
+        const silentAudio = new Audio("silent1min.mp3");
+        const chimeAudio = new Audio("chime.mp3");
 
         let totalRounds = 0;
         let minutesPerRound = 0;
@@ -213,6 +210,13 @@
         let roundEndTime = 0;
         let countdownTimer = null;
         let isRunning = false;
+        let sessionContext = null;
+        let silentBuffer = null;
+        let chimeBuffer = null;
+        let sessionStartTime = 0;
+        let scheduledRoundEndTimes = [];
+        let sessionStopTimer = null;
+        let useScheduledPlayback = false;
 
         function formatTime(totalSeconds) {
             const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
@@ -225,6 +229,8 @@
                 return;
             }
 
+            refreshRoundProgress();
+
             const secondsRemaining = Math.max(0, Math.ceil((roundEndTime - Date.now()) / 1000));
             countdown.textContent = formatTime(secondsRemaining);
         }
@@ -233,13 +239,6 @@
             clearInterval(countdownTimer);
             updateCountdown();
             countdownTimer = setInterval(updateCountdown, 250);
-        }
-
-        function stopAllAudio() {
-            silentAudio.pause();
-            silentAudio.currentTime = 0;
-            chimeAudio.pause();
-            chimeAudio.currentTime = 0;
         }
 
         function showSetupScreen() {
@@ -256,17 +255,118 @@
             isRunning = false;
             clearInterval(countdownTimer);
             countdownTimer = null;
+            clearTimeout(sessionStopTimer);
+            sessionStopTimer = null;
             roundEndTime = 0;
             currentRound = 0;
             currentMinuteSegment = 0;
+            scheduledRoundEndTimes = [];
             countdown.textContent = "00 : 00";
             statusText.textContent = message;
             goBtn.disabled = false;
-            stopAllAudio();
             showSetupScreen();
+
+            if (sessionContext) {
+                sessionContext.close().catch(() => {});
+                sessionContext = null;
+            }
+
+            silentAudio.pause();
+            silentAudio.currentTime = 0;
+            chimeAudio.pause();
+            chimeAudio.currentTime = 0;
+            useScheduledPlayback = false;
         }
 
-        async function playMinuteSegment() {
+        async function loadAudioBuffer(context, path) {
+            const response = await fetch(path);
+
+            if (!response.ok) {
+                throw new Error(`Could not load ${path}`);
+            }
+
+            const fileBuffer = await response.arrayBuffer();
+            return await context.decodeAudioData(fileBuffer);
+        }
+
+        async function ensureBuffers(context) {
+            if (!silentBuffer) {
+                silentBuffer = await loadAudioBuffer(context, "silent1min.mp3");
+            }
+
+            if (!chimeBuffer) {
+                chimeBuffer = await loadAudioBuffer(context, "chime.mp3");
+            }
+        }
+
+        function scheduleSession() {
+            sessionStartTime = sessionContext.currentTime + 0.05;
+            scheduledRoundEndTimes = [];
+
+            let nextStartTime = sessionStartTime;
+
+            for (let roundIndex = 0; roundIndex < totalRounds; roundIndex += 1) {
+                for (let minuteIndex = 0; minuteIndex < minutesPerRound; minuteIndex += 1) {
+                    const silentSource = sessionContext.createBufferSource();
+                    silentSource.buffer = silentBuffer;
+                    silentSource.connect(sessionContext.destination);
+                    silentSource.start(nextStartTime);
+                    nextStartTime += silentBuffer.duration;
+                }
+
+                scheduledRoundEndTimes.push(nextStartTime);
+
+                const chimeSource = sessionContext.createBufferSource();
+                chimeSource.buffer = chimeBuffer;
+                chimeSource.connect(sessionContext.destination);
+                chimeSource.start(nextStartTime);
+                nextStartTime += chimeBuffer.duration;
+            }
+
+            const firstRoundDurationMs = minutesPerRound * 60 * 1000;
+            roundEndTime = Date.now() + firstRoundDurationMs;
+            currentRound = 1;
+            statusText.textContent = `Round ${currentRound} of ${totalRounds}`;
+            startCountdown();
+
+            const totalDurationMs = Math.max(0, (nextStartTime - sessionContext.currentTime) * 1000);
+            sessionStopTimer = window.setTimeout(() => {
+                if (isRunning) {
+                    resetUI("All rounds complete.");
+                }
+            }, totalDurationMs + 150);
+        }
+
+        function refreshRoundProgress() {
+            if (!isRunning || !sessionContext || !useScheduledPlayback) {
+                return;
+            }
+
+            const elapsedSeconds = Math.max(0, sessionContext.currentTime - sessionStartTime);
+
+            for (let index = 0; index < scheduledRoundEndTimes.length; index += 1) {
+                const roundEndAudioTime = scheduledRoundEndTimes[index] - sessionStartTime;
+
+                if (elapsedSeconds < roundEndAudioTime) {
+                    currentRound = index + 1;
+                    roundEndTime = Date.now() + Math.max(0, (roundEndAudioTime - elapsedSeconds) * 1000);
+                    statusText.textContent = `Round ${currentRound} of ${totalRounds}`;
+                    return;
+                }
+
+                if (elapsedSeconds < roundEndAudioTime + chimeBuffer.duration) {
+                    currentRound = index + 1;
+                    roundEndTime = Date.now();
+                    statusText.textContent = `Round ${currentRound} complete. Playing chime...`;
+                    return;
+                }
+            }
+
+            roundEndTime = Date.now();
+            countdown.textContent = "00 : 00";
+        }
+
+        async function playMinuteSegmentFallback() {
             if (!isRunning) {
                 return;
             }
@@ -276,7 +376,7 @@
             await silentAudio.play();
         }
 
-        async function finishRound() {
+        async function finishRoundFallback() {
             if (!isRunning) {
                 return;
             }
@@ -287,30 +387,30 @@
             await chimeAudio.play();
         }
 
-        async function startRound(roundNumber) {
+        async function startRoundFallback(roundNumber) {
             currentRound = roundNumber;
             currentMinuteSegment = 0;
             roundEndTime = Date.now() + (minutesPerRound * 60 * 1000);
             statusText.textContent = `Round ${currentRound} of ${totalRounds}`;
             startCountdown();
-            await playMinuteSegment();
+            await playMinuteSegmentFallback();
         }
 
         silentAudio.addEventListener("ended", async () => {
-            if (!isRunning) {
+            if (!isRunning || useScheduledPlayback) {
                 return;
             }
 
             if (currentMinuteSegment < minutesPerRound) {
-                await playMinuteSegment();
+                await playMinuteSegmentFallback();
                 return;
             }
 
-            await finishRound();
+            await finishRoundFallback();
         });
 
         chimeAudio.addEventListener("ended", async () => {
-            if (!isRunning) {
+            if (!isRunning || useScheduledPlayback) {
                 return;
             }
 
@@ -319,7 +419,7 @@
                 return;
             }
 
-            await startRound(currentRound + 1);
+            await startRoundFallback(currentRound + 1);
         });
 
         goBtn.addEventListener("click", async () => {
@@ -335,15 +435,38 @@
             statusText.textContent = "Starting...";
 
             try {
-                await startRound(1);
+                sessionContext = new (window.AudioContext || window.webkitAudioContext)();
+                await ensureBuffers(sessionContext);
+                await sessionContext.resume();
+                useScheduledPlayback = true;
+                scheduleSession();
             } catch (error) {
-                console.error(error);
-                resetUI("Playback could not start. Press Go again after allowing audio.");
+                console.warn("Scheduled playback unavailable, using media element fallback.", error);
+
+                if (sessionContext) {
+                    sessionContext.close().catch(() => {});
+                    sessionContext = null;
+                }
+
+                try {
+                    useScheduledPlayback = false;
+                    await startRoundFallback(1);
+                } catch (fallbackError) {
+                    console.error(fallbackError);
+                    resetUI("Playback could not start. Press Go again after allowing audio.");
+                }
             }
         });
 
         stopBtn.addEventListener("click", () => {
             resetUI("Timer stopped.");
+        });
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                refreshRoundProgress();
+                updateCountdown();
+            }
         });
     </script>
 </body>
