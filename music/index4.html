@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interval Chime Timer</title>
+    
+</head>
+<body>
+    <!-- <select id="minutesSelect">
+        <option value="1">1 minute</option>
+        <option value="2">2 minutes</option>
+        <option value="3">3 minutes</option>
+        <option value="4">4 minutes</option>
+        <option value="5">5 minutes</option>
+    </select>
+    
+    <select id="repeatsSelect">
+        <option value="1">1 round</option>
+        <option value="2">2 rounds</option>
+        <option value="3">3 rounds</option>
+        <option value="4">4 rounds</option>
+        <option value="5">5 rounds</option>
+    </select> -->
+    <button id="goBtn">Go</button>
+    <button id="stopBtn" disabled>Stop</button>
+    <audio id="silentAudio" preload="auto" controls src="silent10sec.mp3"></audio>
+    <audio id="chimeAudio" preload="auto" controls src="chime.mp3"></audio>
+    <h1 id="roundShow">2</h1>
+    <script>
+       /*  const minutesSelect = document.getElementById("minutesSelect");
+        const repeatsSelect = document.getElementById("repeatsSelect"); */
+        const goBtn = document.getElementById("goBtn");
+        const stopBtn = document.getElementById("stopBtn");
+
+        // const countdown = document.getElementById("countdown");
+        // const statusText = document.getElementById("status");
+        // const silentAudio = document.getElementById("silentAudio");
+        // const chimeAudio = document.getElementById("chimeAudio");
+        let nMins = 1; // Default to 1 minute
+        let nRounds = 2; // Default to 2 rounds
+
+        const silentAudio = document.getElementById("silentAudio");
+        const chimeAudio = document.getElementById("chimeAudio");
+        const roundShow = document.getElementById("roundShow");
+
+        goBtn.addEventListener("click", () => {
+            goBtn.disabled = true;
+            stopBtn.disabled = false;
+            silentAudio.play();
+        });
+
+        silentAudio.addEventListener("ended", () => {
+            chimeAudio.play();
+            nRounds--;
+            roundShow.innerText = String(nRounds);
+        });
+
+        chimeAudio.addEventListener("ended", () => {
+            if (nRounds > 0) {
+              silentAudio.play();
+            } else {
+                alert("tera tel gaya mera khel gaya");
+                goBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+
+
+        });
+    </script>
+
+
+</body>
+</html>
