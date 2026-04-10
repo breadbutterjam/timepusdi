@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Player</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #0e0e0e;
+            font-family: Georgia, serif;
+        }
+
+        #selector-view, #player-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+        }
+
+        #player-view { display: none; position: relative; }
+
+        label {
+            color: #aaa;
+            font-size: 13px;
+            letter-spacing: normal;
+            text-transform: none;
+            align-self: flex-start;
+        }
+
+        select {
+            appearance: none;
+            background: #1a1a1a;
+            color: #f0f0f0;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 10px 40px 10px 14px;
+            font-size: 15px;
+            font-family: inherit;
+            cursor: pointer;
+            outline: none;
+            min-width: 220px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+        }
+
+        button#playBtn {
+            background: #f0f0f0;
+            color: #0e0e0e;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 28px;
+            font-size: 14px;
+            font-family: inherit;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button#playBtn:hover { background: #ccc; }
+
+        #close-btn {
+            position: absolute;
+            top: -28px;
+            right: -28px;
+            background: none;
+            border: 1px solid #444;
+            color: #aaa;
+            border-radius: 50%;
+            width: 28px;
+            height: 28px;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, color 0.2s;
+        }
+
+        #close-btn:hover { border-color: #f0f0f0; color: #f0f0f0; }
+
+        audio { outline: none; }
+    </style>
+</head>
+<body>
+
+    <div id="selector-view">
+        <label for="options">Select track</label>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+            <select id="options">
+                <option value="">-- Select --</option>
+                <option value="AankhenChaar">Aankhen Chaar - Tu yaa mein</option>
+                <option value="TataSafari2">Tata Safari</option>
+                <option value="Anjaane">Anjaane Strings</option>
+            </select>
+            <button id="playBtn" onclick="handlePlay()">Play</button>
+        </div>
+    </div>
+
+    <div id="player-view">
+        <button id="close-btn" onclick="handleClose()" title="Close">&#x2715;</button>
+        <audio id="audioPlayer" controls></audio>
+    </div>
+
+    <script>
+        function handlePlay() {
+            const selected = document.getElementById('options').value;
+            if (!selected) return;
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.src = selected + '.mp3';
+            audioPlayer.play();
+            document.getElementById('selector-view').style.display = 'none';
+            document.getElementById('player-view').style.display = 'flex';
+        }
+
+        function handleClose() {
+            const audioPlayer = document.getElementById('audioPlayer');
+            audioPlayer.pause();
+            audioPlayer.src = '';
+            document.getElementById('options').value = '';
+            document.getElementById('player-view').style.display = 'none';
+            document.getElementById('selector-view').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
