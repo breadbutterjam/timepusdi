@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interval Chime Timer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            background:
+                radial-gradient(circle at top, rgba(215, 171, 92, 0.2), transparent 35%),
+                linear-gradient(160deg, #102019 0%, #182f25 50%, #0a1310 100%);
+            color: #f6f1e8;
+            font-family: Georgia, "Times New Roman", serif;
+        }
+
+        .panel {
+            width: min(100%, 420px);
+            padding: 28px;
+            border: 1px solid rgba(246, 241, 232, 0.14);
+            border-radius: 24px;
+            background: rgba(9, 15, 12, 0.72);
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+            backdrop-filter: blur(12px);
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 32px;
+            font-weight: 400;
+            text-align: center;
+        }
+
+        .subtitle {
+            margin: 0 0 24px;
+            color: rgba(246, 241, 232, 0.74);
+            text-align: center;
+            font-size: 15px;
+        }
+
+        .setup-screen,
+        .timer-screen {
+            display: grid;
+            gap: 18px;
+        }
+
+        .timer-screen {
+            display: none;
+        }
+
+        .field {
+            display: grid;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+            color: rgba(246, 241, 232, 0.86);
+        }
+
+        select,
+        button {
+            width: 100%;
+            border-radius: 14px;
+            border: 1px solid rgba(246, 241, 232, 0.15);
+            font: inherit;
+        }
+
+        select {
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #f6f1e8;
+        }
+
+        option {
+            color: #111;
+        }
+
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 6px;
+        }
+
+        button {
+            padding: 14px 16px;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+            transform: none;
+        }
+
+        .go-btn {
+            background: #d7ab5c;
+            color: #1e1609;
+            border-color: transparent;
+            font-weight: 700;
+        }
+
+        .stop-btn {
+            background: transparent;
+            color: #f6f1e8;
+        }
+
+        .display {
+            padding: 24px 18px;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.05);
+            text-align: center;
+        }
+
+        .countdown {
+            margin: 0;
+            font-size: clamp(42px, 10vw, 64px);
+            letter-spacing: 0.08em;
+        }
+
+        .status {
+            margin: 12px 0 0;
+            color: rgba(246, 241, 232, 0.72);
+            font-size: 15px;
+        }
+
+        @media (max-width: 480px) {
+            .panel {
+                padding: 22px;
+            }
+
+            .actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="panel">
+        <section id="setupScreen" class="setup-screen">
+            <div class="field">
+                <label for="minutesSelect">Minutes per round</label>
+                <select id="minutesSelect">
+                    <option value="1">1 minute</option>
+                    <option value="2">2 minutes</option>
+                    <option value="3">3 minutes</option>
+                    <option value="5">5 minutes</option>
+                    <option value="10">10 minutes</option>
+                    <option value="15">15 minutes</option>
+                    <option value="20">20 minutes</option>
+                    <option value="30">30 minutes</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="repeatsSelect">Number of repeats</label>
+                <select id="repeatsSelect">
+                    <option value="1">1 repeat</option>
+                    <option value="2">2 repeats</option>
+                    <option value="3">3 repeats</option>
+                    <option value="4">4 repeats</option>
+                    <option value="5">5 repeats</option>
+                    <option value="10">10 repeats</option>
+                </select>
+            </div>
+
+            <button id="goBtn" class="go-btn" type="button">Start</button>
+        </section>
+
+        <section id="timerScreen" class="timer-screen">
+            <div class="display">
+                <p id="countdown" class="countdown">00 : 00</p>
+                <p id="status" class="status">Starting...</p>
+            </div>
+
+            <button id="stopBtn" class="stop-btn" type="button">Stop</button>
+        </section>
+    </main>
+
+    <audio id="silentAudio" preload="auto" src="silent1min.mp3"></audio>
+    <audio id="chimeAudio" preload="auto" src="chime.mp3"></audio>
+
+    <script>
+        const minutesSelect = document.getElementById("minutesSelect");
+        const repeatsSelect = document.getElementById("repeatsSelect");
+        const setupScreen = document.getElementById("setupScreen");
+        const timerScreen = document.getElementById("timerScreen");
+        const goBtn = document.getElementById("goBtn");
+        const stopBtn = document.getElementById("stopBtn");
+        const countdown = document.getElementById("countdown");
+        const statusText = document.getElementById("status");
+        const silentAudio = document.getElementById("silentAudio");
+        const chimeAudio = document.getElementById("chimeAudio");
+
+        let totalRounds = 0;
+        let minutesPerRound = 0;
+        let currentRound = 0;
+        let currentMinuteSegment = 0;
+        let roundEndTime = 0;
+        let countdownTimer = null;
+        let isRunning = false;
+
+        function formatTime(totalSeconds) {
+            const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+            const seconds = String(totalSeconds % 60).padStart(2, "0");
+            return `${minutes} : ${seconds}`;
+        }
+
+        function updateCountdown() {
+            if (!isRunning) {
+                return;
+            }
+
+            const secondsRemaining = Math.max(0, Math.ceil((roundEndTime - Date.now()) / 1000));
+            countdown.textContent = formatTime(secondsRemaining);
+        }
+
+        function startCountdown() {
+            clearInterval(countdownTimer);
+            updateCountdown();
+            countdownTimer = setInterval(updateCountdown, 250);
+        }
+
+        function stopAllAudio() {
+            silentAudio.pause();
+            silentAudio.currentTime = 0;
+            chimeAudio.pause();
+            chimeAudio.currentTime = 0;
+        }
+
+        function showSetupScreen() {
+            setupScreen.style.display = "grid";
+            timerScreen.style.display = "none";
+        }
+
+        function showTimerScreen() {
+            setupScreen.style.display = "none";
+            timerScreen.style.display = "grid";
+        }
+
+        function resetUI(message) {
+            isRunning = false;
+            clearInterval(countdownTimer);
+            countdownTimer = null;
+            roundEndTime = 0;
+            currentRound = 0;
+            currentMinuteSegment = 0;
+            countdown.textContent = "00 : 00";
+            statusText.textContent = message;
+            goBtn.disabled = false;
+            stopAllAudio();
+            showSetupScreen();
+        }
+
+        async function playMinuteSegment() {
+            if (!isRunning) {
+                return;
+            }
+
+            currentMinuteSegment += 1;
+            silentAudio.currentTime = 0;
+            await silentAudio.play();
+        }
+
+        async function finishRound() {
+            if (!isRunning) {
+                return;
+            }
+
+            statusText.textContent = `Round ${currentRound} complete. Playing chime...`;
+            countdown.textContent = "00 : 00";
+            chimeAudio.currentTime = 0;
+            await chimeAudio.play();
+        }
+
+        async function startRound(roundNumber) {
+            currentRound = roundNumber;
+            currentMinuteSegment = 0;
+            roundEndTime = Date.now() + (minutesPerRound * 60 * 1000);
+            statusText.textContent = `Round ${currentRound} of ${totalRounds}`;
+            startCountdown();
+            await playMinuteSegment();
+        }
+
+        silentAudio.addEventListener("ended", async () => {
+            if (!isRunning) {
+                return;
+            }
+
+            if (currentMinuteSegment < minutesPerRound) {
+                await playMinuteSegment();
+                return;
+            }
+
+            await finishRound();
+        });
+
+        chimeAudio.addEventListener("ended", async () => {
+            if (!isRunning) {
+                return;
+            }
+
+            if (currentRound >= totalRounds) {
+                resetUI("All rounds complete.");
+                return;
+            }
+
+            await startRound(currentRound + 1);
+        });
+
+        goBtn.addEventListener("click", async () => {
+            if (isRunning) {
+                return;
+            }
+
+            minutesPerRound = Number(minutesSelect.value);
+            totalRounds = Number(repeatsSelect.value);
+            isRunning = true;
+            goBtn.disabled = true;
+            showTimerScreen();
+            statusText.textContent = "Starting...";
+
+            try {
+                await startRound(1);
+            } catch (error) {
+                console.error(error);
+                resetUI("Playback could not start. Press Go again after allowing audio.");
+            }
+        });
+
+        stopBtn.addEventListener("click", () => {
+            resetUI("Timer stopped.");
+        });
+    </script>
+</body>
+</html>
