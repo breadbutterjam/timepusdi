@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Asia – 49 Sovereign States</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  background: #fafaf7;
+}
+
+/* Header */
+h1 {
+  text-align: center;
+  padding: 16px;
+  margin: 0;
+  font-size: 20px;
+}
+
+/* Tabs */
+.tab {
+  display: flex;
+  overflow-x: auto;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tab button {
+  flex: none;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.tab button.active {
+  border-bottom: 2px solid #333;
+  font-weight: bold;
+}
+
+/* Tab Content */
+.tabcontent {
+  display: none;
+  padding: 12px;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background: #f5f5f5;
+  text-align: left;
+}
+
+/* Flag */
+img {
+  width: 48px;
+  border: 1px solid #eee;
+}
+
+/* Mobile tweaks */
+@media (max-width: 600px) {
+  th, td {
+    padding: 10px;
+  }
+
+  img {
+    width: 40px;
+  }
+
+  h1 {
+    font-size: 18px;
+  }
+}
+
+/* Modal Background */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 100;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+}
+
+/* Modal Content */
+.modal-content {
+  position: relative;
+  margin: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #fff;
+  padding: 24px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+}
+
+/* Flag */
+.modal-content img {
+  width: 100%;
+  max-width: 280px;
+  border: 1px solid #eee;
+  margin-bottom: 16px;
+}
+
+/* Country name */
+.modal-content h2 {
+  margin: 0;
+}
+
+/* Close button */
+.close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Asia — 49 Sovereign States</h1>
+
+<div class="tab" id="tabButtons"></div>
+<div id="tabContent"></div>
+<div id="countryModal" class="modal">
+  <div class="modal-content">
+    <span class="close">&times;</span>
+    <img id="modalFlag" src="" />
+    <h2 id="modalName"></h2>
+  </div>
+</div>
+<script>
+const data = {
+  "Around India": [
+    { name: "India", code: "in" },
+    { name: "Bangladesh", code: "bd" },
+    { name: "Nepal", code: "np" },
+    { name: "Bhutan", code: "bt" },
+    { name: "Sri Lanka", code: "lk" },
+    { name: "Maldives", code: "mv" },
+    { name: "Thailand", code: "th" },
+    { name: "Myanmar", code: "mm" },
+    { name: "China", code: "cn" }
+],
+  "East":[
+    { name: "Vietnam", code: "vn" },
+    { name: "Malaysia", code: "my" },
+    { name: "Singapore", code: "sg" },
+    { name: "Indonesia", code: "id" },
+    { name: "Philippines", code: "ph" },
+    { name: "Cambodia", code: "kh" },
+    { name: "Laos", code: "la" },
+    { name: "Brunei", code: "bn" },
+    { name: "Timor-Leste", code: "tl" },
+    { name: "Japan", code: "jp" },
+    { name: "South Korea", code: "kr" },
+    { name: "North Korea", code: "kp" },
+    { name: "Mongolia", code: "mn" },
+    { name: "Russia", code: "ru" }
+  ],
+  "Middle East": [
+    { name: "Kazakhstan", code: "kz" },
+    { name: "Kyrgyzstan", code: "kg" },
+    { name: "Uzbekistan", code: "uz" },
+    { name: "Tajikistan", code: "tj" },
+    { name: "Turkmenistan", code: "tm" },
+    { name: "Afghanistan", code: "af" },
+    { name: "Pakistan", code: "pk" },
+    { name: "Iran", code: "ir" },
+    { name: "Iraq", code: "iq" },
+    { name: "Kuwait", code: "kw" },
+    { name: "Bahrain", code: "bh" },
+    { name: "Qatar", code: "qa" },
+    { name: "Saudi Arabia", code: "sa" },
+    { name: "United Arab Emirates", code: "ae" },
+    { name: "Oman", code: "om" },
+    { name: "Yemen", code: "ye" }
+  ],
+  "Others": [
+    { name: "Egypt", code: "eg" },
+    { name: "Armenia", code: "am" },
+    { name: "Azerbaijan", code: "az" },
+    { name: "Georgia", code: "ge" },
+    { name: "Israel", code: "il" },
+    { name: "Jordan", code: "jo" },
+    { name: "Lebanon", code: "lb" },
+    { name: "Syria", code: "sy" },
+    { name: "Turkey", code: "tr" },
+    { name: "Cyprus", code: "cy" }
+  ]
+}
+
+const data2 = {
+  "West Asia": [
+    { name: "Armenia", code: "am" },
+    { name: "Azerbaijan", code: "az" },
+    { name: "Georgia", code: "ge" },
+    { name: "Iran", code: "ir" },
+    { name: "Iraq", code: "iq" },
+    { name: "Israel", code: "il" },
+    { name: "Jordan", code: "jo" },
+    { name: "Lebanon", code: "lb" },
+    { name: "Syria", code: "sy" },
+    { name: "Kuwait", code: "kw" },
+    { name: "Bahrain", code: "bh" },
+    { name: "Qatar", code: "qa" },
+    { name: "Saudi Arabia", code: "sa" },
+    { name: "United Arab Emirates", code: "ae" },
+    { name: "Oman", code: "om" },
+    { name: "Yemen", code: "ye" },
+    { name: "Turkey", code: "tr" },
+    { name: "Cyprus", code: "cy" }
+  ],
+  "Central Asia": [
+    { name: "Kazakhstan", code: "kz" },
+    { name: "Kyrgyzstan", code: "kg" },
+    { name: "Uzbekistan", code: "uz" },
+    { name: "Tajikistan", code: "tj" },
+    { name: "Turkmenistan", code: "tm" }
+  ],
+  "South Asia": [
+    { name: "India", code: "in" },
+    { name: "Pakistan", code: "pk" },
+    { name: "Bangladesh", code: "bd" },
+    { name: "Nepal", code: "np" },
+    { name: "Bhutan", code: "bt" },
+    { name: "Sri Lanka", code: "lk" },
+    { name: "Maldives", code: "mv" },
+    { name: "Afghanistan", code: "af" }
+  ],
+  "Southeast Asia": [
+    { name: "Thailand", code: "th" },
+    { name: "Vietnam", code: "vn" },
+    { name: "Malaysia", code: "my" },
+    { name: "Singapore", code: "sg" },
+    { name: "Indonesia", code: "id" },
+    { name: "Philippines", code: "ph" },
+    { name: "Myanmar", code: "mm" },
+    { name: "Cambodia", code: "kh" },
+    { name: "Laos", code: "la" },
+    { name: "Brunei", code: "bn" },
+    { name: "Timor-Leste", code: "tl" }
+  ],
+  "East Asia": [
+    { name: "China", code: "cn" },
+    { name: "Japan", code: "jp" },
+    { name: "South Korea", code: "kr" },
+    { name: "North Korea", code: "kp" },
+    { name: "Mongolia", code: "mn" }
+  ],
+  "Transcontinental": [
+    { name: "Russia", code: "ru" },
+    { name: "Egypt", code: "eg" }
+  ]
+};
+
+const tabButtons = document.getElementById("tabButtons");
+const tabContent = document.getElementById("tabContent");
+
+Object.keys(data).forEach((region, index) => {
+  // Create tab button
+  const btn = document.createElement("button");
+  btn.innerText = region;
+  btn.onclick = () => openTab(region, btn);
+  if (index === 0) btn.classList.add("active");
+  tabButtons.appendChild(btn);
+
+  // Create tab content
+  const div = document.createElement("div");
+  div.id = region;
+  div.className = "tabcontent";
+  if (index === 0) div.style.display = "block";
+
+  div.innerHTML = `
+    <table>
+      
+      <tbody>
+        ${data[region].map(c => `
+          <tr onclick="openModal('${c.name}', '${c.code}')">
+            <td><img src="https://flagcdn.com/w160/${c.code}.png"></td>
+            <td>${c.name}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+
+  tabContent.appendChild(div);
+});
+
+function openTab(region, element) {
+  document.querySelectorAll(".tabcontent").forEach(tc => tc.style.display = "none");
+  document.querySelectorAll(".tab button").forEach(btn => btn.classList.remove("active"));
+
+  document.getElementById(region).style.display = "block";
+  element.classList.add("active");
+}
+
+const modal = document.getElementById("countryModal");
+const modalFlag = document.getElementById("modalFlag");
+const modalName = document.getElementById("modalName");
+const closeBtn = document.querySelector(".close");
+
+function openModal(name, code) {
+  console.log(name, code);
+  modal.style.display = "block";
+  modalFlag.src = `https://flagcdn.com/w640/${code}.png`;
+  modalName.innerText = name;
+}
+
+// Close on X click
+closeBtn.onclick = () => modal.style.display = "none";
+
+// Close on outside click
+window.onclick = (e) => {
+  if (e.target === modal) {
+    modal.style.display = "none";
+  }
+};
+
+// Close on ESC key
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    modal.style.display = "none";
+  }
+});
+
+</script>
+</body>
+</html>
