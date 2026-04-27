@@ -117,6 +117,8 @@ img {
   width: 90%;
   max-width: 400px;
   text-align: center;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 /* Flag */
@@ -129,7 +131,15 @@ img {
 
 /* Country name */
 .modal-content h2 {
-  margin: 0;
+  margin: 0 0 12px 0;
+}
+
+/* Description */
+.modal-content p {
+  text-align: left;
+  line-height: 1.6;
+  color: #444;
+  font-size: 14px;
 }
 
 /* Close button */
@@ -155,135 +165,80 @@ img {
     <span class="close">&times;</span>
     <img id="modalFlag" src="" />
     <h2 id="modalName"></h2>
+    <p id="modalDescription"></p>
   </div>
 </div>
 <script>
 const data = {
   "Around India": [
-    { name: "India", code: "in" },
-    { name: "Bangladesh", code: "bd" },
-    { name: "Nepal", code: "np" },
-    { name: "Bhutan", code: "bt" },
-    { name: "Sri Lanka", code: "lk" },
-    { name: "Maldives", code: "mv" },
-    { name: "Thailand", code: "th" },
-    { name: "Myanmar", code: "mm" },
-    { name: "China", code: "cn" }
+    { name: "India", code: "in", description: "Three horizontal bands of saffron (top), white with a blue Ashoka Chakra (24-spoke wheel) in the center, and green (bottom). Saffron represents courage and sacrifice, white signifies peace and truth, green symbolizes faith and chivalry, and the chakra represents the eternal wheel of law." },
+    { name: "Bangladesh", code: "bd", description: "A green field with a red disk slightly off-center towards the hoist. The green represents the lushness of the land and the red disk symbolizes the blood shed during the Liberation War and the rising sun of independence." },
+    { name: "Nepal", code: "np", description: "The only non-rectangular national flag, consisting of two stacked triangular pennants in crimson red with blue borders. Features a white moon with crescent and a white sun, representing the hope that Nepal will last as long as these celestial bodies." },
+    { name: "Bhutan", code: "bt", description: "Divided diagonally from the lower hoist corner, with yellow above and orange below. A white dragon (Druk) crosses the dividing line, holding jewels in its claws. The dragon represents the name of the country (Druk Yul means 'Land of the Thunder Dragon')." },
+    { name: "Sri Lanka", code: "lk", description: "Features a golden lion holding a kastane sword on a maroon background with four bo leaves in each corner, bordered by yellow. Two vertical stripes of green and saffron on the hoist side represent Muslim and Tamil minorities." },
+    { name: "Maldives", code: "mv", description: "A green rectangle with a white crescent in the center, set on a red field. The red represents the blood of the nation's heroes, green symbolizes peace and prosperity, and the crescent is the Islamic symbol." },
+    { name: "Thailand", code: "th", description: "Five horizontal stripes in red, white, blue (double width in center), white, and red. The red represents the blood spilled to maintain Thailand's independence, white symbolizes the purity of Buddhism, and blue represents the monarchy." },
+    { name: "Myanmar", code: "mm", description: "Three horizontal stripes of yellow, green, and red with a large white five-pointed star in the center. Yellow represents solidarity, green symbolizes peace and tranquility, red stands for courage and decisiveness, and the star represents the union of the country." },
+    { name: "China", code: "cn", description: "A red field with five golden stars in the canton (upper hoist corner). The large star represents the Communist Party of China, while the four smaller stars represent the four social classes: workers, peasants, urban petite bourgeoisie, and national bourgeoisie." }
 ],
   "East":[
-    { name: "Vietnam", code: "vn" },
-    { name: "Malaysia", code: "my" },
-    { name: "Singapore", code: "sg" },
-    { name: "Indonesia", code: "id" },
-    { name: "Philippines", code: "ph" },
-    { name: "Cambodia", code: "kh" },
-    { name: "Laos", code: "la" },
-    { name: "Brunei", code: "bn" },
-    { name: "Timor-Leste", code: "tl" },
-    { name: "Japan", code: "jp" },
-    { name: "South Korea", code: "kr" },
-    { name: "North Korea", code: "kp" },
-    { name: "Mongolia", code: "mn" },
-    { name: "Russia", code: "ru" }
+    { name: "Vietnam", code: "vn", description: "A red field with a large yellow five-pointed star in the center. The red symbolizes revolution and bloodshed, while the star represents the five main classes in Vietnamese society: intellectuals, farmers, workers, businesspeople, and military personnel." },
+    { name: "Malaysia", code: "my", description: "Fourteen alternating red and white horizontal stripes with a blue canton containing a yellow crescent and a 14-point star. The 14 stripes and star points represent the equal status of the 13 member states and the federal government. The crescent represents Islam, and the yellow is the royal color of Malay rulers." },
+    { name: "Singapore", code: "sg", description: "Two equal horizontal sections of red (top) and white (bottom). A white crescent moon and five stars in a circle are positioned in the upper left corner. Red represents universal brotherhood and equality, white signifies purity and virtue, the crescent represents a young nation on the rise, and the five stars stand for democracy, peace, progress, justice, and equality." },
+    { name: "Indonesia", code: "id", description: "Two equal horizontal bands of red (top) and white (bottom). The red represents courage and white represents purity. The design is derived from the 13th-century Majapahit Empire banner and has been used in various forms throughout Indonesian history." },
+    { name: "Philippines", code: "ph", description: "A horizontal bicolor of blue and red with a white equilateral triangle at the hoist. Inside the triangle are a golden sun with eight rays and three five-pointed stars at each vertex. The sun represents liberty and its eight rays symbolize the first eight provinces that revolted against Spanish rule. The three stars represent the main geographical regions: Luzon, Visayas, and Mindanao." },
+    { name: "Cambodia", code: "kh", description: "Three horizontal bands of blue (top and bottom) and red (double width in center), with a white depiction of Angkor Wat in the center of the red band. Blue represents royalty, red represents the nation, and white represents religion. Angkor Wat is Cambodia's most famous temple and national symbol." },
+    { name: "Laos", code: "la", description: "Three horizontal stripes of red, blue (double width), and red, with a white disk in the center. Red represents the blood shed for liberation, blue symbolizes the Mekong River and prosperity, and the white disk represents the full moon over the Mekong and the unity of the country." },
+    { name: "Brunei", code: "bn", description: "A yellow field with two diagonal stripes of white (top) and black (bottom), and the national emblem in red centered on the flag. Yellow is the traditional color of royalty in Southeast Asia. The emblem features a crescent, royal parasol, and upturned hands with the national motto." },
+    { name: "Timor-Leste", code: "tl", description: "A red field with a yellow triangle superimposed on a larger black triangle at the hoist side, with a white star in the center of the black triangle. Red represents the struggle for liberation, yellow symbolizes traces of colonialism, black represents the obscurantism that needs to be overcome, and the white star represents peace and guiding light." },
+    { name: "Japan", code: "jp", description: "A white rectangular field with a large red disk (representing the sun) in the center. The design is called Hinomaru (circle of the sun), embodying Japan's sobriquet as the 'Land of the Rising Sun.' The red disk symbolizes the sun goddess Amaterasu, the mythical founder of Japan and ancestor of its emperors." },
+    { name: "South Korea", code: "kr", description: "A white rectangular field with a red and blue Taegeuk (yin-yang symbol) in the center, surrounded by four black trigrams in each corner. The white background represents peace and purity, the Taegeuk symbolizes the balance of opposing cosmic forces, and the four trigrams represent the classical elements: heaven, earth, fire, and water." },
+    { name: "North Korea", code: "kp", description: "A wide red stripe with narrow white and blue borders, with a white disk containing a red five-pointed star on the hoist side. Red represents the revolutionary spirit, white symbolizes purity, and blue represents the hope for peace. The star represents the Communist Party leadership." },
+    { name: "Mongolia", code: "mn", description: "Three equal vertical bands of red (hoist side), blue (center), and red, with the Soyombo symbol in yellow on the hoist-side red band. The blue represents the eternal blue sky, while the red symbolizes progress and prosperity. The Soyombo is a national symbol containing fire, sun, moon, earth, water, and the yin-yang." },
+    { name: "Russia", code: "ru", description: "Three equal horizontal bands of white (top), blue, and red. These are traditional Pan-Slavic colors: white represents nobility and frankness, blue symbolizes faithfulness and honesty, and red represents courage, generosity, and love. The flag has been used in various forms since Peter the Great's time." }
   ],
   "Middle East": [
-    { name: "Kazakhstan", code: "kz" },
-    { name: "Kyrgyzstan", code: "kg" },
-    { name: "Uzbekistan", code: "uz" },
-    { name: "Tajikistan", code: "tj" },
-    { name: "Turkmenistan", code: "tm" },
-    { name: "Afghanistan", code: "af" },
-    { name: "Pakistan", code: "pk" },
-    { name: "Iran", code: "ir" },
-    { name: "Iraq", code: "iq" },
-    { name: "Kuwait", code: "kw" },
-    { name: "Bahrain", code: "bh" },
-    { name: "Qatar", code: "qa" },
-    { name: "Saudi Arabia", code: "sa" },
-    { name: "United Arab Emirates", code: "ae" },
-    { name: "Oman", code: "om" },
-    { name: "Yemen", code: "ye" }
+    { name: "Kazakhstan", code: "kz", description: "A sky blue field with a golden sun with 32 rays above a soaring golden steppe eagle in the center, and a vertical strip of national ornamental patterns (koshkar-muiz) near the hoist. Blue represents the Turkic peoples and the endless sky, the sun symbolizes wealth and abundance, and the eagle represents freedom and independence." },
+    { name: "Kyrgyzstan", code: "kg", description: "A red field with a yellow sun containing 40 uniformly spaced rays in the center. Inside the sun is a red ring crossed by two sets of three lines representing the crown (tunduk) of a traditional Kyrgyz yurt. The 40 rays represent the 40 tribes unified by the epic hero Manas." },
+    { name: "Uzbekistan", code: "uz", description: "Three horizontal bands of blue, white with red fimbriations (thin borders), and green, with a white crescent moon and 12 white stars in the upper hoist corner. Blue represents sky and water, white signifies peace, green symbolizes nature and fertility, and red represents life force. The 12 stars stand for the months and zodiac signs." },
+    { name: "Tajikistan", code: "tj", description: "Three horizontal stripes of red (top), white (wider center), and green (bottom), with a golden crown topped by seven stars in the center of the white stripe. Red represents unity, white symbolizes cotton and the snow-capped mountains, and green represents the valleys. The crown and seven stars represent Tajik sovereignty and the number seven in Tajik culture." },
+    { name: "Turkmenistan", code: "tm", description: "A green field with a vertical red stripe near the hoist containing five carpet guls (designs) stacked above two olive branches. In the upper canton is a white crescent moon and five white stars. Green represents Islam and the land, the guls represent the five major tribes, and the olive branches symbolize peace." },
+    { name: "Afghanistan", code: "af", description: "Three equal vertical bands of black (hoist side), red, and green, with the national emblem in white centered on the red band. Black represents the dark past, red symbolizes the blood shed for independence, and green represents hope and prosperity. The emblem features a mosque with a mihrab and minbar." },
+    { name: "Pakistan", code: "pk", description: "A green field with a white crescent moon and five-rayed star at the center, and a white vertical stripe at the hoist side. Green represents Islam and the Muslim majority, white represents religious minorities and peace. The crescent represents progress and the star represents light and knowledge." },
+    { name: "Iran", code: "ir", description: "Three horizontal bands of green (top), white, and red, with the national emblem in red centered in the white band and stylized Kufic script (Allah-o-Akbar repeated 22 times) in white along the edges of the colored bands. Green represents growth and Islam, white symbolizes peace, and red represents courage. The emblem is a stylized representation of the word Allah and a sword." },
+    { name: "Iraq", code: "iq", description: "Three equal horizontal bands of red (top), white, and black, with the Arabic phrase 'Allahu Akbar' (God is Great) in green Kufic script centered in the white band. The colors are the Pan-Arab colors: red represents courage, white symbolizes generosity, and black represents the triumph of Islam." },
+    { name: "Kuwait", code: "kw", description: "Three equal horizontal bands of green (top), white, and red with a black trapezoid based on the hoist side. The colors are Pan-Arab: green represents fertility, white symbolizes purity, red represents the blood of enemies, and black represents the defeat of enemies." },
+    { name: "Bahrain", code: "bh", description: "A red field with a white serrated band (five white triangles) on the hoist side. Red is the traditional color for flags of Persian Gulf states, and the white represents peace. The five triangles originally represented the Five Pillars of Islam, though this is now unofficial." },
+    { name: "Qatar", code: "qa", description: "A maroon field with a broad white serrated band (nine white triangles) on the hoist side. The maroon represents the blood shed during Qatar's wars, particularly in the 19th century. The nine-point serrated line indicates that Qatar was the 9th member of the 'reconciled Emirates' of the Persian Gulf." },
+    { name: "Saudi Arabia", code: "sa", description: "A green field with white Arabic inscription (the shahada: 'There is no god but Allah, and Muhammad is His messenger') above a white horizontal sword. Green is considered the traditional color of Islam. The sword represents the strict interpretation of Islam and the country's military strength. The flag is never flown at half-mast because it bears the shahada." },
+    { name: "United Arab Emirates", code: "ae", description: "Three equal horizontal bands of green (top), white, and black with a wider vertical red band on the hoist side. The colors are Pan-Arab: red represents unity, green symbolizes fertility, white represents neutrality, and black represents the oil wealth of the land." },
+    { name: "Oman", code: "om", description: "Three horizontal bands of white (top), red, and green with a broad vertical red band on the hoist side featuring the national emblem (a khanjar dagger and two crossed swords) in white. Red represents battles against foreign invaders, white symbolizes peace and prosperity, and green represents the Green Mountains (Jebel Akhdar) and fertility." },
+    { name: "Yemen", code: "ye", description: "Three equal horizontal bands of red (top), white, and black. The colors are the Pan-Arab colors: red represents the blood of martyrs and unity, white symbolizes a bright future, and black represents the dark past." }
   ],
   "Others": [
-    { name: "Egypt", code: "eg" },
-    { name: "Armenia", code: "am" },
-    { name: "Azerbaijan", code: "az" },
-    { name: "Georgia", code: "ge" },
-    { name: "Israel", code: "il" },
-    { name: "Jordan", code: "jo" },
-    { name: "Lebanon", code: "lb" },
-    { name: "Syria", code: "sy" },
-    { name: "Turkey", code: "tr" },
-    { name: "Cyprus", code: "cy" }
-  ]
-}
-
-const data2 = {
-  "West Asia": [
-    { name: "Armenia", code: "am" },
-    { name: "Azerbaijan", code: "az" },
-    { name: "Georgia", code: "ge" },
-    { name: "Iran", code: "ir" },
-    { name: "Iraq", code: "iq" },
-    { name: "Israel", code: "il" },
-    { name: "Jordan", code: "jo" },
-    { name: "Lebanon", code: "lb" },
-    { name: "Syria", code: "sy" },
-    { name: "Kuwait", code: "kw" },
-    { name: "Bahrain", code: "bh" },
-    { name: "Qatar", code: "qa" },
-    { name: "Saudi Arabia", code: "sa" },
-    { name: "United Arab Emirates", code: "ae" },
-    { name: "Oman", code: "om" },
-    { name: "Yemen", code: "ye" },
-    { name: "Turkey", code: "tr" },
-    { name: "Cyprus", code: "cy" }
-  ],
-  "Central Asia": [
-    { name: "Kazakhstan", code: "kz" },
-    { name: "Kyrgyzstan", code: "kg" },
-    { name: "Uzbekistan", code: "uz" },
-    { name: "Tajikistan", code: "tj" },
-    { name: "Turkmenistan", code: "tm" }
-  ],
-  "South Asia": [
-    { name: "India", code: "in" },
-    { name: "Pakistan", code: "pk" },
-    { name: "Bangladesh", code: "bd" },
-    { name: "Nepal", code: "np" },
-    { name: "Bhutan", code: "bt" },
-    { name: "Sri Lanka", code: "lk" },
-    { name: "Maldives", code: "mv" },
-    { name: "Afghanistan", code: "af" }
-  ],
-  "Southeast Asia": [
-    { name: "Thailand", code: "th" },
-    { name: "Vietnam", code: "vn" },
-    { name: "Malaysia", code: "my" },
-    { name: "Singapore", code: "sg" },
-    { name: "Indonesia", code: "id" },
-    { name: "Philippines", code: "ph" },
-    { name: "Myanmar", code: "mm" },
-    { name: "Cambodia", code: "kh" },
-    { name: "Laos", code: "la" },
-    { name: "Brunei", code: "bn" },
-    { name: "Timor-Leste", code: "tl" }
-  ],
-  "East Asia": [
-    { name: "China", code: "cn" },
-    { name: "Japan", code: "jp" },
-    { name: "South Korea", code: "kr" },
-    { name: "North Korea", code: "kp" },
-    { name: "Mongolia", code: "mn" }
-  ],
-  "Transcontinental": [
-    { name: "Russia", code: "ru" },
-    { name: "Egypt", code: "eg" }
+    { name: "Egypt", code: "eg", description: "Three equal horizontal bands of red (top), white, and black, with the golden Eagle of Saladin centered in the white band. Red represents the struggle against colonialism and the 1952 revolution, white symbolizes the purity of the revolution, and black represents the end of British occupation. The eagle represents strength, power, and independence." },
+    { name: "Armenia", code: "am", description: "Three equal horizontal bands of red (top), blue, and orange. Red symbolizes the blood shed by Armenian soldiers, blue represents the Armenian sky, and orange represents the fertile lands and the hardworking people of Armenia." },
+    { name: "Azerbaijan", code: "az", description: "Three equal horizontal bands of blue (top), red, and green, with a white crescent and eight-pointed star in the center. Blue represents Turkic heritage, red stands for progress, and green symbolizes Islam. The crescent and star are traditional symbols of Islam, and the eight points represent the eight Turkic peoples." },
+    { name: "Georgia", code: "ge", description: "A white field with a large red cross dividing the flag into four quarters, each containing a smaller red Bolnur-Katskhuri cross (also called a Jerusalem cross). The design is based on the medieval Georgian Kingdom flag, representing the five Holy Wounds of Christ." },
+    { name: "Israel", code: "il", description: "A white field with two horizontal blue stripes near the top and bottom edges and a blue Star of David (Magen David) in the center. The design is based on the Jewish prayer shawl (tallit), and the Star of David is an ancient Jewish symbol. Blue and white are traditional Jewish colors." },
+    { name: "Jordan", code: "jo", description: "Three equal horizontal bands of black (top), white, and green with a red triangle on the hoist side containing a small white seven-pointed star. The colors represent the Pan-Arab Revolt: black for the Abbasid Caliphate, white for the Umayyad Caliphate, green for the Fatimid Caliphate, and red for the Hashemite dynasty. The star represents the seven verses of the first surah in the Quran." },
+    { name: "Lebanon", code: "lb", description: "Three horizontal bands of red (top), white (double width), and red, with a green cedar tree in the center of the white band. Red represents the blood shed for liberation, white symbolizes peace and the snow-capped mountains, and the cedar tree is the national symbol representing holiness, eternity, and peace." },
+    { name: "Syria", code: "sy", description: "Three equal horizontal bands of red (top), white, and black, with two green five-pointed stars in the center of the white band. The colors are Pan-Arab: red represents the struggle for independence, white symbolizes the Umayyad dynasty, and black represents the Abbasid dynasty. The two stars originally represented Syria and Egypt during their union." },
+    { name: "Turkey", code: "tr", description: "A red field with a white crescent moon and a five-pointed star slightly off-center toward the hoist. Red represents the blood of Turkish soldiers, while the crescent and star are ancient symbols of Islam that became associated with Turkey during the Ottoman Empire." },
+    { name: "Cyprus", code: "cy", description: "A white field with a copper-orange silhouette of the island of Cyprus in the center above two green olive branches. The copper-orange represents the copper deposits for which Cyprus was famous in ancient times (copper is named after Cyprus), and the olive branches symbolize peace between Greek and Turkish Cypriots." }
   ]
 };
 
 const tabButtons = document.getElementById("tabButtons");
 const tabContent = document.getElementById("tabContent");
+
+// Create a flat list of all countries with unique IDs
+const allCountries = [];
+Object.keys(data).forEach(region => {
+  data[region].forEach(country => {
+    allCountries.push(country);
+  });
+});
 
 Object.keys(data).forEach((region, index) => {
   // Create tab button
@@ -299,20 +254,25 @@ Object.keys(data).forEach((region, index) => {
   div.className = "tabcontent";
   if (index === 0) div.style.display = "block";
 
-  div.innerHTML = `
-    <table>
-      
-      <tbody>
-        ${data[region].map(c => `
-          <tr onclick="openModal('${c.name}', '${c.code}')">
-            <td><img src="https://flagcdn.com/w160/${c.code}.png"></td>
-            <td>${c.name}</td>
-          </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  `;
-
+  const table = document.createElement("table");
+  const tbody = document.createElement("tbody");
+  
+  data[region].forEach(country => {
+    const countryIndex = allCountries.findIndex(c => c.code === country.code);
+    const row = document.createElement("tr");
+    row.style.cursor = "pointer";
+    row.onclick = () => openModal(countryIndex);
+    
+    row.innerHTML = `
+      <td><img src="https://flagcdn.com/w160/${country.code}.png"></td>
+      <td>${country.name}</td>
+    `;
+    
+    tbody.appendChild(row);
+  });
+  
+  table.appendChild(tbody);
+  div.appendChild(table);
   tabContent.appendChild(div);
 });
 
@@ -327,13 +287,16 @@ function openTab(region, element) {
 const modal = document.getElementById("countryModal");
 const modalFlag = document.getElementById("modalFlag");
 const modalName = document.getElementById("modalName");
+const modalDescription = document.getElementById("modalDescription");
 const closeBtn = document.querySelector(".close");
 
-function openModal(name, code) {
-  console.log(name, code);
+function openModal(countryIndex) {
+  console.log("Opening modal for country index:", countryIndex);
+  const country = allCountries[countryIndex];
   modal.style.display = "block";
-  modalFlag.src = `https://flagcdn.com/w640/${code}.png`;
-  modalName.innerText = name;
+  modalFlag.src = `https://flagcdn.com/w640/${country.code}.png`;
+  modalName.innerText = country.name;
+  modalDescription.innerText = country.description;
 }
 
 // Close on X click
