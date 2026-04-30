@@ -202,7 +202,7 @@ h1 {
 }
 
 .mode-content.active {
-  display: block;
+  display: flex;
 }
 
 .tabcontent {
@@ -240,6 +240,8 @@ img {
   max-width: 600px;
   margin: 0 auto;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
 }
 
 .quiz-stats {
@@ -278,6 +280,13 @@ img {
   border-radius: 12px;
   text-align: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  position: relative;
+}
+
+.flag-row {
+  position: relative;
+  display: flex;
+  justify-content: center;
 }
 
 .quiz-flag {
@@ -288,10 +297,54 @@ img {
   margin-bottom: 4px;
 }
 
+.onepxHt{
+  height: 1px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.onepx{
+  width: 1px;
+  /* background-color: red; */
+  position: relative;
+  /* height: 32px; */
+}
+.hint-icon {
+  /* 
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px; */
+  width: 32px;
+  height: 32px;
+  border: 2px solid #ddd;
+  border-radius: 50%;
+  background: #fff;
+  color: #333;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  position: absolute;
+  right: 0;
+  top: 0;
+  transform: translateX(100%);
+  
+}
+
+.hint-icon:hover,
+.hint-icon.active {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
 .quiz-question {
   font-size: 14px;
   font-weight: 400;
-  margin-bottom: 20px;
+  margin-bottom: 4px;
+  margin-top: 20px;
   color: #333;
 }
 
@@ -426,15 +479,6 @@ img {
   background: #ececec;
 }
 
-.btn-hint {
-  background: #3b82f6;
-  color: white;
-}
-
-.btn-hint:hover {
-  background: #2563eb;
-}
-
 .btn-skip {
   background: #f59e0b;
   color: white;
@@ -444,15 +488,21 @@ img {
   background: #d97706;
 }
 
-/* Hint Box */
+/* Hint Overlay */
 .hint-box {
   background: #eff6ff;
   border: 2px solid #3b82f6;
   border-radius: 8px;
   padding: 16px;
-  margin: 16px 0;
+  margin: 0;
   text-align: left;
   display: none;
+  position: absolute;
+  top: 72px;
+  left: 24px;
+  right: 24px;
+  z-index: 30;
+  box-shadow: 0 12px 28px rgba(0,0,0,0.18);
 }
 
 .hint-box.show {
@@ -474,14 +524,36 @@ img {
 .feedback {
   padding: 16px;
   border-radius: 8px;
-  margin: 16px 0;
+  /* margin: 16px 0; */
   font-weight: 500;
   display: none;
+
+  position: absolute;
+  transform: translateY(-3rem);
 }
 
 .feedback.show {
   display: block;
 }
+
+.feedback.show.auto-dismiss {
+  animation: fadeOut 0.6s ease-in-out forwards;
+  animation-delay: 2s;
+}
+
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1; /* stays visible */
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
 
 .feedback.correct {
   background: #dcfce7;
@@ -519,6 +591,20 @@ img {
 
   .quiz-flag {
     max-width: 240px;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .flag-row {
+    position: relative;
+    width: fit-content;
+    margin: 0 auto;
+  }
+
+  .hint-box {
+    top: 66px;
+    left: 12px;
+    right: 12px;
   }
 
   .option-btn, .search-input {
@@ -660,7 +746,10 @@ img {
     </div>
 
     <div class="quiz-card">
-      <img id="mcq-flag" class="quiz-flag" src="" alt="Flag">
+      <div class="flag-row">
+        <img id="mcq-flag" class="quiz-flag" src="" alt="Flag">
+        <div class="onepx"><button class="hint-icon" id="mcq-hint-btn" type="button" onclick="toggleHint('mcq')" aria-label="Toggle hint" aria-expanded="false">?</button></div>
+      </div>
       <div class="quiz-question">Which country does this flag belong to?</div>
       
       <div class="hint-box" id="mcq-hint">
@@ -668,12 +757,11 @@ img {
         <div class="hint-text" id="mcq-hint-text"></div>
       </div>
 
-      <div class="feedback" id="mcq-feedback"></div>
+      <div class="onepxHt"><div class="feedback" id="mcq-feedback"></div></div>
 
       <div class="quiz-options" id="mcq-options"></div>
 
       <div class="quiz-actions">
-        <button class="action-btn btn-hint" id="mcq-hint-btn" onclick="showHint('mcq')">Show Hint</button>
         <button class="action-btn btn-skip" onclick="skipQuestion('mcq')">Skip</button>
         <button class="action-btn btn-primary" onclick="nextQuestion('mcq')" style="display: none;" id="mcq-next">Next Question</button>
       </div>
@@ -700,7 +788,10 @@ img {
     </div>
 
     <div class="quiz-card">
-      <img id="dropdown-flag" class="quiz-flag" src="" alt="Flag">
+      <div class="flag-row">
+        <img id="dropdown-flag" class="quiz-flag" src="" alt="Flag">
+        <div class="onepx"><button class="hint-icon" id="dropdown-hint-btn" type="button" onclick="toggleHint('dropdown')" aria-label="Toggle hint" aria-expanded="false">?</button></div>
+      </div>
       <div class="quiz-question">Which country does this flag belong to?</div>
 
       <div class="hint-box" id="dropdown-hint">
@@ -722,7 +813,6 @@ img {
       </div>
 
       <div class="quiz-actions">
-        <button class="action-btn btn-hint" id="dropdown-hint-btn" onclick="showHint('dropdown')">Show Hint</button>
         <button class="action-btn btn-skip" onclick="skipQuestion('dropdown')">Skip</button>
         <button class="action-btn btn-primary" onclick="nextQuestion('dropdown')" style="display: none;" id="dropdown-next">Next Question</button>
       </div>
@@ -952,8 +1042,9 @@ function loadQuestion(mode) {
 
   // Reset UI
   document.getElementById(`${mode}-hint`).classList.remove('show');
-  document.getElementById(`${mode}-hint-btn`).style.display = 'inline-block';
-  document.getElementById(`${mode}-feedback`).classList.remove('show', 'correct', 'incorrect');
+  document.getElementById(`${mode}-hint-btn`).classList.remove('active');
+  document.getElementById(`${mode}-hint-btn`).setAttribute('aria-expanded', 'false');
+  document.getElementById(`${mode}-feedback`).classList.remove('show', 'correct', 'incorrect', 'auto-dismiss');
   document.getElementById(`${mode}-next`).style.display = 'none';
 
   // Set flag
@@ -1050,7 +1141,8 @@ function checkAnswer(mode, selectedName) {
   quizState[mode].answered = true;
 
   const feedback = document.getElementById(`${mode}-feedback`);
-  feedback.classList.add('show');
+  // feedback.classList.add('show');
+  feedback.classList.add('show', 'auto-dismiss');
 
   if (correct) {
     quizState[mode].correct++;
@@ -1091,7 +1183,6 @@ function checkAnswer(mode, selectedName) {
 
   updateStats(mode);
   document.getElementById(`${mode}-next`).style.display = 'inline-block';
-  document.getElementById(`${mode}-hint-btn`).style.display = 'none';
 }
 
 function updateStats(mode) {
@@ -1100,12 +1191,16 @@ function updateStats(mode) {
   document.getElementById(`${mode}-total`).textContent = quizState[mode].correct + quizState[mode].incorrect;
 }
 
-function showHint(mode) {
-  document.getElementById(`${mode}-hint`).classList.add('show');
-  document.getElementById(`${mode}-hint-btn`).style.display = 'none';
+function toggleHint(mode) {
+  const hint = document.getElementById(`${mode}-hint`);
+  const button = document.getElementById(`${mode}-hint-btn`);
+  const isOpen = hint.classList.toggle('show');
+  button.classList.toggle('active', isOpen);
+  button.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
 }
 
 function skipQuestion(mode) {
+console.log('Skip question in mode:', mode);
   if (!quizState[mode].answered) {
     const feedback = document.getElementById(`${mode}-feedback`);
     feedback.classList.add('show', 'incorrect');
@@ -1125,7 +1220,6 @@ function skipQuestion(mode) {
     }
     
     document.getElementById(`${mode}-next`).style.display = 'inline-block';
-    document.getElementById(`${mode}-hint-btn`).style.display = 'none';
   }
 }
 
