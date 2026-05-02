@@ -808,7 +808,8 @@ img {
         <div class="hint-text" id="dropdown-hint-text"></div>
       </div>
 
-      <div class="feedback" id="dropdown-feedback"></div>
+    <div class="onepxHt"><div class="feedback" id="dropdown-feedback"></div></div>      
+    
 
       <div class="search-container">
         <input 
@@ -822,7 +823,8 @@ img {
       </div>
 
       <div class="quiz-actions">
-        <button class="action-btn btn-skip" onclick="skipQuestion('dropdown')">Skip</button>
+        <button class="action-btn btn-secondary" id="btnPassQuiz" onclick="passQuestion('dropdown')">Pass</button>
+        <button class="action-btn btn-skip" id="btnSkipQuiz" onclick="skipWithoutAnswer('dropdown')">Skip</button>
         <button class="action-btn btn-primary" onclick="nextQuestion('dropdown')" style="display: none;" id="dropdown-next">Next Question</button>
       </div>
     </div>
@@ -1179,16 +1181,26 @@ function selectDropdownCountry(countryName) {
   checkAnswer('dropdown', countryName);
 }
 
-function hideSkipPassBtns(){
-  const passBtn = document.getElementById('btnPass');
-  passBtn.style.display = 'none'; // hide pass button after answering
+function hideSkipPassBtns(mode) {
+  console.log('Hiding skip/pass buttons for mode:', mode);
+  var passBtn, skipBtn;
+  if (mode === 'mcq') {
+    passBtn = document.getElementById('btnPass');
+    skipBtn = document.getElementById('btnSkip');
+    
+  } else {
+    passBtn = document.getElementById('btnPassQuiz');
+    skipBtn = document.getElementById('btnSkipQuiz');
+  }
 
-  const skipBtn = document.getElementById('btnSkip');
+  console.log('Pass button:', passBtn, 'Skip button:', skipBtn);
+
+  passBtn.style.display = 'none'; // hide pass button after answering
   skipBtn.style.display = 'none'; // hide skip button after answering
 }
 
 function checkAnswer(mode, selectedName) {
-  hideSkipPassBtns(); // hide skip/pass buttons once an answer is selected
+  hideSkipPassBtns(mode); // hide skip/pass buttons once an answer is selected
 
   if (quizState[mode].answered) return;
 
@@ -1283,15 +1295,22 @@ console.log('Skip question in mode:', mode);
 }
 
 function nextQuestion(mode) {
+  const passBtn = document.getElementById(mode === 'mcq' ? 'btnPass' : 'btnPassQuiz');
+  const skipBtn = document.getElementById(mode === 'mcq' ? 'btnSkip' : 'btnSkipQuiz');
   if (mode === 'dropdown') {
     document.getElementById('dropdown-search').disabled = false;
+  //   passBtn = document.getElementById('btnPassQuiz');
+  //   skipBtn = document.getElementById('btnSkipQuiz');    
+
   }
+  // else{
+  //   passBtn = document.getElementById('btnPass');
+  //   skipBtn = document.getElementById('btnSkip');
+  // }
   loadQuestion(mode);
 
-  const passBtn = document.getElementById('btnPass');
+  
   passBtn.style.display = ''; // show pass button for next question
-
-  const skipBtn = document.getElementById('btnSkip');
   skipBtn.style.display = ''; // show skip button for next question
 }
 
@@ -1300,7 +1319,7 @@ loadQuestion('mcq');
 loadQuestion('dropdown');
 
 function passQuestion(mode) {
-  hideSkipPassBtns();
+  hideSkipPassBtns(mode);
 
   const state = quizState[mode];
   if (state.answered) return;
