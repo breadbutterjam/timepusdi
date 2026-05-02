@@ -249,13 +249,13 @@ img {
 
 .quiz-stats {
   background: #fff;
-  padding: 16px;
+  padding: 0px 16px 0px 16px;
   border-radius: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   display: flex;
   justify-content: space-around;
   text-align: center;
-  display: none; /* Hidden by default, show later once randomization logic is refined */
+  /* display: none;  Hidden by default, show later once randomization logic is refined */
 }
 
 .stat-item {
@@ -594,7 +594,7 @@ img {
   }
 
   .quiz-container {
-    padding: 12px;
+    padding: 8px;
   }
 
   .quiz-flag {
@@ -749,7 +749,7 @@ img {
       </div>
       <div class="stat-item">
         <div class="stat-value" id="mcq-total">0</div>
-        <div class="stat-label">Total</div>
+        <div class="stat-label">Remaining</div>
       </div>
     </div>
 
@@ -770,7 +770,8 @@ img {
       <div class="quiz-options" id="mcq-options"></div>
 
       <div class="quiz-actions">
-        <button class="action-btn btn-skip" onclick="skipQuestion('mcq')">Skip</button>
+        <button class="action-btn btn-secondary" id="btnPass" onclick="passQuestion('mcq')">Pass</button>
+        <button class="action-btn btn-skip" id="btnSkip" onclick="skipWithoutAnswer('mcq')">Skip</button>  
         <button class="action-btn btn-primary" onclick="nextQuestion('mcq')" style="display: none;" id="mcq-next">Next Question</button>
       </div>
     </div>
@@ -901,11 +902,11 @@ const data = {
   ]
 };
 
-// Quiz state
-const quizState = {
-  mcq: { correct: 0, incorrect: 0, currentCountry: null, answered: false },
-  dropdown: { correct: 0, incorrect: 0, currentCountry: null, answered: false }
-};
+
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
 
 // Initialize
 const tabButtons = document.getElementById("tabButtons");
@@ -918,6 +919,27 @@ Object.keys(data).forEach(region => {
     allCountries.push(country);
   });
 });
+
+
+// Quiz state
+const quizState = {
+  mcq: initQuizState(),
+  dropdown: initQuizState()
+};
+
+function initQuizState() {
+  return {
+    correct: 0,
+    incorrect: 0,
+    passed: 0,
+    currentCountry: null,
+    answered: false,
+
+    seen: new Set(),        // all shown countries
+    skipped: [],            // skipped countries (not shown)
+    pool: shuffle([...allCountries]) // working queue
+  };
+}
 
 // Build Practice Mode
 Object.keys(data).forEach((region, index) => {
@@ -1044,7 +1066,22 @@ function removeCountryName(description, countryName) {
 }
 
 function loadQuestion(mode) {
-  const country = getRandomCountry();
+  const state = quizState[mode];
+
+  // 🛑 If no more countries left → handle completion
+  if (state.pool.length === 0) {
+    handleQuizCompletion(mode);
+    return;
+  }
+
+  // ✅ Take NEXT country from pool (not random)
+  const country = state.pool.shift();
+
+  state.currentCountry = country;
+  state.answered = false;
+  state.seen.add(country.code);
+
+  // const country = getRandomCountry();
   quizState[mode].currentCountry = country;
   quizState[mode].answered = false;
 
@@ -1142,7 +1179,17 @@ function selectDropdownCountry(countryName) {
   checkAnswer('dropdown', countryName);
 }
 
+function hideSkipPassBtns(){
+  const passBtn = document.getElementById('btnPass');
+  passBtn.style.display = 'none'; // hide pass button after answering
+
+  const skipBtn = document.getElementById('btnSkip');
+  skipBtn.style.display = 'none'; // hide skip button after answering
+}
+
 function checkAnswer(mode, selectedName) {
+  hideSkipPassBtns(); // hide skip/pass buttons once an answer is selected
+
   if (quizState[mode].answered) return;
 
   const correct = selectedName === quizState[mode].currentCountry.name;
@@ -1194,9 +1241,13 @@ function checkAnswer(mode, selectedName) {
 }
 
 function updateStats(mode) {
-  document.getElementById(`${mode}-correct`).textContent = quizState[mode].correct;
-  document.getElementById(`${mode}-incorrect`).textContent = quizState[mode].incorrect;
-  document.getElementById(`${mode}-total`).textContent = quizState[mode].correct + quizState[mode].incorrect;
+  const state = quizState[mode];
+
+  document.getElementById(`${mode}-correct`).textContent = state.correct;
+  document.getElementById(`${mode}-incorrect`).textContent = state.incorrect;
+
+  const remaining = state.pool.length;
+  document.getElementById(`${mode}-total`).textContent = remaining;
 }
 
 function toggleHint(mode) {
@@ -1236,11 +1287,80 @@ function nextQuestion(mode) {
     document.getElementById('dropdown-search').disabled = false;
   }
   loadQuestion(mode);
+
+  const passBtn = document.getElementById('btnPass');
+  passBtn.style.display = ''; // show pass button for next question
+
+  const skipBtn = document.getElementById('btnSkip');
+  skipBtn.style.display = ''; // show skip button for next question
 }
 
 // Initialize first quiz questions
 loadQuestion('mcq');
 loadQuestion('dropdown');
+
+function passQuestion(mode) {
+  hideSkipPassBtns();
+
+  const state = quizState[mode];
+  if (state.answered) return;
+
+  state.answered = true;
+  state.passed++;
+
+  const feedback = document.getElementById(`${mode}-feedback`);
+  feedback.classList.add('show', 'incorrect');
+  feedback.textContent = `Answer: ${state.currentCountry.name}`;
+
+  if (mode === 'mcq') {
+    const buttons = document.querySelectorAll('#mcq-options .option-btn');
+    buttons.forEach(btn => {
+      btn.disabled = true;
+      if (btn.textContent === state.currentCountry.name) {
+        btn.classList.add('correct');
+      }
+    });
+  } else {
+    document.getElementById('dropdown-search').disabled = true;
+  }
+
+  updateStats(mode);
+  document.getElementById(`${mode}-next`).style.display = 'inline-block';
+}
+
+function skipWithoutAnswer(mode) {
+  
+
+  const state = quizState[mode];
+  if (state.answered) return;
+
+  state.skipped.push(state.currentCountry);
+
+  loadQuestion(mode); // directly move forward
+}
+
+function handleQuizCompletion(mode) {
+  const state = quizState[mode];
+
+  if (state.skipped.length > 0) {
+    const retry = confirm(
+      `All countries completed!\n\nDo you want to attempt ${state.skipped.length} skipped countries?`
+    );
+
+    if (retry) {
+      state.pool = shuffle([...state.skipped]);
+      state.skipped = [];
+      loadQuestion(mode);
+      return;
+    }
+  }
+
+  alert("Quiz complete! 🎉");
+
+  // Reset (optional)
+  quizState[mode] = initQuizState();
+  loadQuestion(mode);
+}
 
 </script>
 </body>
