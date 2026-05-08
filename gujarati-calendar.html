@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gujarati Lunar Calendar</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: linear-gradient(135deg, #f5f1e8 0%, #e8dcc8 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #gujaratiDate{
+            font-size: 1.8rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background: #ffffff;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        .header {
+            padding: 8px 4px;
+            text-align: center;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+        }
+
+        .dateContainer{
+            flex: 0 auto;
+        }
+        .prevDay, .nextDay {
+            /* background-color: red; */
+            /* width: 20px; */
+            flex: 1;
+            display: flex;
+            align-items: center;     /* vertical center */
+            justify-content: center; /* horizontal center */
+        }
+
+        .header.today {
+            background: linear-gradient(135deg, #F4A460 0%, #E67E22 100%);
+            color: white;
+        }
+
+        .header.past {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+            color: white;
+        }
+
+        .header.future {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+        }
+
+        .header:hover {
+            transform: translateY(-2px);
+        }
+
+        .header-label {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-bottom: 4px;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+
+        .header-date {
+            font-family: 'Crimson Pro', serif;
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .date-picker-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            backdrop-filter: blur(4px);
+            animation: fadeIn 0.2s ease;
+        }
+
+        .date-picker-overlay.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .date-picker {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 340px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { 
+                opacity: 0;
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0); 
+            }
+        }
+
+        .date-picker h3 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 20px;
+            margin-bottom: 16px;
+            color: #2c3e50;
+        }
+
+        .date-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: 'Work Sans', sans-serif;
+            margin-bottom: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .date-input:focus {
+            outline: none;
+            border-color: #E67E22;
+        }
+
+        .date-picker-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: 'Work Sans', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #F4A460 0%, #E67E22 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .moon-section {
+            padding: 12px 20px;
+            text-align: center;
+            border-right: 1px solid #f0f0f0;
+            background-color: black;
+        }
+
+        .moon-container {
+            
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            overflow: hidden;
+            /* width: 90px;
+            height: 90px;
+            background: #2c2c2a; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);*/
+            position: relative;
+            
+        }
+
+        .moon-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            clip-path: circle(43%);
+        }
+
+        .moon-css {
+            width: 100%;
+            height: 100%;
+            background: #2c2c2a;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            display: none;
+        }
+
+        .moon-css.active {
+            display: block;
+        }
+
+        .moon-light {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 65%;
+            height: 100%;
+            background: #f5f5f0;
+            border-radius: 50%;
+        }
+
+        .moon-phase-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 6px;
+        }
+
+        .moon-day {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .tithi-section {
+            padding: 12px 20px;
+        }
+
+        .tithi-row {
+            margin-bottom: 16px;
+        }
+
+        .tithi-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .upcoming-phase-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 4px;
+            /* text-transform: uppercase; */
+            letter-spacing: 0.5px;
+        }
+
+        .tithi-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .festivals-section {
+            padding: 24px;
+        }
+
+        .festivals-title {
+            font-family: 'Crimson Pro', serif;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: #2c3e50;
+        }
+
+        .festival-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .festival-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .festival-card.upcoming {
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            border-left: 4px solid #2196F3;
+        }
+
+        .festival-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .festival-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .festival-card.upcoming .festival-name {
+            color: #1976D2;
+        }
+
+        .festival-relative {
+            font-size: 13px;
+            color: #546e7a;
+        }
+
+        .festival-card.upcoming .festival-relative {
+            color: #1976D2;
+            opacity: 0.8;
+        }
+
+        .festival-date {
+            font-size: 13px;
+            color: #7f8c8d;
+        }
+
+        .festival-card.upcoming .festival-date {
+            color: #1976D2;
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header today" id="header">
+            <div class="prevDay"  onclick="prevDate()"><</div>
+            <div class="dateContainer"  onclick="openDatePicker()">
+                <div class="header-label" id="headerLabel">Today</div>
+                <div class="header-date" id="headerDate">Loading...</div>
+            </div>
+            <div class="nextDay" onclick="nextDate()">></div>
+        </div>
+
+        <div class="content-grid">
+            <div class="moon-section">
+                <div class="moon-container">
+                    <img class="moon-image" id="moonImage" alt="Moon phase" style="display: none;">
+                    <div class="moon-css active" id="moonCSS">
+                        <div class="moon-light" id="moonLight"></div>
+                    </div>
+                </div>
+                <div class="moon-phase-name" id="moonPhaseName">Loading...</div>
+                <div class="moon-day" id="moonDay">Calculating...</div>
+            </div>
+
+            <div class="tithi-section">
+                <div class="tithi-row">
+                    <!-- <div class="tithi-label">Gujarati date</div> -->
+                    <div class="tithi-value" id="gujaratiDate">Loading...</div>
+                </div>
+                <div class="tithi-row">
+                    <!-- <div class="tithi-label">Tithi</div> -->
+                    <!-- <div class="tithi-value" id="tithiName">Loading...</div> -->
+                </div>
+                <div class="upcomingPhaseContiner">
+                    <div class="tithi-row next-full-moon">
+                        <div class="upcoming-phase-label">next full moon</div>
+                        <div class="upcoming-phase-value" id="nextFullMoon">Loading...</div>
+                    </div>
+                    <div class="tithi-row next-new-moon">
+                        <div class="upcoming-phase-label">next new moon</div>
+                        <div class="upcoming-phase-value" id="nextNewMoon">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="festivals-section">
+            <h3 class="festivals-title">Upcoming festivals</h3>
+            <div id="festivalsContainer">
+                <div class="loading">Loading festivals...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="date-picker-overlay" id="datePickerOverlay" onclick="closeDatePicker(event)">
+        <div class="date-picker" onclick="event.stopPropagation()">
+            <h3>Select a date</h3>
+            <input type="date" class="date-input" id="dateInput">
+            <div class="date-picker-buttons">
+                <button class="btn btn-secondary" onclick="closeDatePicker()">Cancel</button>
+                <button class="btn btn-primary" onclick="applyDate()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const NASA_MOON_CONFIG = {
+            baseUrl: 'https://svs.gsfc.nasa.gov/vis/a000000/a005500/a005587/frames/730x730_1x1_30p/moon.',
+            referenceDate: '2026-05-08',
+            referenceImageId: 3054,
+            extension: '.jpg'
+        };
+
+        // Lunar calendar data
+        const LUNAR_DATA = {
+            months: [
+                { name: "Chaitra", year: 2026, newMoon: "2026-03-19", fullMoon: "2026-04-02" },
+                { name: "Vaishakh", year: 2026, newMoon: "2026-04-17", fullMoon: "2026-05-01" },
+                { name: "Jyeshtha", year: 2026, newMoon: "2026-05-16", fullMoon: "2026-05-31" },
+                { name: "Ashadh", year: 2026, newMoon: "2026-06-15", fullMoon: "2026-06-30" },
+                { name: "Shravan", year: 2026, newMoon: "2026-07-14", fullMoon: "2026-07-29" },
+                { name: "Bhadrapad", year: 2026, newMoon: "2026-08-12", fullMoon: "2026-08-28" },
+                { name: "Ashwin", year: 2026, newMoon: "2026-09-11", fullMoon: "2026-09-26" },
+                { name: "Kartik", year: 2026, newMoon: "2026-10-10", fullMoon: "2026-10-26" },
+                { name: "Magshar", year: 2026, newMoon: "2026-11-09", fullMoon: "2026-11-24" },
+                { name: "Posh", year: 2026, newMoon: "2026-12-09", fullMoon: "2027-12-24" },
+                { name: "Maha", year: 2027, newMoon: "2027-01-07", fullMoon: "2027-01-22" },
+                { name: "Fagan", year: 2027, newMoon: "2027-02-06", fullMoon: "2027-02-20" }
+            ],
+            festivals: [
+                { name: "Purnima", date: "2026-05-12", type: "monthly" },
+                { name: "Vad Purnima", date: "2026-06-10", type: "festival" },
+                { name: "Guru Purnima", date: "2026-07-10", type: "festival" },
+                { name: "Ashadhi Ekadashi", date: "2026-07-08", type: "festival" },
+                { name: "Shravan Purnima", date: "2026-08-08", type: "festival" },
+                { name: "Janmashtami", date: "2026-08-31", type: "festival" },
+                { name: "Ganesh Chaturthi", date: "2026-09-10", type: "festival" },
+                { name: "Sharad Purnima", date: "2026-10-06", type: "festival" },
+                { name: "Dussehra", date: "2026-10-15", type: "festival" },
+                { name: "Diwali", date: "2026-11-03", type: "festival" },
+                { name: "New Year (Bestu Varas)", date: "2026-11-04", type: "festival" }
+            ]
+        };
+
+        const TITHI_NAMES = [
+            "Ekam", "Beej", "Trij", "Choth", "Pancham", 
+            "Chhath", "Satam", "Aatham", "Nom", "Dasham",
+            "Ekadashi", "Baras", "Teras", "Chaudas", "Jam"
+        ];
+        const purnimaAmas = ["Purnima", "Amas"];
+
+        let currentSelectedDate = new Date();
+
+        function initCalendar() {
+            updateCalendar(currentSelectedDate);
+        }
+
+        function getUpcomingMoonPhases(fromDate) {
+            const inputDate = new Date(fromDate);
+
+            let nextNewMoon = null;
+            let nextFullMoon = null;
+
+            // Find next occurrences
+            for (const month of LUNAR_DATA.months) {
+                const newMoonDate = new Date(month.newMoon);
+                const fullMoonDate = new Date(month.fullMoon);
+
+                if (newMoonDate > inputDate && !nextNewMoon) {
+                nextNewMoon = { type: "newMoon", date: newMoonDate };
+                }
+
+                if (fullMoonDate > inputDate && !nextFullMoon) {
+                nextFullMoon = { type: "fullMoon", date: fullMoonDate };
+                }
+
+                if (nextNewMoon && nextFullMoon) break;
+            }
+
+            // Put into array and sort by date
+            return [nextNewMoon, nextFullMoon]
+                .filter(Boolean)
+                .sort((a, b) => a.date - b.date);
+        }    
+
+        async function getMoonImageUrl(date = new Date()) {
+            // Convert Date → YYYY-MM-DDTHH:mm (API format)
+            const isoString = date.toISOString().slice(0, 16);
+
+            const apiUrl = `https://svs.gsfc.nasa.gov/api/dialamoon/${isoString}`;
+
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                return data.image?.url || data.url || null;
+            } catch (error) {
+                console.error("Error fetching moon image:", error);
+                return null;
+            }
+        }
+
+        function updateCalendar(date) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const selectedDate = new Date(date);
+            selectedDate.setHours(0, 0, 0, 0);
+
+            // Update header
+            updateHeader(selectedDate, today);
+
+            // Calculate lunar info
+            const lunarInfo = calculateLunarInfo(selectedDate);
+            
+            // Update moon phase
+            updateMoonPhase(selectedDate, lunarInfo);
+
+            // Update tithi information
+            updateTithiInfo(lunarInfo);
+
+            // Update festivals
+            updateFestivals(selectedDate);
+        }
+
+        function updateHeader(selectedDate, today) {
+            const header = document.getElementById('header');
+            const headerLabel = document.getElementById('headerLabel');
+            const headerDate = document.getElementById('headerDate');
+
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            headerDate.textContent = selectedDate.toLocaleDateString('en-US', options);
+
+            if (selectedDate.getTime() === today.getTime()) {
+                header.className = 'header today';
+                headerLabel.textContent = 'Today';
+            } else if (selectedDate < today) {
+                header.className = 'header past';
+                headerLabel.textContent = 'Past date';
+            } else {
+                header.className = 'header future';
+                headerLabel.textContent = 'Future date';
+            }
+        }
+
+        function calculateLunarInfo(date) {
+            // Find the appropriate lunar month
+            let currentMonth = null;
+            let isShukla = true;
+            let anchorDate = null;
+            let dayInPaksha = 0;
+
+            for (let i = 0; i < LUNAR_DATA.months.length; i++) {
+                const month = LUNAR_DATA.months[i];
+                const newMoon = new Date(month.newMoon);
+                const fullMoon = new Date(month.fullMoon);
+                
+                if (date >= newMoon && date <= fullMoon) {
+                    currentMonth = month;
+                    isShukla = true;
+                    anchorDate = newMoon;
+                    dayInPaksha = Math.floor((date - newMoon) / (1000 * 60 * 60 * 24));
+                    break;
+                } else if (i < LUNAR_DATA.months.length - 1) {
+                    const nextNewMoon = new Date(LUNAR_DATA.months[i + 1].newMoon);
+                    if (date > fullMoon && date < nextNewMoon) {
+                        currentMonth = month;
+                        isShukla = false;
+                        anchorDate = fullMoon;
+                        dayInPaksha = Math.floor((date - fullMoon) / (1000 * 60 * 60 * 24));
+                        break;
+                    }
+                }
+            }
+
+            if (!currentMonth) {
+                currentMonth = LUNAR_DATA.months[0];
+                isShukla = true;
+                dayInPaksha = 0;
+            }
+
+            const tithiNumber = Math.min(dayInPaksha, 14);
+            const totalDaysInCycle = 30;
+            const dayInCycle = isShukla ? dayInPaksha : (15 + dayInPaksha);
+            var tithiName = TITHI_NAMES[tithiNumber];
+            
+            if (tithiNumber === 14 && isShukla){
+                tithiName = purnimaAmas[0];
+            } else if(tithiNumber === 14 && !isShukla) {
+                tithiName = purnimaAmas[1];
+            }
+
+            console.log("tithiNumber", tithiNumber, "dayInPaksha", dayInPaksha, "isShukla", isShukla, "tithiName", tithiName);
+
+            // console.log(`Date: ${date.toDateString()}, Month: ${currentMonth.name}, Paksha: ${isShukla ? 'Shukla' : 'Krishna'}, Day in Paksha: ${dayInPaksha + 1}, Tithi: ${TITHI_NAMES[tithiNumber]}, Day in Cycle: ${dayInCycle + 1}/${totalDaysInCycle}`);   
+            return {
+                month: currentMonth,
+                isShukla: isShukla,
+                paksha: isShukla ? "Shukla" : "Krishna",
+                tithiNumber: tithiNumber,
+                tithiName: tithiName,
+                dayInPaksha: dayInPaksha + 1,
+                dayInCycle: dayInCycle,
+                totalDaysInCycle: totalDaysInCycle
+            };
+        }
+
+        function updateMoonPhase(date, lunarInfo) {
+            // Calculate NASA image URL
+            const referenceDate = new Date(NASA_MOON_CONFIG.referenceDate);
+            const daysDiff = Math.floor((date - referenceDate) / (1000 * 60 * 60 * 24));
+            const imageId = NASA_MOON_CONFIG.referenceImageId + daysDiff;
+            const imageUrl = `${NASA_MOON_CONFIG.baseUrl}${imageId}${NASA_MOON_CONFIG.extension}`;
+
+            const moonImage = document.getElementById('moonImage');
+            const moonCSS = document.getElementById('moonCSS');
+
+            // Try to load NASA image
+            // moonImage.src = imageUrl;
+            // moonImage.src = getMoonImageUrl(currentSelectedDate)
+            if (moonImageCache[currentSelectedDate.toISOString().slice(0, 10)]) {
+                moonImage.src = moonImageCache[currentSelectedDate.toISOString().slice(0, 10)];
+            } else {
+                getMoonImageUrl(currentSelectedDate).then(url => {
+                    // console.log(url);
+                    moonImage.src = url || imageUrl;
+                    moonImageCache[currentSelectedDate.toISOString().slice(0, 10)] = url;
+                });
+            }
+            moonImage.style.display = 'block';
+            moonCSS.classList.remove('active');
+
+            moonImage.onerror = function() {
+                // Fallback to CSS moon
+                moonImage.style.display = 'none';
+                moonCSS.classList.add('active');
+                updateCSSMoon(lunarInfo.dayInCycle);
+            };
+
+            // Calculate moon phase name
+            const dayInCycle = lunarInfo.dayInCycle;
+            let phaseName = '';
+            
+            if (dayInCycle === 0) {
+                phaseName = 'New moon';
+            } else if (dayInCycle < 7) {
+                phaseName = 'Waxing crescent';
+            } else if (dayInCycle === 7) {
+                phaseName = 'First quarter';
+            } else if (dayInCycle < 15) {
+                phaseName = 'Waxing gibbous';
+            } else if (dayInCycle === 15) {
+                phaseName = 'Full moon';
+            } else if (dayInCycle < 22) {
+                phaseName = 'Waning gibbous';
+            } else if (dayInCycle === 22) {
+                phaseName = 'Last quarter';
+            } else {
+                phaseName = 'Waning crescent';
+            }
+
+            document.getElementById('moonPhaseName').textContent = phaseName;
+            document.getElementById('moonDay').textContent = `Day ${lunarInfo.dayInCycle + 1} of ${lunarInfo.totalDaysInCycle}`;
+        }
+
+        //temp storage for moon images from NASA API to avoid multiple calls
+        const moonImageCache = {};
+
+        function updateCSSMoon(dayInCycle) {
+            const moonLight = document.getElementById('moonLight');
+            const phase = dayInCycle / 30;
+            
+            if (phase < 0.5) {
+                // Waxing
+                const percent = (phase * 2) * 100;
+                moonLight.style.width = `${percent}%`;
+                moonLight.style.right = '0';
+                moonLight.style.left = 'auto';
+            } else {
+                // Waning
+                const percent = ((1 - phase) * 2) * 100;
+                moonLight.style.width = `${percent}%`;
+                moonLight.style.left = '0';
+                moonLight.style.right = 'auto';
+            }
+        }
+
+        function updateTithiInfo(lunarInfo) {
+            // const gujaratiDate = `${lunarInfo.month.name} ${lunarInfo.isShukla ? 'Sud' : 'Vad'} ${lunarInfo.dayInPaksha}`;
+            const gujaratiDate = `${lunarInfo.month.name} ${lunarInfo.isShukla ? 'Sud' : 'Vad'} ${lunarInfo.tithiName}`;
+            
+            document.getElementById('gujaratiDate').textContent = gujaratiDate;
+            // document.getElementById('tithiName').textContent = lunarInfo.tithiName;
+            // document.getElementById('paksha').textContent = `${lunarInfo.paksha} (${lunarInfo.isShukla ? 'waxing' : 'waning'})`;
+
+            updateUpcomingPhases();
+
+        }
+
+        const labelsUpcomingPhases = {
+            newMoon: "Next new moon",
+            fullMoon: "Next full moon"
+        };
+
+        function updateUpcomingPhases() {
+            const upcomingPhases = getUpcomingMoonPhases(currentSelectedDate);
+            const phaseContainer = document.getElementsByClassName('upcomingPhaseContiner')[0];
+            const phase1 = phaseContainer.children[0];
+            const phase2 = phaseContainer.children[1];
+
+            phase1.children[0].textContent = labelsUpcomingPhases[upcomingPhases[0].type];
+            phase1.children[1].textContent = upcomingPhases[0].date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+            phase2.children[0].textContent = labelsUpcomingPhases[upcomingPhases[1].type];
+            phase2.children[1].textContent = upcomingPhases[1].date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+        }
+
+        function updateFestivals(selectedDate) {
+            const festivalsContainer = document.getElementById('festivalsContainer');
+            
+            // Filter upcoming festivals
+            const upcomingFestivals = LUNAR_DATA.festivals
+                .map(festival => {
+                    const festivalDate = new Date(festival.date);
+                    const daysDiff = Math.floor((festivalDate - selectedDate) / (1000 * 60 * 60 * 24));
+                    return { ...festival, festivalDate, daysDiff };
+                })
+                .filter(f => f.daysDiff >= 0)
+                .sort((a, b) => a.daysDiff - b.daysDiff)
+                .slice(0, 5);
+
+            if (upcomingFestivals.length === 0) {
+                festivalsContainer.innerHTML = '<div class="loading">No upcoming festivals</div>';
+                return;
+            }
+
+            festivalsContainer.innerHTML = upcomingFestivals.map((festival, index) => {
+                const options = { month: 'long', day: 'numeric' };
+                const dateStr = festival.festivalDate.toLocaleDateString('en-US', options);
+                
+                let relativeStr = '';
+                if (festival.daysDiff === 0) {
+                    relativeStr = 'Today';
+                } else if (festival.daysDiff === 1) {
+                    relativeStr = 'Tomorrow';
+                } else if (festival.daysDiff < 7) {
+                    relativeStr = `In ${festival.daysDiff} days`;
+                } else {
+                    relativeStr = `${festival.daysDiff} days away`;
+                }
+
+                const upcomingClass = index === 0 ? 'upcoming' : '';
+
+                return `
+                    <div class="festival-card ${upcomingClass}">
+                        <div class="festival-header">
+                            <span class="festival-name">${festival.name}</span>
+                            <span class="festival-relative">${relativeStr}</span>
+                        </div>
+                        <div class="festival-date">${dateStr}, ${festival.festivalDate.getFullYear()}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function prevDate() {
+            currentSelectedDate.setDate(currentSelectedDate.getDate() - 1);
+            updateCalendar(currentSelectedDate);
+        }
+
+        function nextDate(){
+            currentSelectedDate.setDate(currentSelectedDate.getDate() + 1);
+            updateCalendar(currentSelectedDate);
+        }
+
+        function openDatePicker() {
+            const overlay = document.getElementById('datePickerOverlay');
+            const dateInput = document.getElementById('dateInput');
+            
+            const year = currentSelectedDate.getFullYear();
+            const month = String(currentSelectedDate.getMonth() + 1).padStart(2, '0');
+            const day = String(currentSelectedDate.getDate()).padStart(2, '0');
+            dateInput.value = `${year}-${month}-${day}`;
+            
+            overlay.classList.add('active');
+        }
+
+        function closeDatePicker(event) {
+            if (event && event.target !== document.getElementById('datePickerOverlay')) {
+                return;
+            }
+            document.getElementById('datePickerOverlay').classList.remove('active');
+        }
+
+        function applyDate() {
+            const dateInput = document.getElementById('dateInput');
+            if (dateInput.value) {
+                currentSelectedDate = new Date(dateInput.value + 'T00:00:00');
+                updateCalendar(currentSelectedDate);
+                closeDatePicker();
+            }
+        }
+
+        // Initialize on load
+        initCalendar();
+    </script>
+</body>
+</html>
