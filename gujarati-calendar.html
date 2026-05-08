@@ -26,6 +26,7 @@
 
         #gujaratiDate{
             font-size: 1.8rem;
+            font-family: 'Work Sans', sans-serif;
         }
 
         .container {
@@ -71,10 +72,6 @@
         .header.future {
             background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
             color: white;
-        }
-
-        .header:hover {
-            transform: translateY(-2px);
         }
 
         .header-label {
@@ -265,10 +262,15 @@
         .moon-day {
             font-size: 13px;
             color: #7f8c8d;
+            display: none; /* Hide for now */
         }
 
         .tithi-section {
             padding: 12px 20px;
+            display: flex;
+            flex-direction: column;
+            flex-wrap: wrap;
+            justify-content: space-between;
         }
 
         .tithi-row {
@@ -393,10 +395,6 @@
                 <div class="tithi-row">
                     <!-- <div class="tithi-label">Gujarati date</div> -->
                     <div class="tithi-value" id="gujaratiDate">Loading...</div>
-                </div>
-                <div class="tithi-row">
-                    <!-- <div class="tithi-label">Tithi</div> -->
-                    <!-- <div class="tithi-value" id="tithiName">Loading...</div> -->
                 </div>
                 <div class="upcomingPhaseContiner">
                     <div class="tithi-row next-full-moon">
@@ -736,10 +734,10 @@
             const phase2 = phaseContainer.children[1];
 
             phase1.children[0].textContent = labelsUpcomingPhases[upcomingPhases[0].type];
-            phase1.children[1].textContent = upcomingPhases[0].date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            phase1.children[1].textContent = upcomingPhases[0].date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'long'  });
 
             phase2.children[0].textContent = labelsUpcomingPhases[upcomingPhases[1].type];
-            phase2.children[1].textContent = upcomingPhases[1].date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+            phase2.children[1].textContent = upcomingPhases[1].date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'long' });
 
         }
 
