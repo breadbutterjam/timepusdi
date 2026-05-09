@@ -205,6 +205,8 @@
             text-align: center;
             border-right: 1px solid #f0f0f0;
             background-color: black;
+            display: flex;
+            flex-direction: column;
         }
 
         .moon-container {
@@ -366,6 +368,52 @@
             padding: 20px;
             color: #7f8c8d;
         }
+
+        .image-modal {
+        display: none;
+        position: fixed;
+        z-index: 999;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        align-items: center;
+        justify-content: center;
+        }
+
+        .image-modal.active {
+        display: flex;
+        }
+
+        .modal-content {
+        max-width: 95%;
+        max-height: 95%;
+        object-fit: contain;
+        }
+
+        .modal-close {
+        position: absolute;
+        top: 20px;
+        right: 24px;
+        font-size: 36px;
+        color: white;
+        cursor: pointer;
+        font-weight: 300;
+        }
+
+        .loadingHolder{
+            position: absolute;
+            display: none;
+            height: 50%;
+            width: 50%;
+            z-index: 100;
+            background-image: url(loading.gif);
+            background-position: center;
+            background-size: contain;
+            background-repeat: no-repeat;
+            translate: 50% 50%;
+        }
     </style>
 </head>
 <body>
@@ -381,8 +429,10 @@
 
         <div class="content-grid">
             <div class="moon-section">
+                  
                 <div class="moon-container">
-                    <img class="moon-image" id="moonImage" alt="Moon phase" style="display: none;">
+                    <div class="loadingHolder" id="loadingHolder"></div>
+                    <img class="moon-image" id="moonImage" alt="Moon phase" style="display: none;" onclick="openImageModal()">
                     <div class="moon-css active" id="moonCSS">
                         <div class="moon-light" id="moonLight"></div>
                     </div>
@@ -427,7 +477,10 @@
             </div>
         </div>
     </div>
-
+    <div id="imageModal" class="image-modal" onclick="closeImageModal(event)">
+        <span class="modal-close" onclick="closeImageModal()">&times;</span>
+        <img class="modal-content" id="modalImage">
+    </div>
     <script>
         // Configuration
         const NASA_MOON_CONFIG = {
@@ -648,10 +701,14 @@
             if (moonImageCache[currentSelectedDate.toISOString().slice(0, 10)]) {
                 moonImage.src = moonImageCache[currentSelectedDate.toISOString().slice(0, 10)];
             } else {
+                // moonImage.style.opacity = 0.2; // Show loading state
+                showLoading();
                 getMoonImageUrl(currentSelectedDate).then(url => {
                     // console.log(url);
                     moonImage.src = url || imageUrl;
                     moonImageCache[currentSelectedDate.toISOString().slice(0, 10)] = url;
+                    // moonImage.style.opacity = 1; // Remove loading state
+                    hideLoading();
                 });
             }
             moonImage.style.display = 'block';
@@ -831,6 +888,31 @@
 
         // Initialize on load
         initCalendar();
+        
+        function openImageModal() {
+            const src = document.getElementById("moonImage").src;
+            const modal = document.getElementById("imageModal");
+            const modalImg = document.getElementById("modalImage");
+
+            modalImg.src = src;
+            modal.classList.add("active");
+        }
+
+        function closeImageModal(event) {
+            // Close only if clicking outside image OR on close button
+            if (!event || event.target.id === "imageModal") {
+                document.getElementById("imageModal").classList.remove("active");
+            }
+        }
+
+        function showLoading() {
+            document.getElementById('loadingHolder').style.display = 'block';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingHolder').style.display = 'none';
+        }
+
     </script>
 </body>
 </html>
