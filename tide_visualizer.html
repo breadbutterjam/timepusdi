@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tide Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        .mainContainer {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        .sky {
+            background: linear-gradient(to bottom, #87CEEB 0%, #B0D8F0 100%);
+            height: 35%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ocean {
+            background: linear-gradient(to bottom, #1E90FF 0%, #0066CC 100%);
+            min-height: 100px;
+            position: relative;
+            transition: height 1s ease;
+            overflow: hidden;
+        }
+
+        .land {
+            background-color: #eea46f;
+            flex: 1;
+            position: relative;
+            transition: flex 1s ease;
+        }
+
+        /* Bird animation */
+        .bird {
+            position: absolute;
+            animation: flyAcross 15s linear infinite;
+        }
+
+        .bird::before,
+        .bird::after {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 2px;
+            background-color: #333;
+            border-radius: 50%;
+        }
+
+        .bird::before {
+            transform: rotate(-20deg);
+            animation: flapWing 0.5s ease-in-out infinite;
+        }
+
+        .bird::after {
+            transform: rotate(20deg);
+            animation: flapWing 0.5s ease-in-out infinite 0.25s;
+        }
+
+        @keyframes flyAcross {
+            0% {
+                left: -50px;
+            }
+            100% {
+                left: calc(100% + 50px);
+            }
+        }
+
+        @keyframes flapWing {
+            0%, 100% {
+                transform: rotate(-20deg) scaleX(1);
+            }
+            50% {
+                transform: rotate(-30deg) scaleX(1.2);
+            }
+        }
+
+        /* Boat animation */
+        .boat {
+            position: absolute;
+            right: 20%;
+            top: -20px;
+            width: 40px;
+            height: 30px;
+            animation: bob 3s ease-in-out infinite;
+        }
+
+        .boat-body {
+            width: 40px;
+            height: 15px;
+            background-color: #8B4513;
+            border-radius: 0 0 20px 20px;
+            position: absolute;
+            bottom: 0;
+        }
+
+        .boat-sail {
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 0px solid transparent;
+            border-bottom: 25px solid #FFF;
+            position: absolute;
+            left: 12px;
+            top: -25px;
+        }
+
+        @keyframes bob {
+            0%, 100% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            25% {
+                transform: translateY(-8px) rotate(-2deg);
+            }
+            50% {
+                transform: translateY(0px) rotate(0deg);
+            }
+            75% {
+                transform: translateY(-8px) rotate(2deg);
+            }
+        }
+
+        /* Wave animation at shoreline */
+        .waves {
+            position: absolute;
+            top: -4px;
+            left: 0;
+            width: 300%;
+            height: 8px;
+            background: repeating-linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0.7) 0px,
+                rgba(255, 255, 255, 0.9) 5px,
+                rgba(255, 255, 255, 0.7) 10px,
+                transparent 15px,
+                transparent 30px
+            );
+            animation: waveMove 8s linear infinite;
+        }
+
+        @keyframes waveMove {
+            0% {
+                transform: translateX(0);
+            }
+            100% {
+                transform: translateX(-33.33%);
+            }
+        }
+
+        /* Info display */
+        .info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 14px;
+            z-index: 100;
+        }
+
+        .info-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0ea5d9;
+            margin-bottom: 10px;
+        }
+
+        .info-row {
+            margin: 5px 0;
+        }
+
+        .info-label {
+            opacity: 0.7;
+        }
+
+        .info-value {
+            font-weight: bold;
+        }
+
+        .rising {
+            color: #10b981;
+        }
+
+        .falling {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="mainContainer">
+        <!-- Info Panel -->
+        <div class="info" id="info">
+            <div class="info-title">Tide Visualizer</div>
+            <div class="info-row">
+                <span class="info-label">Current Height:</span>
+                <span class="info-value" id="currentHeight">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Status:</span>
+                <span class="info-value" id="status">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Time:</span>
+                <span class="info-value" id="currentTime">-</span>
+            </div>
+        </div>
+
+        <!-- Sky Section -->
+        <div class="sky" id="sky">
+            <!-- Birds will be added dynamically -->
+        </div>
+
+        <!-- Ocean Section -->
+        <div class="ocean" id="ocean">
+            <!-- Boat at horizon -->
+            <div class="boat">
+                <div class="boat-sail"></div>
+                <div class="boat-body"></div>
+            </div>
+        </div>
+
+        <!-- Land/Beach Section -->
+        <div class="land" id="land">
+            <!-- Waves at the edge -->
+            <div class="waves"></div>
+        </div>
+    </div>
+
+<script>
+    const TIDE_DATA = [
+      { date: "2026-05-12", tides: [
+        { type: "low", time: "02:03", height: 1.56 },
+        { type: "high", time: "08:15", height: 3.25 },
+        { type: "low", time: "14:03", height: 1.86 },
+        { type: "high", time: "20:13", height: 3.69 }
+      ], sunrise: "06:05", sunset: "19:04" },
+      { date: "2026-05-13", tides: [
+        { type: "low", time: "02:48", height: 1.19 },
+        { type: "high", time: "09:19", height: 3.67 },
+        { type: "low", time: "15:06", height: 1.76 },
+        { type: "high", time: "21:05", height: 3.82 }
+      ], sunrise: "06:05", sunset: "19:04" },
+      { date: "2026-05-14", tides: [
+        { type: "low", time: "03:30", height: 0.79 },
+        { type: "high", time: "10:10", height: 4.10 },
+        { type: "low", time: "16:01", height: 1.64 },
+        { type: "high", time: "21:52", height: 3.95 }
+      ], sunrise: "06:04", sunset: "19:05" },
+      { date: "2026-05-15", tides: [
+        { type: "low", time: "04:12", height: 0.43 },
+        { type: "high", time: "10:56", height: 4.49 },
+        { type: "low", time: "16:50", height: 1.53 },
+        { type: "high", time: "22:37", height: 4.06 }
+      ], sunrise: "06:04", sunset: "19:05" },
+      { date: "2026-05-16", tides: [
+        { type: "low", time: "04:53", height: 0.15 },
+        { type: "high", time: "11:41", height: 4.78 },
+        { type: "low", time: "17:38", height: 1.46 },
+        { type: "high", time: "23:22", height: 4.13 }
+      ], sunrise: "06:04", sunset: "19:06" },
+      { date: "2026-05-17", tides: [
+        { type: "low", time: "05:36", height: -0.02 },
+        { type: "high", time: "12:26", height: 4.95 },
+        { type: "low", time: "18:25", height: 1.45 }
+      ], sunrise: "06:03", sunset: "19:06" },
+      { date: "2026-05-18", tides: [
+        { type: "high", time: "00:07", height: 4.13 },
+        { type: "low", time: "06:20", height: -0.05 },
+        { type: "high", time: "13:11", height: 4.98 },
+        { type: "low", time: "19:14", height: 1.48 }
+      ], sunrise: "06:03", sunset: "19:06" },
+      { date: "2026-05-19", tides: [
+        { type: "high", time: "00:53", height: 4.06 },
+        { type: "low", time: "07:06", height: 0.07 },
+        { type: "high", time: "13:58", height: 4.88 },
+        { type: "low", time: "20:06", height: 1.56 }
+      ], sunrise: "06:03", sunset: "19:07" },
+      { date: "2026-05-20", tides: [
+        { type: "high", time: "01:42", height: 3.91 },
+        { type: "low", time: "07:55", height: 0.32 },
+        { type: "high", time: "14:46", height: 4.70 },
+        { type: "low", time: "21:04", height: 1.64 }
+      ], sunrise: "06:02", sunset: "19:07" },
+      { date: "2026-05-21", tides: [
+        { type: "high", time: "02:34", height: 3.69 },
+        { type: "low", time: "08:47", height: 0.67 },
+        { type: "high", time: "15:38", height: 4.45 },
+        { type: "low", time: "22:11", height: 1.69 }
+      ], sunrise: "06:02", sunset: "19:08" }
+    ];
+
+    // Get extreme values for scaling
+    function getExtremeData() {
+        let highestHigh = -Infinity;
+        let lowestLow = Infinity;
+        
+        TIDE_DATA.forEach(day => {
+            day.tides.forEach(tide => {
+                if (tide.type === "high" && tide.height > highestHigh) {
+                    highestHigh = tide.height;
+                }
+                if (tide.type === "low" && tide.height < lowestLow) {
+                    lowestLow = tide.height;
+                }
+            });
+        });
+        
+        return { highestHigh, lowestLow };
+    }
+
+    const extremeData = getExtremeData();
+
+    // Parse time string to minutes
+    function parseTime(timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    }
+
+    // Get today's tide data
+    function getTodayTideData() {
+        const today = new Date().toISOString().split('T')[0];
+        return TIDE_DATA.find(d => d.date === today) || TIDE_DATA[1]; // Default to May 13
+    }
+
+    // Calculate current tide info
+    function getCurrentTideInfo() {
+        const todayData = getTodayTideData();
+        const now = new Date();
+        const currentMinutes = now.getHours() * 60 + now.getMinutes();
+        
+        const tides = todayData.tides;
+        let prevTide = null;
+        let nextTide = null;
+        
+        for (let i = 0; i < tides.length; i++) {
+            const tideMinutes = parseTime(tides[i].time);
+            if (tideMinutes <= currentMinutes) {
+                prevTide = { ...tides[i], minutes: tideMinutes };
+            } else if (!nextTide) {
+                nextTide = { ...tides[i], minutes: tideMinutes };
+            }
+        }
+        
+        // Handle edge cases
+        if (!prevTide && nextTide) {
+            prevTide = { type: "high", height: 3.5, minutes: 0 };
+        }
+        if (!nextTide && prevTide) {
+            nextTide = { type: prevTide.type === "high" ? "low" : "high", height: prevTide.type === "high" ? 1.5 : 3.5, minutes: 1440 };
+        }
+        
+        // Calculate current height based on interpolation
+        const totalDuration = nextTide.minutes - prevTide.minutes;
+        const elapsed = currentMinutes - prevTide.minutes;
+        const progress = elapsed / totalDuration;
+        
+        const heightDiff = nextTide.height - prevTide.height;
+        const currentHeight = prevTide.height + (heightDiff * progress);
+        
+        return {
+            currentHeight: currentHeight,
+            isRising: nextTide.type === "high",
+            prevTide: prevTide,
+            nextTide: nextTide
+        };
+    }
+
+    // Update ocean height based on tide
+    function updateOceanHeight() {
+        const tideInfo = getCurrentTideInfo();
+        const oceanElement = document.getElementById('ocean');
+        
+        // Map tide height to percentage (between min and max tide)
+        const range = extremeData.highestHigh - extremeData.lowestLow;
+        const normalizedHeight = (tideInfo.currentHeight - extremeData.lowestLow) / range;
+        
+        // Ocean should be between 10% and 50% of viewport height
+        const minHeight = 10;
+        const maxHeight = 50;
+        const oceanHeight = minHeight + (normalizedHeight * (maxHeight - minHeight));
+        
+        oceanElement.style.height = `${oceanHeight}%`;
+        
+        // Update info panel
+        document.getElementById('currentHeight').textContent = `${tideInfo.currentHeight.toFixed(2)}m`;
+        
+        const statusElement = document.getElementById('status');
+        statusElement.textContent = tideInfo.isRising ? 'Rising ↑' : 'Falling ↓';
+        statusElement.className = `info-value ${tideInfo.isRising ? 'rising' : 'falling'}`;
+        
+        document.getElementById('currentTime').textContent = new Date().toLocaleTimeString('en-IN', { 
+            hour: '2-digit', 
+            minute: '2-digit',
+            hour12: true 
+        });
+    }
+
+    // Create flying birds
+    function createBird() {
+        const sky = document.getElementById('sky');
+        const bird = document.createElement('div');
+        bird.className = 'bird';
+        bird.style.top = `${20 + Math.random() * 40}%`;
+        bird.style.animationDuration = `${12 + Math.random() * 6}s`;
+        bird.style.animationDelay = `${Math.random() * 5}s`;
+        
+        sky.appendChild(bird);
+        
+        // Remove bird after animation
+        setTimeout(() => {
+            bird.remove();
+        }, 20000);
+    }
+
+    // Initialize
+    function init() {
+        // Update tide immediately
+        updateOceanHeight();
+        
+        // Update every second
+        setInterval(updateOceanHeight, 1000);
+        
+        // Create birds periodically
+        setInterval(() => {
+            if (Math.random() > 0.5) {
+                createBird();
+            }
+        }, 4000);
+        
+        // Create initial birds
+        for (let i = 0; i < 3; i++) {
+            setTimeout(createBird, i * 2000);
+        }
+    }
+
+    // Start when page loads
+    window.addEventListener('load', init);
+</script>
+</body>
+</html>
