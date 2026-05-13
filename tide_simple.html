@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tide Simple</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        .mainContainer {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        .sky{
+            background-color: skyblue;
+            height: 35%;
+        }
+
+        .ocean {
+            background-color: #1E90FF;
+            min-height: 12vh;
+            border-bottom: 2px solid white;
+        }
+
+        .land {
+            background-color: #eea46f;
+            /* height: 20%; */
+            flex: 1;
+        }
+        .lineHolder {
+            position: relative;
+
+        }
+
+        .firstLine{
+          position: absolute;
+          height: 1px;
+          background-color: black;
+          width: 100%;
+          top: 0px; 
+          z-index: 9999;
+        }
+    </style>
+</head>
+<body onload="init()">
+    <div class="mainContainer">
+        <div class="section sky"></div>
+        <div class="section ocean"></div>
+        <div class="section land"></div>
+        <div class="firstLine"></div>
+    </div>
+<script>
+    const maxOceanLevel = 60; // as % of viewport height
+    const minOceanLevel = 12; // as % of viewport height
+
+
+
+
+    function getNextTwoTides(inputDate = new Date()) {
+      // Sort just in case (data already seems ordered, but safe)
+      allTides.sort((a, b) => a.dateTime - b.dateTime);
+
+      // Find next two tides
+      const upcoming = allTides.filter(t => t.dateTime > inputDate).slice(0, 2);
+
+      // Format output
+      return upcoming.map(t => ({
+        type: t.type,
+        time:  localiseTime(t.dateTime), // readable format
+        height: t.height
+      }));
+    }
+
+    var diffInTide, diffInVH;
+    var vhPermTide;
+
+    function init(){
+      var nextTwo = getNextTwoTides();
+      var extremes = getTideExtremes();
+      var lastTide = getLastTide();
+
+      diffInTide = extremes.highest.height - extremes.lowest.height;
+      diffInVH = maxOceanLevel - minOceanLevel;
+
+      vhPermTide = diffInVH / diffInTide;
+
+      renderCurrentTide();
+
+    }
+
+    function renderCurrentTide() {
+      var current = getCurrentTideHeight();
+
+      if(!current) return; // no data
+
+      const ocean = document.querySelector(".ocean");
+
+      // Calculate ocean level based on current tide height
+      const oceanLevel = minOceanLevel + (current.height  * vhPermTide);
+
+      // Update ocean height (using vh units)
+      ocean.style.height = `${oceanLevel}vh`;
+    }
+
+    function localiseTime(date) {
+      return date.toLocaleString("en-IN", {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+          });  
+    }
+
+    function getTideExtremes() {
+      if (!allTides.length) return null;
+
+      let min = allTides[0];
+      let max = allTides[0];
+
+      for (const t of allTides) {
+        if (t.height < min.height) min = t;
+        if (t.height > max.height) max = t;
+      }
+
+      return {
+        lowest: {
+          type: min.type,
+          time: localiseTime(min.dateTime),
+          height: min.height
+        },
+        highest: {
+          type: max.type,
+          time: localiseTime(max.dateTime),
+          height: max.height
+        }
+      };
+    }
+
+    function getLastTide(inputDate = new Date()) {
+      // Ensure sorted (safe guard — remove if guaranteed sorted)
+      // allTides.sort((a, b) => a.dateTime - b.dateTime);
+
+      // Find last tide before current time
+      const pastTides = allTides.filter(t => t.dateTime <= inputDate);
+
+      const last = pastTides[pastTides.length - 1];
+
+      if (!last) return null; // no past tide in dataset
+
+      return {
+        type: last.type,
+        time: localiseTime(last.dateTime),
+        height: last.height
+      };
+    }
+
+    function getCurrentTideHeight(inputDate = new Date()) {
+      if (!allTides.length) return null;
+
+      let prev = null;
+      let next = null;
+
+      // Find surrounding tides
+      for (let i = 0; i < allTides.length; i++) {
+        if (allTides[i].dateTime <= inputDate) {
+          prev = allTides[i];
+        }
+        if (allTides[i].dateTime > inputDate) {
+          next = allTides[i];
+          break;
+        }
+      }
+
+      // Edge cases
+      if (!prev) return null; // before dataset
+      if (!next) return prev.height; // after dataset → hold last value
+
+      // Time interpolation
+      const totalDuration = next.dateTime - prev.dateTime;
+      const elapsed = inputDate - prev.dateTime;
+
+      const progress = elapsed / totalDuration; // 0 → 1
+
+      // Linear interpolation
+      const currentHeight =
+        prev.height + (next.height - prev.height) * progress;
+
+      return {
+        height: currentHeight,
+        trend: next.height > prev.height ? "rising" : "falling",
+        progress, // useful for animation/debug
+        prev,
+        next
+      };
+    }
+
+    const TIDE_DATA = [
+      { date: "2026-05-12", tides: [
+        { type: "low", time: "02:03", height: 1.56 },
+        { type: "high", time: "08:15", height: 3.25 },
+        { type: "low", time: "14:03", height: 1.86 },
+        { type: "high", time: "20:13", height: 3.69 }
+      ], sunrise: "06:05", sunset: "19:04" },
+      { date: "2026-05-13", tides: [
+        { type: "low", time: "02:48", height: 1.19 },
+        { type: "high", time: "09:19", height: 3.67 },
+        { type: "low", time: "15:06", height: 1.76 },
+        { type: "high", time: "21:05", height: 3.82 }
+      ], sunrise: "06:05", sunset: "19:04" },
+      { date: "2026-05-14", tides: [
+        { type: "low", time: "03:30", height: 0.79 },
+        { type: "high", time: "10:10", height: 4.10 },
+        { type: "low", time: "16:01", height: 1.64 },
+        { type: "high", time: "21:52", height: 3.95 }
+      ], sunrise: "06:04", sunset: "19:05" },
+      { date: "2026-05-15", tides: [
+        { type: "low", time: "04:12", height: 0.43 },
+        { type: "high", time: "10:56", height: 4.49 },
+        { type: "low", time: "16:50", height: 1.53 },
+        { type: "high", time: "22:37", height: 4.06 }
+      ], sunrise: "06:04", sunset: "19:05" },
+      { date: "2026-05-16", tides: [
+        { type: "low", time: "04:53", height: 0.15 },
+        { type: "high", time: "11:41", height: 4.78 },
+        { type: "low", time: "17:38", height: 1.46 },
+        { type: "high", time: "23:22", height: 4.13 }
+      ], sunrise: "06:04", sunset: "19:06" },
+      { date: "2026-05-17", tides: [
+        { type: "low", time: "05:36", height: -0.02 },
+        { type: "high", time: "12:26", height: 4.95 },
+        { type: "low", time: "18:25", height: 1.45 }
+      ], sunrise: "06:03", sunset: "19:06" },
+      { date: "2026-05-18", tides: [
+        { type: "high", time: "00:07", height: 4.13 },
+        { type: "low", time: "06:20", height: -0.05 },
+        { type: "high", time: "13:11", height: 4.98 },
+        { type: "low", time: "19:14", height: 1.48 }
+      ], sunrise: "06:03", sunset: "19:06" },
+      { date: "2026-05-19", tides: [
+        { type: "high", time: "00:53", height: 4.06 },
+        { type: "low", time: "07:06", height: 0.07 },
+        { type: "high", time: "13:58", height: 4.88 },
+        { type: "low", time: "20:06", height: 1.56 }
+      ], sunrise: "06:03", sunset: "19:07" },
+      { date: "2026-05-20", tides: [
+        { type: "high", time: "01:42", height: 3.91 },
+        { type: "low", time: "07:55", height: 0.32 },
+        { type: "high", time: "14:46", height: 4.70 },
+        { type: "low", time: "21:04", height: 1.64 }
+      ], sunrise: "06:02", sunset: "19:07" },
+      { date: "2026-05-21", tides: [
+        { type: "high", time: "02:34", height: 3.69 },
+        { type: "low", time: "08:47", height: 0.67 },
+        { type: "high", time: "15:38", height: 4.45 },
+        { type: "low", time: "22:11", height: 1.69 }
+      ], sunrise: "06:02", sunset: "19:08" }
+    ];
+
+    // Flatten all tides into one array with full Date objects
+    const allTides = TIDE_DATA.flatMap(day => {
+        return day.tides.map(tide => {
+          const dateTimeStr = `${day.date}T${tide.time}:00`;
+          return {
+            ...tide,
+            dateTime: new Date(dateTimeStr)
+          };
+        });
+      });
+
+</script>
+</body>
+</html>
