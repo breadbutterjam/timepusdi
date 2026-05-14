@@ -39,14 +39,67 @@
 
         }
 
-        .firstLine{
+        .tideLineContainer {
           position: absolute;
-          height: 1px;
-          background-color: black;
           width: 100%;
-          top: 0px; 
           z-index: 9999;
+          display: flex;
+          flex-direction: column;
         }
+
+        .line{
+          height: 1px;
+          /* background-color: black; */
+          border-bottom: 1px dotted black;
+        }
+
+        .lineLabel{
+          font-family: monospace;
+          text-align: end;
+          position: absolute;
+          background: #ffffff87;
+          top: -0.5rem;
+          padding-left: 0.4rem;
+          padding-right: 0.4rem;
+          border-radius: 2px;
+          right: 4px;
+        }
+
+        .summarySection
+        {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background-color: rgba(255,255,255,0.8);
+          padding: 10px;
+          border-radius: 5px;
+          z-index: 10000;
+          display: flex;
+          flex-direction: column;
+        }
+
+
+        #boat {
+          position: absolute;
+          right: 15%;
+          top: calc(35% - 20px);
+          animation: bob 3s ease-in-out infinite;
+          display: none;
+        }
+
+        #boat path {
+          fill: #1e293b; /* default (day) */
+        }
+
+        @keyframes bob {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
+        }
+
     </style>
 </head>
 <body onload="init()">
@@ -54,14 +107,56 @@
         <div class="section sky"></div>
         <div class="section ocean"></div>
         <div class="section land"></div>
-        <div class="firstLine"></div>
+        <div id="boat">
+          <svg width="40" height="30" viewBox="0 0 40 30">
+            <path
+              id="boat-body"
+              d="M5,20 L10,10 L15,10 L20,15 L20,20 L35,20 L30,25 L10,25 Z"
+            />
+            <path
+              id="boat-mast"
+              d="M12,10 L12,5 L14,5 L14,10"
+            />
+          </svg>
+        </div>
+         <div class="summarySection">
+            <div id="status">Tide is coming in ↑</div>
+            <div id="nextTide">Next tide at 11:00 AM - high of 2.3m</div>
+            <!-- <div id="currentTime">Current time: 10:30 AM</div> -->
+         </div>
     </div>
 <script>
-    const maxOceanLevel = 60; // as % of viewport height
-    const minOceanLevel = 12; // as % of viewport height
+    const maxOceanLevel = 95; // as % of viewport height
+    const minOceanLevel = 2; // as % of viewport height
 
+    const skyHeight = 35; // as % of viewport height
 
+    function renderLine(label, tideHt){
+      /*
+          <div class="lineLabel">tide label</div>
+          <div class="line"></div>
+      */
 
+      const lineContainer = document.createElement("div");
+      lineContainer.className = "tideLineContainer";
+
+      const lineLabel = document.createElement("div");
+      lineLabel.className = "lineLabel";
+      lineLabel.textContent = label;
+
+      const line = document.createElement("div");
+      line.className = "line";
+
+      const mainContiner = document.getElementsByClassName("mainContainer")[0];
+      lineContainer.appendChild(lineLabel); 
+      lineContainer.appendChild(line);
+
+      mainContiner.appendChild(lineContainer);
+
+      // Position line based on tide height
+      const oceanLevel = skyHeight + minOceanLevel + (tideHt * vhPermTide);
+      lineContainer.style.top = `${oceanLevel}vh`;
+    }
 
     function getNextTwoTides(inputDate = new Date()) {
       // Sort just in case (data already seems ordered, but safe)
@@ -93,6 +188,33 @@
 
       renderCurrentTide();
 
+      renderSummary(nextTwo);
+
+      // Render lines for next tide
+      var label = nextTwo[0].type === "high" ? "Next High Tide" : "Next Low Tide";
+      var time = nextTwo[0].time.split(", ")[1];
+      renderLine(`${label} at ${time} - ${nextTwo[0].height}m`, nextTwo[0].height);
+
+
+      setBoatTheme(true);  // day
+    // setBoatTheme(false); // night
+    }
+
+    function renderSummary(nextTwo) {
+      const statusEl = document.getElementById("status");
+      const nextTideEl = document.getElementById("nextTide");
+      // const currentTimeEl = document.getElementById("currentTime");
+
+      if (nextTwo.length) {
+        const next = nextTwo[0];
+        statusEl.textContent = `Tide is ${next.type === "high" ? "coming in ↓" : "going out ↑"}`;
+        nextTideEl.textContent = `${next.type} tide at ${next.time.split(", ")[1]} ${next.height}m`;
+      } else {
+        statusEl.textContent = "No upcoming tides in dataset";
+        nextTideEl.textContent = "";
+      }
+
+      // currentTimeEl.textContent = `Current time: ${localiseTime(new Date())}`;
     }
 
     function renderCurrentTide() {
@@ -273,7 +395,63 @@
           };
         });
       });
+    
+    function setBoatTheme(isDaytime) {
+      const color = isDaytime ? "#1e293b" : "#334155";
 
+      document.getElementById("boat-body").setAttribute("fill", color);
+      document.getElementById("boat-mast").setAttribute("fill", color);
+    }
+
+    /*functions from another file*/
+
+    const getTodayTideData = () => {
+        const today = currentTime.toISOString().split('T')[0];
+        return TIDE_DATA.find(d => d.date === today) || TIDE_DATA[0];
+      };
+    
+      // Parse time string to minutes
+    function parseTime(timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    }
+
+    let currentTime = new Date();
+
+    const getSunPosition = () => {
+        const todayData = getTodayTideData();
+        const sunriseMinutes = parseTime(todayData.sunrise);
+        const sunsetMinutes = parseTime(todayData.sunset);
+        const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+        
+        const isDaytime = currentMinutes >= sunriseMinutes && currentMinutes <= sunsetMinutes;
+        
+        if (!isDaytime) {
+          const nightStart = sunsetMinutes;
+          const nightEnd = sunriseMinutes + 1440;
+          const nightDuration = nightEnd - nightStart;
+          const nightElapsed = currentMinutes > sunsetMinutes 
+            ? currentMinutes - nightStart 
+            : (1440 - nightStart) + currentMinutes;
+          const moonProgress = nightElapsed / nightDuration;
+          
+          return {
+            isDaytime: false,
+            position: 15 + moonProgress * 70,
+            progress: moonProgress
+          };
+        }
+        
+        const dayDuration = sunsetMinutes - sunriseMinutes;
+        const dayElapsed = currentMinutes - sunriseMinutes;
+        const sunProgress = dayElapsed / dayDuration;
+        
+        return {
+          isDaytime: true,
+          position: 15 + sunProgress * 70,
+          progress: sunProgress
+        };
+      };  
 </script>
 </body>
 </html>
