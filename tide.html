@@ -733,6 +733,7 @@
         const isDaytime = currentMinutes >= sunriseMinutes && currentMinutes <= sunsetMinutes;
         
         if (!isDaytime) {
+          // Night time - show moon
           const nightStart = sunsetMinutes;
           const nightEnd = sunriseMinutes + 1440;
           const nightDuration = nightEnd - nightStart;
@@ -744,19 +745,38 @@
           return {
             isDaytime: false,
             position: 15 + moonProgress * 70,
-            progress: moonProgress
+            progress: moonProgress,
+            isSetting: false
           };
         }
         
-        const dayDuration = sunsetMinutes - sunriseMinutes;
-        const dayElapsed = currentMinutes - sunriseMinutes;
-        const sunProgress = dayElapsed / dayDuration;
+        // Day time - sun behavior
+        const minutesBeforeSunset = sunsetMinutes - currentMinutes;
+        const sunsetTransitionMinutes = 30; // Start moving 30 mins before sunset
         
-        return {
-          isDaytime: true,
-          position: 15 + sunProgress * 70,
-          progress: sunProgress
-        };
+        if (minutesBeforeSunset <= sunsetTransitionMinutes) {
+          // Sun is setting - move from fixed position to horizon
+          const settingProgress = 1 - (minutesBeforeSunset / sunsetTransitionMinutes);
+          
+          return {
+            isDaytime: true,
+            position: 72, // Keep horizontal position centered
+            progress: settingProgress,
+            isSetting: true
+          };
+        } else {
+          // Sun is fixed at 20% from top during the day
+          const dayDuration = sunsetMinutes - sunriseMinutes;
+          const dayElapsed = currentMinutes - sunriseMinutes;
+          const sunProgress = dayElapsed / dayDuration;
+          
+          return {
+            isDaytime: true,
+            position: 72, // Keep horizontal position centered
+            progress: sunProgress,
+            isSetting: false
+          };
+        }
       };
 
     // Update celestial body (sun/moon) position and appearance
@@ -768,10 +788,18 @@
         celestial.classList.remove('moon');
         celestial.style.left = `${sunInfo.position}%`;
         
-        // Calculate vertical position (arc)
-        const verticalPos = 10 + Math.sin(sunInfo.progress * Math.PI) * 15;
-        celestial.style.top = `${verticalPos}%`;
+        if (sunInfo.isSetting) {
+          // Sun is setting - move from 20% to 95% (near horizon)
+          const startTop = 20;
+          const endTop = 95;
+          const verticalPos = startTop + (sunInfo.progress * (endTop - startTop));
+          celestial.style.top = `${verticalPos}%`;
+        } else {
+          // Sun is fixed at 20% from top during the day
+          celestial.style.top = '20%';
+        }
       } else {
+        // Moon follows an arc across the sky
         celestial.classList.add('moon');
         celestial.style.left = `${sunInfo.position}%`;
         
