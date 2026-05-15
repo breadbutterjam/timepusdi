@@ -192,9 +192,11 @@
 
       // Render lines for next tide
       var label = nextTwo[0].type === "high" ? "Next High Tide" : "Next Low Tide";
-      alert(nextTwo[0].time)
-      var time = nextTwo[0].time.split(", ")[1];
-      alert(time)
+      // alert(nextTwo[0].time)
+      // var time = nextTwo[0].time.split(", ")[1];
+      var time = new Date(nextTwo[0].time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+      time = time.replace('am', 'AM').replace('pm', 'PM');
+      // alert(time)
       renderLine(`${label} at ${time} - ${nextTwo[0].height}m`, nextTwo[0].height);
 
 
@@ -209,8 +211,12 @@
 
       if (nextTwo.length) {
         const next = nextTwo[0];
+        var nextTime = new Date(next.time);
+        nextTime = nextTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+        nextTime = nextTime.replace('am', 'AM').replace('pm', 'PM');
         statusEl.textContent = `Tide is ${next.type === "high" ? "coming in ↓" : "going out ↑"}`;
-        nextTideEl.textContent = `${next.type} tide at ${next.time.split(", ")[1]} ${next.height}m`;
+        nextTideEl.textContent = `${next.type} tide at ${nextTime} ${next.height}m`;
+  
       } else {
         statusEl.textContent = "No upcoming tides in dataset";
         nextTideEl.textContent = "";
