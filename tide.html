@@ -64,7 +64,7 @@
           text-align: end;
           position: absolute;
           background: #ffffff87;
-          top: -0.5rem;
+          top: -1rem;
           padding-left: 0.4rem;
           padding-right: 0.4rem;
           border-radius: 2px;
@@ -74,15 +74,37 @@
         .summarySection
         {
           position: absolute;
-          top: 10px;
-          left: 10px;
-          background-color: rgba(255,255,255,0.8);
-          padding: 10px;
-          border-radius: 5px;
+          /* top: 10px; */
+          /* left: 10px; */
+          /* background-color: rgba(255,255,255,0.8); */
+          /* border-radius: 5px; */
+          /* background: #ffffff87; */
+          bottom: 0px;
+          left: 0px;
           z-index: 10000;
           display: flex;
           flex-direction: column;
           transition: background-color 0.5s ease, color 0.5s ease;
+        }
+        
+        .sunrisesetinfo{
+          position: absolute;
+          bottom: 0px;
+          right: 0px;
+        }
+
+        .label{
+          font-family: monospace;
+          padding-left: 0.4rem;
+          padding-right: 0.4rem;
+          border-radius: 2px;
+        }
+
+        .timeNow{
+          position: absolute;
+          bottom: 0px;
+          left: 0px; 
+          
         }
 
 
@@ -347,9 +369,17 @@
             <div id="starsContainer"></div>
             <!-- Birds container -->
             <div id="birdsContainer"></div>
+            <div class="label sunrisesetinfo"></div>
+            <div class="summarySection label">
+                <div id="status">Tide is coming in ↑</div>
+                <!-- <div id="nextTide">Next tide at 11:00 AM - high of 2.3m</div> -->
+                <!-- <div id="currentTime">Current time: 10:30 AM</div> -->
+            </div>
         </div>
         <div class="section ocean"></div>
-        <div class="section land"></div>
+        <div class="section land">
+          <div class="timeNow label"></div>
+        </div>
         <div id="boat">
           <svg width="40" height="30" viewBox="0 0 40 30">
             <path
@@ -362,11 +392,6 @@
             />
           </svg>
         </div>
-         <div class="summarySection">
-            <div id="status">Tide is coming in ↑</div>
-            <div id="nextTide">Next tide at 11:00 AM - high of 2.3m</div>
-            <!-- <div id="currentTime">Current time: 10:30 AM</div> -->
-         </div>
     </div>
 <script>
     const maxOceanLevel = 60; // as % of viewport height
@@ -420,6 +445,26 @@
     var diffInTide, diffInVH;
     var vhPermTide;
 
+    function renderTwoTideLines(inputDate = new Date()){
+      while (document.querySelector('.tideLineContainer')){
+          document.querySelector('.tideLineContainer').remove()
+      }
+
+      var nextTwo = getNextTwoTides(inputDate);
+
+      // Render lines for next tide
+      var label = nextTwo[0].type === "high" ? "next high tide" : "next low tide";
+      var time = new Date(nextTwo[0].time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+      time = time.replace('am', 'AM').replace('pm', 'PM');
+
+      var label2 = nextTwo[1].type === "high" ? "high tide" : "low tide";
+      var time2 = new Date(nextTwo[1].time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+      time2 = time2.replace('am', 'AM').replace('pm', 'PM');
+
+      renderLine(`${label} at ${time} [${nextTwo[0].height}m]`, nextTwo[0].height);
+      renderLine(`${label2} at ${time2} [${nextTwo[1].height}m]`, nextTwo[1].height);
+    }
+
     function init(){
       var nextTwo = getNextTwoTides();
       var extremes = getTideExtremes();
@@ -434,13 +479,8 @@
 
       renderSummary(nextTwo);
 
-      // Render lines for next tide
-      var label = nextTwo[0].type === "high" ? "Next High Tide" : "Next Low Tide";
-      // var time = nextTwo[0].time.split(", ")[1];
-      var time = new Date(nextTwo[0].time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-      time = time.replace('am', 'AM').replace('pm', 'PM');
+      renderTwoTideLines();
 
-      renderLine(`${label} at ${time} - ${nextTwo[0].height}m`, nextTwo[0].height);
 
       // Initialize sun/moon and theme
       const sunInfo = getSunPosition();
@@ -462,7 +502,7 @@
 
     function renderSummary(nextTwo) {
       const statusEl = document.getElementById("status");
-      const nextTideEl = document.getElementById("nextTide");
+      // const nextTideEl = document.getElementById("nextTide");
       // const currentTimeEl = document.getElementById("currentTime");
 
       if (nextTwo.length) {
@@ -472,17 +512,17 @@
         nextTime = nextTime.replace('am', 'AM').replace('pm', 'PM');
         
         statusEl.textContent = `Tide is ${next.type === "high" ? "coming in ↓" : "going out ↑"}`;
-        nextTideEl.textContent = `${next.type} tide at ${nextTime} ${next.height}m`;
+        // nextTideEl.textContent = `${next.type} tide at ${nextTime} ${next.height}m`;
       } else {
         statusEl.textContent = "No upcoming tides in dataset";
-        nextTideEl.textContent = "";
+        // nextTideEl.textContent = "";
       }
 
       // currentTimeEl.textContent = `Current time: ${localiseTime(new Date())}`;
     }
 
-    function renderCurrentTide() {
-      var current = getCurrentTideHeight();
+    function renderCurrentTide(inputDate = new Date()) {
+      var current = getCurrentTideHeight(inputDate);
 
       if(!current) return; // no data
 
@@ -749,12 +789,12 @@
       if (isDaytime) {
         skyEl.style.backgroundColor = '#87CEEB'; // skyblue
         oceanEl.style.backgroundColor = '#1E90FF'; // dodgerblue
-        summaryEl.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        // summaryEl.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
         summaryEl.style.color = '#000';
       } else {
         skyEl.style.backgroundColor = '#1e293b'; // dark night sky
         oceanEl.style.backgroundColor = '#0c4a6e'; // dark ocean
-        summaryEl.style.backgroundColor = 'rgba(30, 41, 59, 0.9)';
+        // summaryEl.style.backgroundColor = 'rgba(30, 41, 59, 0.9)';
         summaryEl.style.color = '#e2e8f0';
       }
       
@@ -939,8 +979,31 @@
       const sunInfo = getSunPosition();
       updateCelestialBody(sunInfo);
       updateTheme(sunInfo.isDaytime);
-      renderCurrentTide();
-      renderSummary(getNextTwoTides());
+      renderCurrentTide(currentTime);
+      renderSummary(getNextTwoTides(currentTime));
+      updateTime();
+      updateSunriseSetInfo();
+      renderTwoTideLines(currentTime);
+    }
+
+    function updateSunriseSetInfo() {
+      const sunInfoEl = document.querySelector('.sunrisesetinfo');
+      const todayData = getTodayTideData();
+      const isSunInSky = getSunPosition().isDaytime;
+      sunInfoEl.textContent =  isSunInSky 
+        ? `Sunset at ${todayData.sunset}`
+        : `Sunrise at ${todayData.sunrise}`;
+      
+      // sunInfoEl.textContent = `Sunrise: ${todayData.sunrise} | Sunset: ${todayData.sunset}`;
+
+      //statusEl.textContent = `Tide is ${next.type === "high" ? "coming in ↓" : "going out ↑"}`;
+    }
+
+    function updateTime() {
+      const timeNowEl = document.querySelector('.timeNow');
+      const formattedTime = currentTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+      // timeNowEl.textContent = formattedTime.replace('am', 'AM').replace('pm', 'PM');
+      timeNowEl.textContent = formattedTime;
     }
 
 </script>
