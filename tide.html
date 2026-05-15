@@ -20,9 +20,9 @@
         }
 
         .sky{
-            background-color: skyblue;
+            background: skyblue;
             height: 35%;
-            transition: background-color 1s ease;
+            transition: background 2s ease;
             position: relative;
             overflow: hidden;
         }
@@ -91,11 +91,6 @@
           position: absolute;
           bottom: 0px;
           right: 0px;
-        }
-
-        .nightColor{
-          /* background-color: #1e293b; */
-          color: #e2e8f0;
         }
 
         .label{
@@ -231,6 +226,67 @@
           fill: rgba(59, 130, 246, 0.9);
         }
 
+        /* Time Controls */
+        .timeControls {
+          position: absolute;
+          top: 15px;
+          left: 15px;
+          display: flex;
+          gap: 10px;
+          align-items: center;
+          z-index: 10001;
+        }
+
+        .controlButton {
+          width: 40px;
+          height: 40px;
+          cursor: pointer;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s ease;
+          background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .controlButton:hover {
+          transform: scale(1.1);
+          background-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .controlButton svg {
+          width: 20px;
+          height: 20px;
+        }
+
+        .controlButton path {
+          fill: #1e293b;
+          transition: fill 0.3s ease;
+        }
+
+        .controlButton.active {
+          background-color: rgba(59, 130, 246, 0.4);
+        }
+
+        .controlButton.active path {
+          fill: rgba(59, 130, 246, 1);
+        }
+
+        .speedIndicator {
+          font-family: monospace;
+          font-size: 14px;
+          font-weight: bold;
+          color: rgba(59, 130, 246, 1);
+          padding: 5px 10px;
+          background-color: rgba(255, 255, 255, 0.3);
+          border-radius: 12px;
+          display: none;
+        }
+
+        .speedIndicator.visible {
+          display: block;
+        }
+
         /* Modal */
         .modal {
           display: none;
@@ -338,6 +394,21 @@
     </style>
 </head>
 <body onload="init()">
+    <!-- Time Controls (Pause and Fast Forward) -->
+    <div class="timeControls">
+      <div id="pauseButton" class="controlButton" onclick="togglePause()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+        </svg>
+      </div>
+      <div id="fastForwardButton" class="controlButton" onclick="cycleFastForward()">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+        </svg>
+      </div>
+      <div id="speedIndicator" class="speedIndicator"></div>
+    </div>
+
     <!-- Clock Icon -->
     <div id="clockIcon" onclick="openTimeModal()">
       <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -490,16 +561,31 @@
       // Initialize sun/moon and theme
       const sunInfo = getSunPosition();
       updateCelestialBody(sunInfo);
-      updateTheme(sunInfo.isDaytime);
+      updateTheme(sunInfo.isDaytime, sunInfo);
       
       // Initialize stars
       initStars();
       
-      // Update sky and celestial body periodically
+      // New update mechanism with pause and speed support
       updateInterval = setInterval(() => {
-        currentTime = new Date();
-        updateDisplay();
-      }, 1000);
+        if (!isPaused) {
+          const now = Date.now();
+          const deltaTime = now - lastUpdateTime;
+          lastUpdateTime = now;
+          
+          const speed = TIME_SPEEDS[currentSpeedIndex];
+          
+          if (isTimeModified) {
+            // For modified time, advance based on speed multiplier
+            currentTime = new Date(currentTime.getTime() + (deltaTime * speed));
+          } else {
+            // For real time, just use current time
+            currentTime = new Date();
+          }
+          
+          updateDisplay();
+        }
+      }, 100); // Update more frequently for smoother fast-forward
 
       // Initialize birds
       initBirds();
@@ -728,6 +814,12 @@
     let currentTime = new Date();
     let isTimeModified = false;
     let updateInterval = null;
+    
+    // Time control configuration
+    const TIME_SPEEDS = [1, 10, 50]; // Configure speeds here: normal, 10x, 50x
+    let currentSpeedIndex = 0; // 0 = normal (1x)
+    let isPaused = false;
+    let lastUpdateTime = Date.now();
 
     const getSunPosition = () => {
         const todayData = getTodayTideData();
@@ -765,7 +857,7 @@
           
           return {
             isDaytime: true,
-            position: 72, // Keep horizontal position centered
+            position: 72, // Sun position towards right side
             progress: settingProgress,
             isSetting: true
           };
@@ -777,7 +869,7 @@
           
           return {
             isDaytime: true,
-            position: 72, // Keep horizontal position centered
+            position: 72, // Sun position towards right side
             progress: sunProgress,
             isSetting: false
           };
@@ -814,20 +906,61 @@
     }
 
     // Update theme colors based on day/night
-    function updateTheme(isDaytime) {
+    function updateTheme(isDaytime, sunInfo) {
       const skyEl = document.querySelector('.sky');
       const oceanEl = document.querySelector('.ocean');
       const summaryEl = document.querySelector('.summarySection');
       
       if (isDaytime) {
-        skyEl.style.backgroundColor = '#87CEEB'; // skyblue
-        oceanEl.style.backgroundColor = '#1E90FF'; // dodgerblue
-        // summaryEl.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        if (sunInfo && sunInfo.isSetting) {
+          // During sunset, create dynamic gradient following the sun
+          const sunVerticalPos = 20 + (sunInfo.progress * 75); // Match sun's vertical position
+          const sunHorizontalPos = 72; // Sun's horizontal position
+          
+          // Transition colors from day to sunset
+          // progress: 0 = sunset just starting, 1 = sunset complete
+          const skyBlue = '#87CEEB';
+          const sunsetOrange = '#FF6B35';
+          const sunsetPink = '#FF8C94';
+          const twilightPurple = '#5D5C9E';
+          
+          // Create radial gradient centered on sun position
+          if (sunInfo.progress < 0.5) {
+            // Early sunset - warm colors around sun
+            skyEl.style.background = `
+              radial-gradient(circle at ${sunHorizontalPos}% ${sunVerticalPos}%, 
+                ${sunsetOrange} 0%, 
+                ${sunsetPink} 15%, 
+                ${skyBlue} 35%)
+            `;
+          } else {
+            // Late sunset - deeper colors
+            const mixProgress = (sunInfo.progress - 0.5) * 2; // 0 to 1 for second half
+            skyEl.style.background = `
+              radial-gradient(circle at ${sunHorizontalPos}% ${sunVerticalPos}%, 
+                ${sunsetOrange} 0%, 
+                ${twilightPurple} 20%, 
+                #4A5B8C ${30 + mixProgress * 20}%,
+                #1e293b ${50 + mixProgress * 20}%)
+            `;
+          }
+          
+          // Ocean also transitions
+          const oceanDay = '#1E90FF';
+          const oceanSunset = '#0c4a6e';
+          oceanEl.style.backgroundColor = oceanDay;
+          
+        } else {
+          // Regular daytime - solid color
+          skyEl.style.background = '#87CEEB';
+          oceanEl.style.backgroundColor = '#1E90FF';
+        }
+        
         summaryEl.style.color = '#000';
       } else {
-        skyEl.style.backgroundColor = '#1e293b'; // dark night sky
-        oceanEl.style.backgroundColor = '#0c4a6e'; // dark ocean
-        // summaryEl.style.backgroundColor = 'rgba(30, 41, 59, 0.9)';
+        // Night time
+        skyEl.style.background = '#1e293b';
+        oceanEl.style.backgroundColor = '#0c4a6e';
         summaryEl.style.color = '#e2e8f0';
       }
       
@@ -933,6 +1066,54 @@
       };
     }
 
+    // Time Control Functions
+    function togglePause() {
+      isPaused = !isPaused;
+      const pauseButton = document.getElementById('pauseButton');
+      
+      if (isPaused) {
+        pauseButton.classList.add('active');
+        // Change icon to play
+        pauseButton.innerHTML = `
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 5v14l11-7z"/>
+          </svg>
+        `;
+      } else {
+        pauseButton.classList.remove('active');
+        // Change icon back to pause
+        pauseButton.innerHTML = `
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+          </svg>
+        `;
+        lastUpdateTime = Date.now(); // Reset timing
+      }
+    }
+
+    function cycleFastForward() {
+      // Cycle through speed options
+      currentSpeedIndex = (currentSpeedIndex + 1) % TIME_SPEEDS.length;
+      const speed = TIME_SPEEDS[currentSpeedIndex];
+      
+      const ffButton = document.getElementById('fastForwardButton');
+      const speedIndicator = document.getElementById('speedIndicator');
+      
+      if (speed === 1) {
+        // Normal speed
+        ffButton.classList.remove('active');
+        speedIndicator.classList.remove('visible');
+        speedIndicator.textContent = '';
+      } else {
+        // Fast forward active
+        ffButton.classList.add('active');
+        speedIndicator.classList.add('visible');
+        speedIndicator.textContent = `${speed}x`;
+      }
+      
+      lastUpdateTime = Date.now(); // Reset timing
+    }
+
     // Time Modal Functions
     function openTimeModal() {
       const modal = document.getElementById('timeModal');
@@ -974,11 +1155,8 @@
         // Update clock icon color
         document.getElementById('clockIcon').classList.add('modified');
         
-        // Stop real-time updates
-        if (updateInterval) {
-          clearInterval(updateInterval);
-          updateInterval = null;
-        }
+        // Don't stop updates - time continues to run
+        lastUpdateTime = Date.now(); // Reset timing for smooth continuation
         
         // Update display immediately
         updateDisplay();
@@ -991,16 +1169,22 @@
       currentTime = new Date();
       isTimeModified = false;
       
-      // Update clock icon color
-      document.getElementById('clockIcon').classList.remove('modified');
+      // Reset speed controls
+      currentSpeedIndex = 0;
+      isPaused = false;
       
-      // Restart real-time updates
-      if (!updateInterval) {
-        updateInterval = setInterval(() => {
-          currentTime = new Date();
-          updateDisplay();
-        }, 1000);
-      }
+      // Reset UI
+      document.getElementById('clockIcon').classList.remove('modified');
+      document.getElementById('pauseButton').classList.remove('active');
+      document.getElementById('pauseButton').innerHTML = `
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+        </svg>
+      `;
+      document.getElementById('fastForwardButton').classList.remove('active');
+      document.getElementById('speedIndicator').classList.remove('visible');
+      
+      lastUpdateTime = Date.now();
       
       // Update display immediately
       updateDisplay();
@@ -1011,7 +1195,7 @@
     function updateDisplay() {
       const sunInfo = getSunPosition();
       updateCelestialBody(sunInfo);
-      updateTheme(sunInfo.isDaytime);
+      updateTheme(sunInfo.isDaytime, sunInfo);
       renderCurrentTide(currentTime);
       renderSummary(getNextTwoTides(currentTime));
       updateTime();
@@ -1023,15 +1207,10 @@
       const sunInfoEl = document.querySelector('.sunrisesetinfo');
       const todayData = getTodayTideData();
       const isSunInSky = getSunPosition().isDaytime;
-      sunInfoEl.textContent =  isSunInSky ? `Sunset at ${todayData.sunset}` : `Sunrise at ${todayData.sunrise}`;
+      sunInfoEl.textContent =  isSunInSky 
+        ? `Sunset at ${todayData.sunset}`
+        : `Sunrise at ${todayData.sunrise}`;
       
-      if (!isSunInSky) {
-        sunInfoEl.classList.add('nightColor');
-      } else {
-        sunInfoEl.classList.remove('nightColor');
-      }
-
-
       // sunInfoEl.textContent = `Sunrise: ${todayData.sunrise} | Sunset: ${todayData.sunset}`;
 
       //statusEl.textContent = `Tide is ${next.type === "high" ? "coming in ↓" : "going out ↑"}`;
