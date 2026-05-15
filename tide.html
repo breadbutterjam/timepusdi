@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tide Simple</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+        }
+
+        .mainContainer {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            height: 100dvh; /* for mobile viewport handling */
+            position: relative;
+        }
+
+        .sky{
+            background-color: skyblue;
+            height: 35%;
+            transition: background-color 1s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ocean {
+            background-color: #1E90FF;
+            min-height: 12vh;
+            border-bottom: 2px solid white;
+            transition: background-color 1s ease;
+        }
+
+        .land {
+            background-color: #eea46f;
+            /* height: 20%; */
+            flex: 1;
+            min-height: 0;
+        }
+        .lineHolder {
+            position: relative;
+
+        }
+
+        .tideLineContainer {
+          position: absolute;
+          width: 100%;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .line{
+          height: 1px;
+          /* background-color: black; */
+          border-bottom: 1px dotted black;
+        }
+
+        .lineLabel{
+          font-family: monospace;
+          text-align: end;
+          position: absolute;
+          background: #ffffff87;
+          top: -0.5rem;
+          padding-left: 0.4rem;
+          padding-right: 0.4rem;
+          border-radius: 2px;
+          right: 4px;
+        }
+
+        .summarySection
+        {
+          position: absolute;
+          top: 10px;
+          left: 10px;
+          background-color: rgba(255,255,255,0.8);
+          padding: 10px;
+          border-radius: 5px;
+          z-index: 10000;
+          display: flex;
+          flex-direction: column;
+          transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+
+        #boat {
+          position: absolute;
+          right: 15%;
+          top: calc(35% - 20px);
+          animation: bob 3s ease-in-out infinite;
+          display: none;
+        }
+
+        #boat path {
+          fill: #1e293b; /* default (day) */
+        }
+
+        @keyframes bob {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-6px);
+          }
+        }
+
+        /* Sun/Moon styling */
+        #celestialBody {
+          position: absolute;
+          width: 60px;
+          height: 60px;
+          border-radius: 50%;
+          background: radial-gradient(circle at 30% 30%, #ffeb3b, #ffa726);
+          box-shadow: 0 0 30px rgba(255, 165, 0, 0.6);
+          transition: all 1s ease;
+          z-index: 5;
+        }
+
+        #celestialBody.moon {
+          background: radial-gradient(circle at 30% 30%, #f0f0f0, #c0c0c0);
+          box-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+        }
+
+        /* Stars */
+        .star {
+          position: absolute;
+          width: 2px;
+          height: 2px;
+          background: white;
+          border-radius: 50%;
+          opacity: 0;
+          transition: opacity 1s ease;
+        }
+
+        .star.visible {
+          animation: twinkle 3s ease-in-out infinite;
+        }
+
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 1; }
+        }
+
+        /* Birds */
+        .bird {
+          position: absolute;
+          z-index: 10;
+        }
+
+        .bird path {
+          fill: none;
+          stroke: #1e293b;
+          stroke-width: 2;
+          stroke-linecap: round;
+          transition: stroke 0.5s ease;
+        }
+
+        .bird.night path {
+          stroke: #334155;
+        }
+
+        /* Clock icon */
+        #clockIcon {
+          position: absolute;
+          top: 15px;
+          right: 15px;
+          width: 40px;
+          height: 40px;
+          cursor: pointer;
+          z-index: 10001;
+          /* background-color: rgba(255, 255, 255, 0.9); */
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          /* box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); */
+          transition: all 0.3s ease;
+        }
+
+        #clockIcon:hover {
+          transform: scale(1.1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+
+        #clockIcon.modified {
+          background-color: rgba(59, 130, 246, 0.9);
+        }
+
+        #clockIcon svg {
+          width: 24px;
+          height: 24px;
+        }
+
+        #clockIcon path {
+          fill: #1e293b;
+          transition: fill 0.3s ease;
+        }
+
+        #clockIcon.modified path {
+          fill: white;
+        }
+
+        /* Modal */
+        .modal {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background-color: rgba(0, 0, 0, 0.5);
+          z-index: 10002;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .modal.show {
+          display: flex;
+        }
+
+        .modal-content {
+          background-color: white;
+          padding: 25px;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+          max-width: 90%;
+          width: 320px;
+        }
+
+        .modal-header {
+          font-size: 18px;
+          font-weight: bold;
+          margin-bottom: 20px;
+          color: #1e293b;
+        }
+
+        .datetime-picker {
+          display: flex;
+          flex-direction: column;
+          gap: 15px;
+          margin-bottom: 20px;
+        }
+
+        .picker-group {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+        }
+
+        .picker-group label {
+          font-size: 12px;
+          color: #64748b;
+          font-weight: 500;
+        }
+
+        .picker-group input {
+          padding: 8px 12px;
+          border: 1px solid #cbd5e1;
+          border-radius: 6px;
+          font-size: 14px;
+          font-family: monospace;
+        }
+
+        .modal-buttons {
+          display: flex;
+          gap: 10px;
+          justify-content: flex-end;
+        }
+
+        .modal-buttons button {
+          padding: 8px 16px;
+          border: none;
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .btn-cancel {
+          background-color: #e2e8f0;
+          color: #475569;
+        }
+
+        .btn-cancel:hover {
+          background-color: #cbd5e1;
+        }
+
+        .btn-ok {
+          background-color: #3b82f6;
+          color: white;
+        }
+
+        .btn-ok:hover {
+          background-color: #2563eb;
+        }
+
+        .btn-now {
+          background-color: #10b981;
+          color: white;
+        }
+
+        .btn-now:hover {
+          background-color: #059669;
+        }
+
+    </style>
+</head>
+<body onload="init()">
+    <!-- Clock Icon -->
+    <div id="clockIcon" onclick="openTimeModal()">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z"/>
+      </svg>
+    </div>
+
+    <!-- Time Picker Modal -->
+    <div id="timeModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">Set Time</div>
+        <div class="datetime-picker">
+          <div class="picker-group">
+            <label>Date</label>
+            <input type="date" id="datePicker" />
+          </div>
+          <div class="picker-group">
+            <label>Time</label>
+            <input type="time" id="timePicker" />
+          </div>
+        </div>
+        <div class="modal-buttons">
+          <button class="btn-cancel" onclick="closeTimeModal()">Cancel</button>
+          <button class="btn-now" id="nowButton" onclick="resetToNow()" style="display: none;">Now</button>
+          <button class="btn-ok" onclick="applyTime()">OK</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mainContainer">
+        <div class="section sky">
+            <div id="celestialBody"></div>
+            <!-- Stars container -->
+            <div id="starsContainer"></div>
+            <!-- Birds container -->
+            <div id="birdsContainer"></div>
+        </div>
+        <div class="section ocean"></div>
+        <div class="section land"></div>
+        <div id="boat">
+          <svg width="40" height="30" viewBox="0 0 40 30">
+            <path
+              id="boat-body"
+              d="M5,20 L10,10 L15,10 L20,15 L20,20 L35,20 L30,25 L10,25 Z"
+            />
+            <path
+              id="boat-mast"
+              d="M12,10 L12,5 L14,5 L14,10"
+            />
+          </svg>
+        </div>
+         <div class="summarySection">
+            <div id="status">Tide is coming in ↑</div>
+            <div id="nextTide">Next tide at 11:00 AM - high of 2.3m</div>
+            <!-- <div id="currentTime">Current time: 10:30 AM</div> -->
+         </div>
+    </div>
+<script>
+    const maxOceanLevel = 60; // as % of viewport height
+    const minOceanLevel = 20; // as % of viewport height
+
+    const skyHeight = 35; // as % of viewport height
+
+    function renderLine(label, tideHt){
+      /*
+          <div class="lineLabel">tide label</div>
+          <div class="line"></div>
+      */
+
+      const lineContainer = document.createElement("div");
+      lineContainer.className = "tideLineContainer";
+
+      const lineLabel = document.createElement("div");
+      lineLabel.className = "lineLabel";
+      lineLabel.textContent = label;
+
+      const line = document.createElement("div");
+      line.className = "line";
+
+      const mainContiner = document.getElementsByClassName("mainContainer")[0];
+      lineContainer.appendChild(lineLabel); 
+      lineContainer.appendChild(line);
+
+      mainContiner.appendChild(lineContainer);
+
+      // Position line based on tide height
+      const oceanLevel = skyHeight + minOceanLevel + (tideHt * vhPermTide);
+      lineContainer.style.top = `${oceanLevel}vh`;
+    }
+
+    function getNextTwoTides(inputDate = new Date()) {
+      // Sort just in case (data already seems ordered, but safe)
+      allTides.sort((a, b) => a.dateTime - b.dateTime);
+
+      // Find next two tides
+      const upcoming = allTides.filter(t => t.dateTime > inputDate).slice(0, 2);
+
+      // Format output
+      return upcoming.map(t => ({
+        type: t.type,
+        time:  localiseTime(t.dateTime), // readable format
+        height: t.height
+      }));
+    }
+
+    var diffInTide, diffInVH;
+    var vhPermTide;
+
+    function init(){
+      var nextTwo = getNextTwoTides();
+      var extremes = getTideExtremes();
+      var lastTide = getLastTide();
+
+      diffInTide = extremes.highest.height - extremes.lowest.height;
+      diffInVH = maxOceanLevel - minOceanLevel;
+
+      vhPermTide = diffInVH / diffInTide;
+
+      renderCurrentTide();
+
+      renderSummary(nextTwo);
+
+      // Render lines for next tide
+      var label = nextTwo[0].type === "high" ? "Next High Tide" : "Next Low Tide";
+      // var time = nextTwo[0].time.split(", ")[1];
+      var time = new Date(nextTwo[0].time).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+      time = time.replace('am', 'AM').replace('pm', 'PM');
+
+      renderLine(`${label} at ${time} - ${nextTwo[0].height}m`, nextTwo[0].height);
+
+      // Initialize sun/moon and theme
+      const sunInfo = getSunPosition();
+      updateCelestialBody(sunInfo);
+      updateTheme(sunInfo.isDaytime);
+      
+      // Initialize stars
+      initStars();
+      
+      // Update sky and celestial body periodically
+      updateInterval = setInterval(() => {
+        currentTime = new Date();
+        updateDisplay();
+      }, 1000);
+
+      // Initialize birds
+      initBirds();
+    }
+
+    function renderSummary(nextTwo) {
+      const statusEl = document.getElementById("status");
+      const nextTideEl = document.getElementById("nextTide");
+      // const currentTimeEl = document.getElementById("currentTime");
+
+      if (nextTwo.length) {
+        const next = nextTwo[0];
+        var nextTime = new Date(next.time);
+        nextTime = nextTime.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
+        nextTime = nextTime.replace('am', 'AM').replace('pm', 'PM');
+        
+        statusEl.textContent = `Tide is ${next.type === "high" ? "coming in ↓" : "going out ↑"}`;
+        nextTideEl.textContent = `${next.type} tide at ${nextTime} ${next.height}m`;
+      } else {
+        statusEl.textContent = "No upcoming tides in dataset";
+        nextTideEl.textContent = "";
+      }
+
+      // currentTimeEl.textContent = `Current time: ${localiseTime(new Date())}`;
+    }
+
+    function renderCurrentTide() {
+      var current = getCurrentTideHeight();
+
+      if(!current) return; // no data
+
+      const ocean = document.querySelector(".ocean");
+
+      // Calculate ocean level based on current tide height
+      const oceanLevel = minOceanLevel + (current.height  * vhPermTide);
+
+      // Update ocean height (using vh units)
+      ocean.style.height = `${oceanLevel}vh`;
+    }
+
+    function localiseTime(date) {
+      return date.toLocaleString("en-IN", {
+            day: "numeric",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+          });  
+    }
+
+    function getTideExtremes() {
+      if (!allTides.length) return null;
+
+      let min = allTides[0];
+      let max = allTides[0];
+
+      for (const t of allTides) {
+        if (t.height < min.height) min = t;
+        if (t.height > max.height) max = t;
+      }
+
+      return {
+        lowest: {
+          type: min.type,
+          time: localiseTime(min.dateTime),
+          height: min.height
+        },
+        highest: {
+          type: max.type,
+          time: localiseTime(max.dateTime),
+          height: max.height
+        }
+      };
+    }
+
+    function getLastTide(inputDate = new Date()) {
+      // Ensure sorted (safe guard — remove if guaranteed sorted)
+      // allTides.sort((a, b) => a.dateTime - b.dateTime);
+
+      // Find last tide before current time
+      const pastTides = allTides.filter(t => t.dateTime <= inputDate);
+
+      const last = pastTides[pastTides.length - 1];
+
+      if (!last) return null; // no past tide in dataset
+
+      return {
+        type: last.type,
+        time: localiseTime(last.dateTime),
+        height: last.height
+      };
+    }
+
+    function getCurrentTideHeight(inputDate = new Date()) {
+      if (!allTides.length) return null;
+
+      let prev = null;
+      let next = null;
+
+      // Find surrounding tides
+      for (let i = 0; i < allTides.length; i++) {
+        if (allTides[i].dateTime <= inputDate) {
+          prev = allTides[i];
+        }
+        if (allTides[i].dateTime > inputDate) {
+          next = allTides[i];
+          break;
+        }
+      }
+
+      // Edge cases
+      if (!prev) return null; // before dataset
+      if (!next) return prev.height; // after dataset → hold last value
+
+      // Time interpolation
+      const totalDuration = next.dateTime - prev.dateTime;
+      const elapsed = inputDate - prev.dateTime;
+
+      const progress = elapsed / totalDuration; // 0 → 1
+
+      // Linear interpolation
+      const currentHeight =
+        prev.height + (next.height - prev.height) * progress;
+
+      return {
+        height: currentHeight,
+        trend: next.height > prev.height ? "rising" : "falling",
+        progress, // useful for animation/debug
+        prev,
+        next
+      };
+    }
+
+    const TIDE_DATA = [
+      { date: "2026-05-12", tides: [
+        { type: "low", time: "02:03", height: 1.56 },
+        { type: "high", time: "08:15", height: 3.25 },
+        { type: "low", time: "14:03", height: 1.86 },
+        { type: "high", time: "20:13", height: 3.69 }
+      ], sunrise: "06:05", sunset: "19:04" },
+      { date: "2026-05-13", tides: [
+        { type: "low", time: "02:48", height: 1.19 },
+        { type: "high", time: "09:19", height: 3.67 },
+        { type: "low", time: "15:06", height: 1.76 },
+        { type: "high", time: "21:05", height: 3.82 }
+      ], sunrise: "06:05", sunset: "19:04" },
+      { date: "2026-05-14", tides: [
+        { type: "low", time: "03:30", height: 0.79 },
+        { type: "high", time: "10:10", height: 4.10 },
+        { type: "low", time: "16:01", height: 1.64 },
+        { type: "high", time: "21:52", height: 3.95 }
+      ], sunrise: "06:04", sunset: "19:05" },
+      { date: "2026-05-15", tides: [
+        { type: "low", time: "04:12", height: 0.43 },
+        { type: "high", time: "10:56", height: 4.49 },
+        { type: "low", time: "16:50", height: 1.53 },
+        { type: "high", time: "22:37", height: 4.06 }
+      ], sunrise: "06:04", sunset: "19:05" },
+      { date: "2026-05-16", tides: [
+        { type: "low", time: "04:53", height: 0.15 },
+        { type: "high", time: "11:41", height: 4.78 },
+        { type: "low", time: "17:38", height: 1.46 },
+        { type: "high", time: "23:22", height: 4.13 }
+      ], sunrise: "06:04", sunset: "19:06" },
+      { date: "2026-05-17", tides: [
+        { type: "low", time: "05:36", height: -0.02 },
+        { type: "high", time: "12:26", height: 4.95 },
+        { type: "low", time: "18:25", height: 1.45 }
+      ], sunrise: "06:03", sunset: "19:06" },
+      { date: "2026-05-18", tides: [
+        { type: "high", time: "00:07", height: 4.13 },
+        { type: "low", time: "06:20", height: -0.05 },
+        { type: "high", time: "13:11", height: 4.98 },
+        { type: "low", time: "19:14", height: 1.48 }
+      ], sunrise: "06:03", sunset: "19:06" },
+      { date: "2026-05-19", tides: [
+        { type: "high", time: "00:53", height: 4.06 },
+        { type: "low", time: "07:06", height: 0.07 },
+        { type: "high", time: "13:58", height: 4.88 },
+        { type: "low", time: "20:06", height: 1.56 }
+      ], sunrise: "06:03", sunset: "19:07" },
+      { date: "2026-05-20", tides: [
+        { type: "high", time: "01:42", height: 3.91 },
+        { type: "low", time: "07:55", height: 0.32 },
+        { type: "high", time: "14:46", height: 4.70 },
+        { type: "low", time: "21:04", height: 1.64 }
+      ], sunrise: "06:02", sunset: "19:07" },
+      { date: "2026-05-21", tides: [
+        { type: "high", time: "02:34", height: 3.69 },
+        { type: "low", time: "08:47", height: 0.67 },
+        { type: "high", time: "15:38", height: 4.45 },
+        { type: "low", time: "22:11", height: 1.69 }
+      ], sunrise: "06:02", sunset: "19:08" }
+    ];
+
+    // Flatten all tides into one array with full Date objects
+    const allTides = TIDE_DATA.flatMap(day => {
+        return day.tides.map(tide => {
+          const dateTimeStr = `${day.date}T${tide.time}:00`;
+          return {
+            ...tide,
+            dateTime: new Date(dateTimeStr)
+          };
+        });
+      });
+    
+    function setBoatTheme(isDaytime) {
+      const color = isDaytime ? "#1e293b" : "#334155";
+
+      document.getElementById("boat-body").setAttribute("fill", color);
+      document.getElementById("boat-mast").setAttribute("fill", color);
+    }
+
+    /*functions from another file*/
+
+    const getTodayTideData = () => {
+        const today = currentTime.toISOString().split('T')[0];
+        return TIDE_DATA.find(d => d.date === today) || TIDE_DATA[0];
+      };
+    
+      // Parse time string to minutes
+    function parseTime(timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+    }
+
+    let currentTime = new Date();
+    let isTimeModified = false;
+    let updateInterval = null;
+
+    const getSunPosition = () => {
+        const todayData = getTodayTideData();
+        const sunriseMinutes = parseTime(todayData.sunrise);
+        const sunsetMinutes = parseTime(todayData.sunset);
+        const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes();
+        
+        const isDaytime = currentMinutes >= sunriseMinutes && currentMinutes <= sunsetMinutes;
+        
+        if (!isDaytime) {
+          const nightStart = sunsetMinutes;
+          const nightEnd = sunriseMinutes + 1440;
+          const nightDuration = nightEnd - nightStart;
+          const nightElapsed = currentMinutes > sunsetMinutes 
+            ? currentMinutes - nightStart 
+            : (1440 - nightStart) + currentMinutes;
+          const moonProgress = nightElapsed / nightDuration;
+          
+          return {
+            isDaytime: false,
+            position: 15 + moonProgress * 70,
+            progress: moonProgress
+          };
+        }
+        
+        const dayDuration = sunsetMinutes - sunriseMinutes;
+        const dayElapsed = currentMinutes - sunriseMinutes;
+        const sunProgress = dayElapsed / dayDuration;
+        
+        return {
+          isDaytime: true,
+          position: 15 + sunProgress * 70,
+          progress: sunProgress
+        };
+      };
+
+    // Update celestial body (sun/moon) position and appearance
+    function updateCelestialBody(sunInfo) {
+      const celestial = document.getElementById('celestialBody');
+      const skyEl = document.querySelector('.sky');
+      
+      if (sunInfo.isDaytime) {
+        celestial.classList.remove('moon');
+        celestial.style.left = `${sunInfo.position}%`;
+        
+        // Calculate vertical position (arc)
+        const verticalPos = 10 + Math.sin(sunInfo.progress * Math.PI) * 15;
+        celestial.style.top = `${verticalPos}%`;
+      } else {
+        celestial.classList.add('moon');
+        celestial.style.left = `${sunInfo.position}%`;
+        
+        const verticalPos = 10 + Math.sin(sunInfo.progress * Math.PI) * 15;
+        celestial.style.top = `${verticalPos}%`;
+      }
+    }
+
+    // Update theme colors based on day/night
+    function updateTheme(isDaytime) {
+      const skyEl = document.querySelector('.sky');
+      const oceanEl = document.querySelector('.ocean');
+      const summaryEl = document.querySelector('.summarySection');
+      
+      if (isDaytime) {
+        skyEl.style.backgroundColor = '#87CEEB'; // skyblue
+        oceanEl.style.backgroundColor = '#1E90FF'; // dodgerblue
+        summaryEl.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        summaryEl.style.color = '#000';
+      } else {
+        skyEl.style.backgroundColor = '#1e293b'; // dark night sky
+        oceanEl.style.backgroundColor = '#0c4a6e'; // dark ocean
+        summaryEl.style.backgroundColor = 'rgba(30, 41, 59, 0.9)';
+        summaryEl.style.color = '#e2e8f0';
+      }
+      
+      // Update boat theme
+      setBoatTheme(isDaytime);
+      
+      // Show/hide stars
+      const stars = document.querySelectorAll('.star');
+      stars.forEach(star => {
+        if (isDaytime) {
+          star.classList.remove('visible');
+        } else {
+          star.classList.add('visible');
+        }
+      });
+      
+      // Update bird colors
+      const birds = document.querySelectorAll('.bird');
+      birds.forEach(bird => {
+        if (isDaytime) {
+          bird.classList.remove('night');
+        } else {
+          bird.classList.add('night');
+        }
+      });
+    }
+
+    // Initialize stars
+    function initStars() {
+      const starsContainer = document.getElementById('starsContainer');
+      const numStars = 50;
+      
+      for (let i = 0; i < numStars; i++) {
+        const star = document.createElement('div');
+        star.className = 'star';
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.animationDelay = `${Math.random() * 3}s`;
+        starsContainer.appendChild(star);
+      }
+    }
+
+    // Initialize birds
+    let birds = [];
+    
+    function initBirds() {
+      const birdsContainer = document.getElementById('birdsContainer');
+      
+      // Spawn birds periodically
+      setInterval(() => {
+        if (Math.random() > 0.7) {
+          const bird = createBird();
+          birds.push(bird);
+          birdsContainer.appendChild(bird.element);
+        }
+      }, 3000);
+      
+      // Animate birds
+      setInterval(() => {
+        birds = birds.filter(bird => {
+          bird.x += bird.speed;
+          bird.element.style.left = `${bird.x}%`;
+          
+          // Remove if off-screen
+          if (bird.x > 120) {
+            bird.element.remove();
+            return false;
+          }
+          return true;
+        });
+      }, 50);
+    }
+
+    function createBird() {
+      const birdEl = document.createElement('div');
+      birdEl.className = 'bird';
+      
+      const size = 8 + Math.random() * 6;
+      const y = 15 + Math.random() * 30;
+      const speed = 0.5 + Math.random() * 0.5;
+      
+      birdEl.innerHTML = `
+        <svg width="${size * 2}" height="${size}" viewBox="0 0 24 12">
+          <path d="M2,6 Q6,2 12,6 Q18,2 22,6" />
+        </svg>
+      `;
+      
+      birdEl.style.left = '-50px';
+      birdEl.style.top = `${y}%`;
+      
+      // Check if night mode
+      const sunInfo = getSunPosition();
+      if (!sunInfo.isDaytime) {
+        birdEl.classList.add('night');
+      }
+      
+      return {
+        element: birdEl,
+        x: -5,
+        y: y,
+        speed: speed,
+        size: size
+      };
+    }
+
+    // Time Modal Functions
+    function openTimeModal() {
+      const modal = document.getElementById('timeModal');
+      const datePicker = document.getElementById('datePicker');
+      const timePicker = document.getElementById('timePicker');
+      const nowButton = document.getElementById('nowButton');
+      
+      // Set current values
+      const date = currentTime.toISOString().split('T')[0];
+      const hours = String(currentTime.getHours()).padStart(2, '0');
+      const minutes = String(currentTime.getMinutes()).padStart(2, '0');
+      
+      datePicker.value = date;
+      timePicker.value = `${hours}:${minutes}`;
+      
+      // Show "Now" button if time is modified
+      nowButton.style.display = isTimeModified ? 'block' : 'none';
+      
+      modal.classList.add('show');
+    }
+
+    function closeTimeModal() {
+      const modal = document.getElementById('timeModal');
+      modal.classList.remove('show');
+    }
+
+    function applyTime() {
+      const datePicker = document.getElementById('datePicker');
+      const timePicker = document.getElementById('timePicker');
+      
+      const dateValue = datePicker.value;
+      const timeValue = timePicker.value;
+      
+      if (dateValue && timeValue) {
+        const newTime = new Date(`${dateValue}T${timeValue}:00`);
+        currentTime = newTime;
+        isTimeModified = true;
+        
+        // Update clock icon color
+        document.getElementById('clockIcon').classList.add('modified');
+        
+        // Stop real-time updates
+        if (updateInterval) {
+          clearInterval(updateInterval);
+          updateInterval = null;
+        }
+        
+        // Update display immediately
+        updateDisplay();
+      }
+      
+      closeTimeModal();
+    }
+
+    function resetToNow() {
+      currentTime = new Date();
+      isTimeModified = false;
+      
+      // Update clock icon color
+      document.getElementById('clockIcon').classList.remove('modified');
+      
+      // Restart real-time updates
+      if (!updateInterval) {
+        updateInterval = setInterval(() => {
+          currentTime = new Date();
+          updateDisplay();
+        }, 1000);
+      }
+      
+      // Update display immediately
+      updateDisplay();
+      
+      closeTimeModal();
+    }
+
+    function updateDisplay() {
+      const sunInfo = getSunPosition();
+      updateCelestialBody(sunInfo);
+      updateTheme(sunInfo.isDaytime);
+      renderCurrentTide();
+      renderSummary(getNextTwoTides());
+    }
+
+</script>
+</body>
+</html>
