@@ -168,7 +168,8 @@
       // Format output
       return upcoming.map(t => ({
         type: t.type,
-        time:  localiseTime(t.dateTime), // readable format
+        // time:  localiseTime(t.dateTime), // readable format
+        time: t.dateTime, // raw Date for flexible formatting later
         height: t.height
       }));
     }
