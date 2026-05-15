@@ -193,6 +193,7 @@
       // Render lines for next tide
       var label = nextTwo[0].type === "high" ? "Next High Tide" : "Next Low Tide";
       var time = nextTwo[0].time.split(", ")[1];
+      alert(time)
       renderLine(`${label} at ${time} - ${nextTwo[0].height}m`, nextTwo[0].height);
 
 
