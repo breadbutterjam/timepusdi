@@ -93,6 +93,11 @@
           right: 0px;
         }
 
+        .nightColor{
+          /* background-color: #1e293b; */
+          color: #e2e8f0;
+        }
+
         .label{
           font-family: monospace;
           padding-left: 0.4rem;
@@ -1018,10 +1023,15 @@
       const sunInfoEl = document.querySelector('.sunrisesetinfo');
       const todayData = getTodayTideData();
       const isSunInSky = getSunPosition().isDaytime;
-      sunInfoEl.textContent =  isSunInSky 
-        ? `Sunset at ${todayData.sunset}`
-        : `Sunrise at ${todayData.sunrise}`;
+      sunInfoEl.textContent =  isSunInSky ? `Sunset at ${todayData.sunset}` : `Sunrise at ${todayData.sunrise}`;
       
+      if (!isSunInSky) {
+        sunInfoEl.classList.add('nightColor');
+      } else {
+        sunInfoEl.classList.remove('nightColor');
+      }
+
+
       // sunInfoEl.textContent = `Sunrise: ${todayData.sunrise} | Sunset: ${todayData.sunset}`;
 
       //statusEl.textContent = `Tide is ${next.type === "high" ? "coming in ↓" : "going out ↑"}`;
