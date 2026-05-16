@@ -849,7 +849,7 @@
         
         // Day time - sun behavior
         const minutesBeforeSunset = sunsetMinutes - currentMinutes;
-        const sunsetTransitionMinutes = 30; // Start moving 30 mins before sunset
+        const sunsetTransitionMinutes = 20; // Start transition 20 mins before sunset
         
         if (minutesBeforeSunset <= sunsetTransitionMinutes) {
           // Sun is setting - move from fixed position to horizon
@@ -891,9 +891,14 @@
           const endTop = 95;
           const verticalPos = startTop + (sunInfo.progress * (endTop - startTop));
           celestial.style.top = `${verticalPos}%`;
+          
+          // Change sun color to orange-red as it descends
+          const sunColor = interpolateColor('#FFD700', '#F93A00', sunInfo.progress);
+          celestial.style.backgroundColor = sunColor;
         } else {
           // Sun is fixed at 20% from top during the day
           celestial.style.top = '20%';
+          celestial.style.backgroundColor = '#FFD700'; // Normal sun color
         }
       } else {
         // Moon follows an arc across the sky
@@ -902,7 +907,29 @@
         
         const verticalPos = 10 + Math.sin(sunInfo.progress * Math.PI) * 15;
         celestial.style.top = `${verticalPos}%`;
+        celestial.style.backgroundColor = ''; // Reset color for moon
       }
+    }
+
+    // Helper function to interpolate between two hex colors
+    function interpolateColor(color1, color2, factor) {
+      const c1 = hexToRgb(color1);
+      const c2 = hexToRgb(color2);
+      
+      const r = Math.round(c1.r + (c2.r - c1.r) * factor);
+      const g = Math.round(c1.g + (c2.g - c1.g) * factor);
+      const b = Math.round(c1.b + (c2.b - c1.b) * factor);
+      
+      return `rgb(${r}, ${g}, ${b})`;
+    }
+
+    function hexToRgb(hex) {
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return result ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16)
+      } : null;
     }
 
     // Update theme colors based on day/night
@@ -913,42 +940,32 @@
       
       if (isDaytime) {
         if (sunInfo && sunInfo.isSetting) {
-          // During sunset, create dynamic gradient following the sun
-          const sunVerticalPos = 20 + (sunInfo.progress * 75); // Match sun's vertical position
-          const sunHorizontalPos = 72; // Sun's horizontal position
-          
-          // Transition colors from day to sunset
+          // During sunset, transition solid colors smoothly
           // progress: 0 = sunset just starting, 1 = sunset complete
-          const skyBlue = '#87CEEB';
-          const sunsetOrange = '#FF6B35';
-          const sunsetPink = '#FF8C94';
-          const twilightPurple = '#5D5C9E';
           
-          // Create radial gradient centered on sun position
+          const skyBlue = '#87CEEB';      // Day sky
+          const sunsetOrange = '#EB8526'; // Bright orange at mid-sunset
+          const nightBlue = '#1e293b';    // Night sky
+          
+          let skyColor;
+          
           if (sunInfo.progress < 0.5) {
-            // Early sunset - warm colors around sun
-            skyEl.style.background = `
-              radial-gradient(circle at ${sunHorizontalPos}% ${sunVerticalPos}%, 
-                ${sunsetOrange} 0%, 
-                ${sunsetPink} 15%, 
-                ${skyBlue} 35%)
-            `;
+            // First half: Sky Blue → Orange
+            const halfProgress = sunInfo.progress * 2; // 0 to 1
+            skyColor = interpolateColor(skyBlue, sunsetOrange, halfProgress);
           } else {
-            // Late sunset - deeper colors
-            const mixProgress = (sunInfo.progress - 0.5) * 2; // 0 to 1 for second half
-            skyEl.style.background = `
-              radial-gradient(circle at ${sunHorizontalPos}% ${sunVerticalPos}%, 
-                ${sunsetOrange} 0%, 
-                ${twilightPurple} 20%, 
-                #4A5B8C ${30 + mixProgress * 20}%,
-                #1e293b ${50 + mixProgress * 20}%)
-            `;
+            // Second half: Orange → Dark Blue
+            const halfProgress = (sunInfo.progress - 0.5) * 2; // 0 to 1
+            skyColor = interpolateColor(sunsetOrange, nightBlue, halfProgress);
           }
+          
+          skyEl.style.background = skyColor;
           
           // Ocean also transitions
           const oceanDay = '#1E90FF';
-          const oceanSunset = '#0c4a6e';
-          oceanEl.style.backgroundColor = oceanDay;
+          const oceanNight = '#0c4a6e';
+          const oceanColor = interpolateColor(oceanDay, oceanNight, sunInfo.progress);
+          oceanEl.style.backgroundColor = oceanColor;
           
         } else {
           // Regular daytime - solid color
