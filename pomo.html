@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomo</title>
+    <style>
+        body{
+            margin: 0; 
+            padding: 0; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+            font-family: sans-serif;
+            /* background-color: #f0f0f0; */
+        }
+        .bgImage{
+            background-image: url("ocean.jpg");
+            background-size: cover;
+            background-position: center;
+            width: 100%;
+            height: 100%;
+        }
+        .timeCont{
+            position: absolute;
+            font-size: 12.7em;
+            color: white;
+            /* font-family: 'Arial', sans-serif; */
+            font-family: monospace;
+            opacity: 0.2;
+        }
+
+        .iconHolder{
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            display: flex;
+            gap: 8px;   
+        }
+        
+        .icon{
+            color: white;
+            cursor: pointer;
+            opacity: 0.5;
+            font-size: 1.27em;
+        }
+
+        .settingsPane{
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 120px;
+            /* height: 300px; */
+            background-color: rgba(255,255,255,0.3);
+            color: black;
+            display: none;
+            border-radius: 0.5em;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 8px;
+        }
+
+        .pause{
+            opacity: 1;
+        }
+
+        .secBtn{
+            background-color: white;
+            border: 1px saddlebrown;
+        }
+
+        .timeSelector{
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body onload="init();">
+
+    <div class="bgImage"></div>
+    <div class="timeCont"></div>
+    <div class="iconHolder">
+        <div class="icon settingsIcon">⚙</div>
+        <!-- <div class="icon helpIcon">🛈</div> -->
+    </div>
+
+    <div class="settingsPane">
+        <div class="settingsControl timeSelector">
+            <span>Select Time:</span><br>
+            <input type="radio" id="time25" name="timeSel" value="25">
+            <label for="time25">25 mins</label><br>
+            
+            <input type="radio" id="time10" name="timeSel" value="10">
+            <label for="time10">10 mins</label><br>
+            
+            <input type="radio" id="time5" name="timeSel" value="5">
+            <label for="time5">5 mins</label><br>
+
+            <input type="radio" id="time2" name="timeSel" value="2" checked>
+            <label for="time2">2 mins</label>
+        </div>
+        <input type="button" id="applyBtn" value="Apply">
+        <input type="button" class="secBtn" id="cancelBtn" value="Cancel">
+    </div>
+    <script>
+        let mins = 2; // Set the desired minutes for the timer
+
+        let bTimerRunning = false;
+
+        let timeCont = document.querySelector(".timeCont");
+        let totalSeconds = mins * 60; // 25 minutes in seconds
+
+        function resetTimer() {
+            totalSeconds = mins * 60;
+            updateTime();
+        }
+
+        function init() {
+            // console.log("Initializing...");
+            updateTime();
+            addEventListeners();
+            const settingsPane = document.querySelector(".settingsPane");
+            settingsPane.style.display = "none";
+            
+        }
+
+        function addEventListeners() {
+            // console.log("Adding event listeners...");
+            timeCont.addEventListener("click", () => {
+                // console.log("Time container clicked. Timer running:", bTimerRunning);
+                if (bTimerRunning) {
+                    clearInterval(intervalId);
+                    bTimerRunning = false;
+                    timeCont.classList.add("pause");
+                } else {
+                    timeCont.classList.remove("pause");
+                    startTimer();
+                }
+            });
+
+            const settingsIcon = document.querySelector(".settingsIcon");
+            const settingsPane = document.querySelector(".settingsPane");
+            settingsIcon.addEventListener("click", () => {
+                // console.log("Settings icon clicked. Current display:", settingsPane.style.display);
+                settingsPane.style.display = "flex";
+            });
+
+            const applyBtn = document.querySelector("#applyBtn");
+            applyBtn.addEventListener("click", () => {
+                applySettings();
+                settingsPane.style.display = "none";
+            });
+
+
+            const cancelBtn = document.querySelector("#cancelBtn");
+            cancelBtn.addEventListener("click", () => {
+                settingsPane.style.display = "none";
+            });
+
+            
+            window.addEventListener("click", (event) => {
+                if (!settingsPane.contains(event.target) && !event.target.classList.contains("settingsIcon")) {
+                    settingsPane.style.display = "none";
+                }
+            });
+            
+        }
+
+        function applySettings() {
+            let selectedTime = document.querySelector('input[name="timeSel"]:checked').value;
+            mins = parseInt(selectedTime);
+            resetTimer();
+            timeCont.classList.remove("pause");
+            startTimer();
+            
+        }
+
+        function updateTime() {
+            let minutes = Math.floor(totalSeconds / 60);
+            let seconds = totalSeconds % 60;
+            timeCont.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (minutes === 0 && seconds === 0) {
+                // alert("Time's up!");
+            }
+        }
+
+        var intervalId = null;
+        function startTimer() {
+            bTimerRunning = true;
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+            intervalId = setInterval(() => {
+                if (totalSeconds > 0) {
+                    totalSeconds--;
+                    updateTime();
+                }
+            }, 1000);
+        }
+
+        startTimer();
+/*
+    
+    TO-DOs
+    add icons for settings, help, refresh.
+
+    settings:
+    - select time: 25, 10, 5; 
+    - select opacity
+    - select font
+    - sound on / off [tick]
+    - music on / off
+    - end of timer? 
+        ..Alarm    
+
+    [DONE]
+        pause / resume. 
+*/
+    </script>
+    
+</body>
+
+</html>
+
