@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pomo</title>
     <style>
+      
+
         body{
             margin: 0; 
             padding: 0; 
@@ -30,6 +32,12 @@
             font-family: monospace;
             opacity: 0.2;
         }
+
+         @media (max-width: 420px) {
+        .timeCont {
+            font-size: 9.7em;
+        }
+       }
 
         .iconHolder{
             position: absolute;
@@ -74,6 +82,61 @@
         .timeSelector{
             font-size: 0.8em;
         }
+        #endofTimer{
+            display: none;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+            .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            }
+
+            .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: #ccc;
+            border-radius: 26px;
+            transition: 0.3s;
+            }
+
+            .slider::before {
+            content: "";
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            left: 3px;
+            top: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.3s;
+            }
+
+            input:checked + .slider {
+            background-color: #2600ff;
+            }
+
+            input:checked + .slider::before {
+            transform: translateX(24px);
+            }
+
+            .fade-out {
+                animation: fadeOut 2s forwards;
+            }
+
+            @keyframes fadeOut {
+            from { opacity: 0.2; }
+            to { opacity: 0; }
+            }
+
     </style>
 </head>
 <body onload="init();">
@@ -82,12 +145,13 @@
     <div class="timeCont"></div>
     <div class="iconHolder">
         <div class="icon settingsIcon">⚙</div>
+        <!-- <div class="icon refreshIcon">⟳</div> -->
         <!-- <div class="icon helpIcon">🛈</div> -->
     </div>
 
     <div class="settingsPane">
         <div class="settingsControl timeSelector">
-            <span>Select Time:</span><br>
+            <!-- <span>Select Time:</span><br> -->
             <input type="radio" id="time25" name="timeSel" value="25">
             <label for="time25">25 mins</label><br>
             
@@ -99,12 +163,19 @@
 
             <input type="radio" id="time2" name="timeSel" value="2" checked>
             <label for="time2">2 mins</label>
+            <br>
+            <!-- <label class="switch">
+                <input type="checkbox" id="toggle">
+                <span class="slider"></span>
+            </label> -->
+
         </div>
         <input type="button" id="applyBtn" value="Apply">
         <input type="button" class="secBtn" id="cancelBtn" value="Cancel">
+        <audio id="endofTimer" src="ding.mp3" preload="auto"></audio>
     </div>
     <script>
-        let mins = 2; // Set the desired minutes for the timer
+        let mins = 0.1; // Set the desired minutes for the timer
 
         let bTimerRunning = false;
 
@@ -138,6 +209,13 @@
                     startTimer();
                 }
             });
+
+            // timeCont.addEventListener("animationend", () => {
+            //       console.log("Fade out complete");
+            //       timeCont.classList.remove("fade-out");
+            //     //   timeCont.innerHTML = "";
+            //     //   timeCont.classList.add("endState");
+            // });
 
             const settingsIcon = document.querySelector(".settingsIcon");
             const settingsPane = document.querySelector(".settingsPane");
@@ -183,6 +261,10 @@
 
             if (minutes === 0 && seconds === 0) {
                 // alert("Time's up!");
+                const endofTimerAudio = document.querySelector("#endofTimer");
+                endofTimerAudio.play();
+
+                timeCont.classList.add("fade-out");
             }
         }
 
@@ -200,23 +282,41 @@
             }, 1000);
         }
 
+        // const toggle = document.getElementById("toggle");
+
+        // toggle.addEventListener("change", () => {
+        //     if (toggle.checked) {
+        //     console.log("ON");
+        //     } else {
+        //     console.log("OFF");
+        //     }
+        // });
+
         startTimer();
 /*
     
     TO-DOs
     add icons for settings, help, refresh.
+        
+    end of timer - do something
 
     settings:
-    - select time: 25, 10, 5; 
+    - select background image
     - select opacity
     - select font
     - sound on / off [tick]
     - music on / off
-    - end of timer? 
+    
         ..Alarm    
 
     [DONE]
         pause / resume. 
+        icon for setting
+
+        - select time: 25, 10, 5; 
+
+        - end of timer? 
+
 */
     </script>
     
