@@ -45,6 +45,7 @@
             right: 4px;
             display: flex;
             gap: 8px;   
+            align-items: end;
         }
         
         .icon{
@@ -52,6 +53,15 @@
             cursor: pointer;
             opacity: 0.5;
             font-size: 1.27em;
+        }
+
+        .icon.refreshIcon{
+            font-size: 1.1em;
+            
+        }
+
+        .gayab{
+            display: none;
         }
 
         .settingsPane{
@@ -144,8 +154,9 @@
     <div class="bgImage"></div>
     <div class="timeCont"></div>
     <div class="iconHolder">
+        <div class="icon refreshIcon gayab">⟳</div>
         <div class="icon settingsIcon">⚙</div>
-        <!-- <div class="icon refreshIcon">⟳</div> -->
+        
         <!-- <div class="icon helpIcon">🛈</div> -->
     </div>
 
@@ -175,7 +186,8 @@
         <audio id="endofTimer" src="ding.mp3" preload="auto"></audio>
     </div>
     <script>
-        let mins = 2; // Set the desired minutes for the timer
+        // let mins = 0.1; // Set the desired minutes for the timer
+        let mins = 2; 
 
         let bTimerRunning = false;
 
@@ -242,6 +254,13 @@
                     settingsPane.style.display = "none";
                 }
             });
+
+            const refreshIcon = document.querySelector(".refreshIcon");
+            refreshIcon.addEventListener("click", () => {
+                resetTimer();
+                refreshIcon.classList.add("gayab");
+                timeCont.classList.remove("fade-out");
+            });
             
         }
 
@@ -263,6 +282,8 @@
                 // alert("Time's up!");
                 const endofTimerAudio = document.querySelector("#endofTimer");
                 endofTimerAudio.play();
+                const refreshIcon = document.querySelector(".refreshIcon");
+                refreshIcon.classList.remove("gayab");
 
                 timeCont.classList.add("fade-out");
             }
