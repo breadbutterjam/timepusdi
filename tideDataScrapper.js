@@ -96,5 +96,9 @@ function getTideData() {
   for (let i = 0; i < tideBoxes.length; i++) {
     tideData.push(getDataFromTideBox(tideBoxes[i]));
   }
+
+  let finalData = toJSObjectString(tideData);
+  copy(finalData);
+
   return tideData;
 }
