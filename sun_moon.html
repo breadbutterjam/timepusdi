@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sun & Moon — Mumbai</title>
+<title>Sun & Moon</title>
 <script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,9 +14,88 @@ html, body { height: 100%; overflow: hidden; background: #000; }
   height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
-/* SKY */
+#locationSelect{
+  text-align: right;
+  appearance: none;
+  -webkit-appearance: none; /* Chrome, Safari */
+  -moz-appearance: none;    /* Firefox */
+}
+
+#locationSelect::-ms-expand {
+  display: none; /* Internet Explorer */
+}
+
+/* ── TOP BAR ── */
+.top-bar {
+  /* position: absolute; */
+  top: 0; left: 0; right: 0;
+  /* height: 32px; */
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0.0));
+  gap: 8px;
+}
+.top-bar select,
+.top-bar button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.82);
+  font-size: 12px;
+  font-family: system-ui, sans-serif;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  letter-spacing: 0.02em;
+}
+.top-bar select option,
+.top-bar select optgroup {
+  background: #1a2a1a;
+  color: #fff;
+}
+.top-bar .sep {
+  color: rgba(255,255,255,0.25);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.top-bar .spacer { flex: 1; }
+
+/* ── TIME SLIDER TRAY — overlays just below top bar ── */
+.slider-tray {
+  position: absolute;
+  top: 16px;
+  left: 0; right: 0;
+  z-index: 19;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.2s ease;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.38), rgba(0,0,0,0.0));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 14px;
+}
+.slider-tray.open { height: 44px; }
+.slider-tray input[type=range] {
+  width: 100%;
+  accent-color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  height: 2px;
+}
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: rgba(255,255,255,0.38);
+  margin-top: 3px;
+}
+
+/* ── SKY ── */
 .sky {
   flex: 0 0 80%;
   display: flex;
@@ -81,77 +160,12 @@ html, body { height: 100%; overflow: hidden; background: #000; }
   background: #e8e8d0;
 }
 
-/* HORIZON BAR — date/time pill sits here */
+/* ── HORIZON + GROUND ── */
 .horizon-bar {
-  position: absolute;
-  top: 80vh;
-  translate: 0 -26px;
-  height: 36px;
-  /* background: #143f08; */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10;
+  height: 2px;
+  background: rgba(255,255,255,0.12);
   flex-shrink: 0;
 }
-.datetime-pill {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  /* background: rgba(0,0,0,0.35);
-  border-radius: 20px; */
-  overflow: hidden;
-  /* border: 1px solid rgba(255,255,255,0.2); */
-}
-.pill-btn {
-  background: none;
-  border: none;
-  color: rgba(255,255,255,0.9);
-  font-size: 13px;
-  font-family: system-ui, sans-serif;
-  padding: 5px 12px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-.pill-btn:hover { background: rgba(255,255,255,0.1); }
-.pill-sep {
-  width: 1px;
-  height: 16px;
-  background: rgba(255,255,255,0.25);
-  flex-shrink: 0;
-}
-
-/* TIME SLIDER — slides out just below horizon */
-.slider-tray {
-  height: 0;
-  overflow: hidden;
-  background: #1a5c0a;
-  transition: height 0.25s ease;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  justify-content: center;
-  padding: 0 16px;
-}
-.slider-tray.open {
-  height: 52px;
-}
-.slider-tray input[type=range] {
-  width: 100%;
-  accent-color: #ccff00;
-  cursor: pointer;
-}
-.slider-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 10px;
-  color: rgba(255,255,255,0.55);
-  margin-top: 2px;
-}
-
-/* GROUND */
 .ground-bar {
   flex: 1;
   min-height: 0;
@@ -179,7 +193,6 @@ html, body { height: 100%; overflow: hidden; background: #000; }
   font-weight: 500;
 }
 
-/* hidden date input */
 #dateInput {
   position: absolute;
   opacity: 0;
@@ -190,26 +203,21 @@ html, body { height: 100%; overflow: hidden; background: #000; }
 </head>
 <body>
 <div id="app">
-  <div class="sky" id="sky">
-    <div class="panel" id="panelEast">
-      <span class="panel-label">E</span>
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button id="dateBtn"></button>
+      <!-- <span class="sep">·</span> -->
+      <button id="timeBtn"></button>
     </div>
-    <div class="panel" id="panelWest">
-      <span class="panel-label">W</span>
-      <div class="altitude-axis" id="altAxis"></div>
-    </div>
-    <div class="divider"></div>
+    <select id="locationSelect"></select>
+    <!-- <span class="sep">·</span> -->
+    
+    
   </div>
 
-  <div class="horizon-bar">
-    <div class="datetime-pill">
-      <button class="pill-btn" id="dateBtn"></button>
-      <div class="pill-sep"></div>
-      <button class="pill-btn" id="timeBtn"></button>
-    </div>
-    <input type="date" id="dateInput">
-  </div>
-
+  <!-- TIME SLIDER (overlays below top bar) -->
   <div class="slider-tray" id="sliderTray">
     <input type="range" id="timeSlider" min="0" max="1439" step="1">
     <div class="slider-labels">
@@ -217,16 +225,94 @@ html, body { height: 100%; overflow: hidden; background: #000; }
     </div>
   </div>
 
+  <!-- SKY -->
+  <div class="sky" id="sky">
+    <div class="panel" id="panelEast"><span class="panel-label">E</span></div>
+    <div class="panel" id="panelWest">
+      <span class="panel-label">W</span>
+      <div class="altitude-axis" id="altAxis"></div>
+    </div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="horizon-bar"></div>
   <div class="ground-bar" id="groundBar"></div>
+
+  <input type="date" id="dateInput">
 </div>
 
 <script>
-(function() {
-  const LAT = 19.076, LNG = 72.8777;
+// ─────────────────────────────────────────────────────────
+//  LOCATIONS — edit freely
+//  Fields: name, lat, lng, tz (IANA timezone string)
+// ─────────────────────────────────────────────────────────
+const LOCATIONS = {
+  "India": [
+    { name: "Mumbai",      lat: 19.0760,  lng:  72.8777, tz: "Asia/Kolkata"       },
+    { name: "Pune",        lat: 18.5204,  lng:  73.8567, tz: "Asia/Kolkata"       },
+    { name: "Delhi",       lat: 28.6139,  lng:  77.2090, tz: "Asia/Kolkata"       },
+    { name: "Bangalore",   lat: 12.9716,  lng:  77.5946, tz: "Asia/Kolkata"       },
+    { name: "Chennai",     lat: 13.0827,  lng:  80.2707, tz: "Asia/Kolkata"       },
+    { name: "Kolkata",     lat: 22.5726,  lng:  88.3639, tz: "Asia/Kolkata"       },
+  ],
+  "Global": [
+    { name: "Dubai",       lat: 25.2048,  lng:  55.2708, tz: "Asia/Dubai"         },
+    { name: "London",      lat: 51.5074,  lng:  -0.1278, tz: "Europe/London"      },
+    { name: "Paris",       lat: 48.8566,  lng:   2.3522, tz: "Europe/Paris"       },
+    { name: "New York",    lat: 40.7128,  lng: -74.0060, tz: "America/New_York"   },
+    { name: "Los Angeles", lat: 34.0522,  lng:-118.2437, tz: "America/Los_Angeles"},
+    { name: "São Paulo",   lat:-23.5505,  lng: -46.6333, tz: "America/Sao_Paulo"  },
+    { name: "Tokyo",       lat: 35.6762,  lng: 139.6503, tz: "Asia/Tokyo"         },
+    { name: "Singapore",   lat:  1.3521,  lng: 103.8198, tz: "Asia/Singapore"     },
+    { name: "Sydney",      lat:-33.8688,  lng: 151.2093, tz: "Australia/Sydney"   },
+    { name: "Cape Town",   lat:-33.9249,  lng:  18.4241, tz: "Africa/Johannesburg"},
+  ]
+};
+// ─────────────────────────────────────────────────────────
 
-  const now = new Date();
-  let selDate = { y: now.getFullYear(), m: now.getMonth(), d: now.getDate() };
-  let selMinutes = now.getHours() * 60 + now.getMinutes();
+(function () {
+  // ── Build location <select> ──
+  const selEl = document.getElementById("locationSelect");
+  Object.entries(LOCATIONS).forEach(([group, cities]) => {
+    const og = document.createElement("optgroup");
+    og.label = group;
+    cities.forEach(city => {
+      const opt = document.createElement("option");
+      opt.value = JSON.stringify({ lat: city.lat, lng: city.lng, tz: city.tz });
+      opt.textContent = city.name;
+      if (city.name === "Mumbai") opt.selected = true;
+      og.appendChild(opt);
+    });
+    selEl.appendChild(og);
+  });
+
+  // ── Helper: get local "now" minutes for a timezone ──
+  function localNowMinutes(tz) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "numeric", minute: "numeric", hour12: false
+    }).formatToParts(new Date());
+    const h = +parts.find(p => p.type === "hour").value;
+    const m = +parts.find(p => p.type === "minute").value;
+    return h * 60 + m;
+  }
+
+  // ── Helper: get local today {y,m,d} for a timezone ──
+  function localToday(tz) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      year: "numeric", month: "numeric", day: "numeric"
+    }).formatToParts(new Date());
+    return {
+      y: +parts.find(p => p.type === "year").value,
+      m: +parts.find(p => p.type === "month").value - 1,
+      d: +parts.find(p => p.type === "day").value
+    };
+  }
+
+  let loc       = JSON.parse(selEl.value);
+  let selDate   = localToday(loc.tz);
+  let selMinutes = localNowMinutes(loc.tz);
   let sliderOpen = false;
 
   function getDateTime() {
@@ -235,10 +321,8 @@ html, body { height: 100%; overflow: hidden; background: #000; }
     return dt;
   }
 
-  function fmtTime(minutes) {
-    const h = String(Math.floor(minutes / 60)).padStart(2, "0");
-    const m = String(minutes % 60).padStart(2, "0");
-    return h + ":" + m;
+  function fmtTime(m) {
+    return String(Math.floor(m / 60)).padStart(2,"0") + ":" + String(m % 60).padStart(2,"0");
   }
 
   function fmtDateLabel(y, m, d) {
@@ -246,78 +330,69 @@ html, body { height: 100%; overflow: hidden; background: #000; }
     return String(d).padStart(2,"0") + "-" + months[m] + "-" + y;
   }
 
-  function getSkyColor(sunAlt) {
-    if (sunAlt > 10) return "#69c0f5";
-    if (sunAlt > 0) return "#88aacc";
-    if (sunAlt > -6) return "#334466";
+  function getSkyColor(alt) {
+    if (alt > 10) return "#69c0f5";
+    if (alt > 0)  return "#88aacc";
+    if (alt > -6) return "#334466";
     return "#0a0e1f";
   }
 
   function fmt(d) {
-    return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false });
+    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
   }
 
   function render() {
-    const dt = getDateTime();
-    const sunPos = SunCalc.getPosition(dt, LAT, LNG);
-    const moonPos = SunCalc.getMoonPosition(dt, LAT, LNG);
-    const sunTimes = SunCalc.getTimes(dt, LAT, LNG);
-    const moonTimes = SunCalc.getMoonTimes(dt, LAT, LNG);
+    const dt       = getDateTime();
+    const sunPos   = SunCalc.getPosition(dt, loc.lat, loc.lng);
+    const moonPos  = SunCalc.getMoonPosition(dt, loc.lat, loc.lng);
+    const sunTimes = SunCalc.getTimes(dt, loc.lat, loc.lng);
+    const moonTimes= SunCalc.getMoonTimes(dt, loc.lat, loc.lng);
 
-    const sunAltDeg = sunPos.altitude * (180 / Math.PI);
-    const moonAltDeg = moonPos.altitude * (180 / Math.PI);
-    const sunAzDeg = sunPos.azimuth * (180 / Math.PI) + 180;
-    const moonAzDeg = moonPos.azimuth * (180 / Math.PI) + 180;
+    const sunAlt  = sunPos.altitude  * (180 / Math.PI);
+    const moonAlt = moonPos.altitude * (180 / Math.PI);
+    const sunAz   = sunPos.azimuth   * (180 / Math.PI) + 180;
+    const moonAz  = moonPos.azimuth  * (180 / Math.PI) + 180;
 
-    const bg = getSkyColor(sunAltDeg);
+    const bg = getSkyColor(sunAlt);
     document.getElementById("panelEast").style.background = bg;
     document.getElementById("panelWest").style.background = bg;
 
     const skyEl = document.getElementById("sky");
-    const skyH = skyEl.offsetHeight;
+    const skyH  = skyEl.offsetHeight;
 
-    function altToBottomPx(altDeg) {
-      return (altDeg / 90) * skyH;
-    }
-
-    function placeBody(id, altDeg, panel) {
-      const existing = document.getElementById(id);
-      if (existing) existing.remove();
+    function place(id, altDeg, panel) {
+      const ex = document.getElementById(id);
+      if (ex) ex.remove();
       if (altDeg <= 0) return;
       const div = document.createElement("div");
       div.id = id;
       div.className = "body " + (id === "sun" ? "sun-body" : "moon-body");
-      div.style.left = "50%";
-      div.style.bottom = altToBottomPx(altDeg) + "px";
+      div.style.left   = "50%";
+      div.style.bottom = (altDeg / 90) * skyH + "px";
       panel.appendChild(div);
     }
 
-    const eastPanel = document.getElementById("panelEast");
-    const westPanel = document.getElementById("panelWest");
-    placeBody("sun", sunAltDeg, (sunAzDeg < 180) ? eastPanel : westPanel);
-    placeBody("moon", moonAltDeg, (moonAzDeg < 180) ? eastPanel : westPanel);
+    const E = document.getElementById("panelEast");
+    const W = document.getElementById("panelWest");
+    place("sun",  sunAlt,  sunAz  < 180 ? E : W);
+    place("moon", moonAlt, moonAz < 180 ? E : W);
 
     const axis = document.getElementById("altAxis");
     axis.innerHTML = "";
-    [90, 75, 60, 45, 30, 15, 0].forEach(deg => {
-      const tick = document.createElement("div");
-      tick.className = "alt-tick";
-      tick.textContent = deg + "°";
-      axis.appendChild(tick);
+    [90,75,60,45,30,15,0].forEach(deg => {
+      const t = document.createElement("div");
+      t.className = "alt-tick";
+      t.textContent = deg + "°";
+      axis.appendChild(t);
     });
-
-    const sunAltLabel = sunAltDeg > 0 ? sunAltDeg.toFixed(1) + "°" : "Below";
-    const moonAltLabel = moonAltDeg > 0 ? moonAltDeg.toFixed(1) + "°" : "Below";
-    const moonrise = moonTimes.rise ? fmt(moonTimes.rise) : "--:--";
-    const moonset = moonTimes.set ? fmt(moonTimes.set) : "--:--";
 
     document.getElementById("groundBar").innerHTML = `
       <div class="ground-item"><span>Sunrise</span><strong>${fmt(sunTimes.sunrise)}</strong></div>
       <div class="ground-item"><span>Sunset</span><strong>${fmt(sunTimes.sunset)}</strong></div>
-      <div class="ground-item"><span>&#9728; Alt</span><strong>${sunAltLabel}</strong></div>
-      <div class="ground-item"><span>Moonrise</span><strong>${moonrise}</strong></div>
-      <div class="ground-item"><span>Moonset</span><strong>${moonset}</strong></div>
-      <div class="ground-item"><span>&#9790; Alt</span><strong>${moonAltLabel}</strong></div>
+      <div class="ground-item"><span>&#9728; Alt</span><strong>${sunAlt > 0 ? sunAlt.toFixed(1)+"°" : "Below"}</strong></div>
+      <div class="ground-item"><span>Moonrise</span><strong>${moonTimes.rise ? fmt(moonTimes.rise) : "--:--"}</strong></div>
+      <div class="ground-item"><span>Moonset</span><strong>${moonTimes.set ? fmt(moonTimes.set) : "--:--"}</strong></div>
+      <div class="ground-item"><span>&#9790; Alt</span><strong>${moonAlt > 0 ? moonAlt.toFixed(1)+"°" : "Below"}</strong></div>
     `;
 
     document.getElementById("dateBtn").textContent = fmtDateLabel(selDate.y, selDate.m, selDate.d);
@@ -325,28 +400,33 @@ html, body { height: 100%; overflow: hidden; background: #000; }
     document.getElementById("timeSlider").value = selMinutes;
   }
 
-  // Date picker
+  // ── Location switch → snap to local now ──
+  selEl.addEventListener("change", () => {
+    loc        = JSON.parse(selEl.value);
+    selDate    = localToday(loc.tz);
+    selMinutes = localNowMinutes(loc.tz);
+    render();
+  });
+
+  // ── Date picker ──
   const dateInput = document.getElementById("dateInput");
   document.getElementById("dateBtn").addEventListener("click", () => {
-    const iso = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}`;
-    dateInput.value = iso;
+    dateInput.value = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}`;
     dateInput.style.pointerEvents = "auto";
     dateInput.showPicker ? dateInput.showPicker() : dateInput.click();
   });
   dateInput.addEventListener("change", () => {
-    const parts = dateInput.value.split("-");
-    selDate = { y: +parts[0], m: +parts[1]-1, d: +parts[2] };
+    const [y, m, d] = dateInput.value.split("-");
+    selDate = { y: +y, m: +m - 1, d: +d };
     dateInput.style.pointerEvents = "none";
     render();
   });
 
-  // Time button toggles slider
+  // ── Time toggle + scrub ──
   document.getElementById("timeBtn").addEventListener("click", () => {
     sliderOpen = !sliderOpen;
     document.getElementById("sliderTray").classList.toggle("open", sliderOpen);
   });
-
-  // Slider scrub
   document.getElementById("timeSlider").addEventListener("input", e => {
     selMinutes = +e.target.value;
     render();
