@@ -360,15 +360,22 @@ const LOCATIONS = {
     const skyEl = document.getElementById("sky");
     const skyH  = skyEl.offsetHeight;
 
+    // Body sizes must match CSS clamp values
+    const sunR  = Math.min(Math.max(window.innerWidth * 0.08, 32), 54) / 2;
+    const moonR = Math.min(Math.max(window.innerWidth * 0.055, 22), 38) / 2;
+
     function place(id, altDeg, panel) {
       const ex = document.getElementById(id);
       if (ex) ex.remove();
-      if (altDeg <= 0) return;
+      const r = id === "sun" ? sunR : moonR;
+      // Hide when the top edge (center + r) is still below horizon
+      if (altDeg <= 0 && (altDeg / 90) * skyH + r <= 0) return;
       const div = document.createElement("div");
       div.id = id;
       div.className = "body " + (id === "sun" ? "sun-body" : "moon-body");
       div.style.left   = "50%";
-      div.style.bottom = (altDeg / 90) * skyH + "px";
+      // Subtract radius so the top edge of the circle = the altitude position
+      div.style.bottom = (altDeg / 90) * skyH - r + "px";
       panel.appendChild(div);
     }
 
