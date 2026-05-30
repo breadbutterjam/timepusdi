@@ -31,17 +31,15 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
 
 /* ── TOP BAR ── */
 .top-bar {
-  /* position: absolute; */
-  background: #000035 ;
+  background: #000035;
   top: 0; left: 0; right: 0;
-  /* height: 32px; */
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 4px 12px;
-  /* background: linear-gradient(to bottom, rgba(0,0,0,0.45), rgba(0,0,0,0.0)); */
   gap: 8px;
+  transition: background 2s ease;
 }
 .top-bar select,
 .top-bar button {
@@ -205,6 +203,49 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   font-weight: 500;
 }
 
+/* ── BLINKING COLON ── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.colon-live { animation: blink 1s step-end infinite; }
+
+/* ── PLAYBACK CONTROLS — inline in top bar ── */
+.ctrl-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.ctrl-btn:active { color: rgba(255,255,255,1); }
+.speed-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  display: none;
+}
+.speed-label.visible { display: inline; }
+
+.time-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: absolute;
+  left: 50%;
+  translate: -50%;
+  top: 4px;
+  z-index: 25;
+  background: rgba(0,0,0,0.3);
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+.hddn { display: none; }
+
 #dateInput {
   position: absolute;
   opacity: 0;
@@ -220,13 +261,15 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   <div class="top-bar">
     <div style="display: flex; align-items: center; gap: 8px;">
       <button id="dateBtn"></button>
-      <!-- <span class="sep">·</span> -->
       <button id="timeBtn"></button>
     </div>
     <select id="locationSelect"></select>
-    <!-- <span class="sep">·</span> -->
-    
+  </div>
 
+  <div class="time-controls hddn" id="timeControls">
+    <button class="ctrl-btn" id="btnPlayPause">⏸︎</button>
+    <button class="ctrl-btn" id="btnSpeed">⏩︎</button>
+    <span class="speed-label" id="speedLabel"></span>
   </div>
 
   <!-- TIME SLIDER (overlays below top bar) -->
@@ -260,24 +303,24 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
 // ─────────────────────────────────────────────────────────
 const LOCATIONS = {
   "India": [
-    { name: "Mumbai",      lat: 19.0760,  lng:  72.8777, tz: "Asia/Kolkata"       },
-    { name: "Pune",        lat: 18.5204,  lng:  73.8567, tz: "Asia/Kolkata"       },
-    { name: "Delhi",       lat: 28.6139,  lng:  77.2090, tz: "Asia/Kolkata"       },
-    { name: "Bangalore",   lat: 12.9716,  lng:  77.5946, tz: "Asia/Kolkata"       },
-    { name: "Chennai",     lat: 13.0827,  lng:  80.2707, tz: "Asia/Kolkata"       },
-    { name: "Kolkata",     lat: 22.5726,  lng:  88.3639, tz: "Asia/Kolkata"       },
+    { name: "Mumbai",      lat: 19.0760,  lng:  72.8777, tz: "Asia/Kolkata"        },
+    { name: "Pune",        lat: 18.5204,  lng:  73.8567, tz: "Asia/Kolkata"        },
+    { name: "Delhi",       lat: 28.6139,  lng:  77.2090, tz: "Asia/Kolkata"        },
+    { name: "Bangalore",   lat: 12.9716,  lng:  77.5946, tz: "Asia/Kolkata"        },
+    { name: "Chennai",     lat: 13.0827,  lng:  80.2707, tz: "Asia/Kolkata"        },
+    { name: "Kolkata",     lat: 22.5726,  lng:  88.3639, tz: "Asia/Kolkata"        },
   ],
   "Global": [
-    { name: "Dubai",       lat: 25.2048,  lng:  55.2708, tz: "Asia/Dubai"         },
-    { name: "London",      lat: 51.5074,  lng:  -0.1278, tz: "Europe/London"      },
-    { name: "Paris",       lat: 48.8566,  lng:   2.3522, tz: "Europe/Paris"       },
-    { name: "New York",    lat: 40.7128,  lng: -74.0060, tz: "America/New_York"   },
-    { name: "Los Angeles", lat: 34.0522,  lng:-118.2437, tz: "America/Los_Angeles"},
-    { name: "São Paulo",   lat:-23.5505,  lng: -46.6333, tz: "America/Sao_Paulo"  },
-    { name: "Tokyo",       lat: 35.6762,  lng: 139.6503, tz: "Asia/Tokyo"         },
-    { name: "Singapore",   lat:  1.3521,  lng: 103.8198, tz: "Asia/Singapore"     },
-    { name: "Sydney",      lat:-33.8688,  lng: 151.2093, tz: "Australia/Sydney"   },
-    { name: "Cape Town",   lat:-33.9249,  lng:  18.4241, tz: "Africa/Johannesburg"},
+    { name: "Dubai",       lat: 25.2048,  lng:  55.2708, tz: "Asia/Dubai"          },
+    { name: "London",      lat: 51.5074,  lng:  -0.1278, tz: "Europe/London"       },
+    { name: "Paris",       lat: 48.8566,  lng:   2.3522, tz: "Europe/Paris"        },
+    { name: "New York",    lat: 40.7128,  lng: -74.0060, tz: "America/New_York"    },
+    { name: "Los Angeles", lat: 34.0522,  lng:-118.2437, tz: "America/Los_Angeles" },
+    { name: "São Paulo",   lat:-23.5505,  lng: -46.6333, tz: "America/Sao_Paulo"   },
+    { name: "Tokyo",       lat: 35.6762,  lng: 139.6503, tz: "Asia/Tokyo"          },
+    { name: "Singapore",   lat:  1.3521,  lng: 103.8198, tz: "Asia/Singapore"      },
+    { name: "Sydney",      lat:-33.8688,  lng: 151.2093, tz: "Australia/Sydney"    },
+    { name: "Cape Town",   lat:-33.9249,  lng:  18.4241, tz: "Africa/Johannesburg" },
   ]
 };
 // ─────────────────────────────────────────────────────────
@@ -298,22 +341,25 @@ const LOCATIONS = {
     selEl.appendChild(og);
   });
 
-  // ── Helper: get local "now" minutes for a timezone ──
+  // ── Helpers: timezone-aware now ──
   function localNowMinutes(tz) {
     const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz,
-      hour: "numeric", minute: "numeric", hour12: false
+      timeZone: tz, hour: "numeric", minute: "numeric", hour12: false
     }).formatToParts(new Date());
-    const h = +parts.find(p => p.type === "hour").value;
-    const m = +parts.find(p => p.type === "minute").value;
-    return h * 60 + m;
+    return +parts.find(p => p.type === "hour").value * 60
+         + +parts.find(p => p.type === "minute").value;
   }
 
-  // ── Helper: get local today {y,m,d} for a timezone ──
+  function localNowSeconds(tz) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, hour: "numeric", minute: "numeric", second: "numeric", hour12: false
+    }).formatToParts(new Date());
+    return +parts.find(p => p.type === "second").value;
+  }
+
   function localToday(tz) {
     const parts = new Intl.DateTimeFormat("en-US", {
-      timeZone: tz,
-      year: "numeric", month: "numeric", day: "numeric"
+      timeZone: tz, year: "numeric", month: "numeric", day: "numeric"
     }).formatToParts(new Date());
     return {
       y: +parts.find(p => p.type === "year").value,
@@ -322,38 +368,46 @@ const LOCATIONS = {
     };
   }
 
-  let loc       = JSON.parse(selEl.value);
-  let selDate   = localToday(loc.tz);
-  let selMinutes = localNowMinutes(loc.tz);
+  let loc        = JSON.parse(selEl.value);
+  let selDate    = localToday(loc.tz);
+  // Store as fractional minutes (minutes + seconds/60) for smooth live updates
+  let selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
   let sliderOpen = false;
 
-  // Build a real UTC-correct Date from the city's local y/m/d + minutes
+  // ── Playback state ──
+  // speedIndex cycles through SPEEDS; 0 = 1x (real time)
+  const SPEEDS     = [1, 2, 5, 10];
+  const SPEED_LABELS = ["", "2x", "5x", "10x"];
+  let speedIndex   = 0;
+  let isPaused     = false;
+  let liveInterval = null;
+
+  // ── Build UTC-correct Date from city local time ──
   function getDateTime() {
-    // Format a local-time string and parse it as if it's in the city's tz
-    const hh = String(Math.floor(selMinutes / 60)).padStart(2,"0");
-    const mm = String(selMinutes % 60).padStart(2,"0");
-    const iso = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}T${hh}:${mm}:00`;
-    // Use Temporal-free approach: find the UTC offset for this tz at roughly this moment
-    // by formatting a known UTC time and comparing
-    const approx = new Date(`${iso}Z`); // treat as UTC first to get ballpark
+    const totalSecs = selMinutes * 60;
+    const hh = String(Math.floor(totalSecs / 3600)).padStart(2, "0");
+    const mm = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, "0");
+    const ss = String(Math.floor(totalSecs % 60)).padStart(2, "0");
+    const iso = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}T${hh}:${mm}:${ss}`;
+    const approx = new Date(`${iso}Z`);
     const localStr = new Intl.DateTimeFormat("en-US", {
       timeZone: loc.tz,
       year:"numeric", month:"2-digit", day:"2-digit",
       hour:"2-digit", minute:"2-digit", second:"2-digit", hour12: false
     }).format(approx);
-    // Parse what the tz thinks approx UTC is
     const [datePart, timePart] = localStr.split(", ");
     const [mo, dy, yr] = datePart.split("/");
     const [tH, tM, tS] = timePart.split(":");
-    const tzDate = new Date(Date.UTC(+yr, +mo-1, +dy, +tH, +tM, +tS));
-    // Offset = approx - tzDate (difference between UTC and what tz rendered)
+    const tzDate  = new Date(Date.UTC(+yr, +mo-1, +dy, +tH, +tM, +tS));
     const offsetMs = approx - tzDate;
-    // Final correct UTC moment
     return new Date(approx.getTime() + offsetMs);
   }
 
+  // Format whole-minute display (no seconds shown to user)
   function fmtTime(m) {
-    return String(Math.floor(m / 60)).padStart(2,"0") + ":" + String(m % 60).padStart(2,"0");
+    const wholeMin = Math.floor(m);
+    return String(Math.floor(wholeMin / 60)).padStart(2,"0")
+         + ":" + String(wholeMin % 60).padStart(2,"0");
   }
 
   function fmtDateLabel(y, m, d) {
@@ -361,41 +415,138 @@ const LOCATIONS = {
     return String(d).padStart(2,"0") + "-" + months[m] + "-" + y;
   }
 
-  function getSkyColor(alt) {
-    if (alt > 10) return "#69c0f5";
-    if (alt > 0)  return "#88aacc";
-    if (alt > -6) return "#334466";
-    return "#0a0e1f";
+  // ── Sky visuals ──
+
+  // Lerp between two hex colours by t (0–1)
+  function lerpColor(a, b, t) {
+    const ah = a.replace('#',''), bh = b.replace('#','');
+    const ar = parseInt(ah.slice(0,2),16), ag = parseInt(ah.slice(2,4),16), ab = parseInt(ah.slice(4,6),16);
+    const br = parseInt(bh.slice(0,2),16), bg = parseInt(bh.slice(2,4),16), bb = parseInt(bh.slice(4,6),16);
+    const rr = Math.round(ar + (br-ar)*t), rg = Math.round(ag + (bg-ag)*t), rb = Math.round(ab + (bb-ab)*t);
+    return `rgb(${rr},${rg},${rb})`;
   }
 
-  // Format a Date in the currently selected city's local timezone
+  // Sky gradient stops [zenith, horizon] for a given sun altitude
+  function skyGradient(sunAlt) {
+    // Key states: deep night, astro twilight, civil twilight, golden hour, full day
+    // Each: [zenithColor, horizonColor]
+    const states = [
+      { alt: -18, zenith: '#03050f', horizon: '#080d1a' },  // deep night
+      { alt:  -6, zenith: '#0a0e1f', horizon: '#1a2040' },  // astro twilight
+      { alt:   0, zenith: '#1a2a5e', horizon: '#c87020' },  // horizon glow at sunrise/set
+      { alt:   6, zenith: '#2255a0', horizon: '#e8a040' },  // golden hour
+      { alt:  15, zenith: '#3a7fc1', horizon: '#87ceeb' },  // post-golden
+      { alt:  90, zenith: '#1a6acd', horizon: '#69c0f5' },  // full day
+    ];
+    // Find bracket
+    let lo = states[0], hi = states[states.length-1];
+    for (let i = 0; i < states.length - 1; i++) {
+      if (sunAlt >= states[i].alt && sunAlt <= states[i+1].alt) {
+        lo = states[i]; hi = states[i+1]; break;
+      }
+    }
+    const t = Math.max(0, Math.min(1, (sunAlt - lo.alt) / (hi.alt - lo.alt)));
+    return {
+      zenith:  lerpColor(lo.zenith,  hi.zenith,  t),
+      horizon: lerpColor(lo.horizon, hi.horizon, t),
+    };
+  }
+
+  // Apply gradient + optional horizon glow to a panel
+  function applyPanelSky(panel, sunAlt, hasSun) {
+    const { zenith, horizon } = skyGradient(sunAlt);
+    let gradient = `linear-gradient(to bottom, ${zenith} 0%, ${horizon} 100%)`;
+
+    // Horizon glow: only in panel containing the sun, during golden hour / twilight
+    if (hasSun && sunAlt > -8 && sunAlt < 15) {
+      const glowIntensity = 1 - Math.abs(sunAlt - 3) / 12; // peaks near 3° alt
+      const glow = Math.max(0, Math.min(1, glowIntensity));
+      const glowColor = sunAlt > 0
+        ? `rgba(255, 160, 30, ${glow * 0.55})`
+        : `rgba(200, 100, 20, ${glow * 0.4})`;
+      gradient = `radial-gradient(ellipse 80% 30% at 50% 100%, ${glowColor} 0%, transparent 70%),
+                  linear-gradient(to bottom, ${zenith} 0%, ${horizon} 100%)`;
+    }
+    panel.style.background = gradient;
+  }
+
+  // Generate or update stars layer on a panel
+  function updateStars(panel, sunAlt) {
+    let starLayer = panel.querySelector('.star-layer');
+    const starOpacity = Math.max(0, Math.min(1, (-sunAlt - 4) / 10)); // fade in below -4°
+
+    if (starOpacity <= 0) {
+      if (starLayer) starLayer.style.opacity = 0;
+      return;
+    }
+    if (!starLayer) {
+      starLayer = document.createElement('div');
+      starLayer.className = 'star-layer';
+      starLayer.style.cssText = `
+        position:absolute; inset:0; z-index:1; pointer-events:none;
+        transition: opacity 2s ease;
+      `;
+      // Seed deterministic stars using panel id as seed variation
+      const seed = panel.id === 'panelEast' ? 0 : 1000;
+      const count = 28;
+      for (let i = 0; i < count; i++) {
+        const s = document.createElement('div');
+        // Simple deterministic pseudo-random using index
+        const px = ((i * 137 + seed) % 97) / 97 * 100;
+        const py = ((i * 97  + seed) % 83) / 83 * 72; // keep stars in top 72% (sky, not ground)
+        const sz = i % 5 === 0 ? 2 : 1;
+        const op = 0.4 + (i % 3) * 0.2;
+        s.style.cssText = `
+          position:absolute; border-radius:50%; background:#fff;
+          width:${sz}px; height:${sz}px;
+          left:${px}%; top:${py}%;
+          opacity:${op};
+        `;
+        starLayer.appendChild(s);
+      }
+      panel.appendChild(starLayer);
+    }
+    starLayer.style.opacity = starOpacity;
+  }
+
   function fmt(d) {
     return new Intl.DateTimeFormat("en-US", {
-      timeZone: loc.tz,
-      hour: "2-digit", minute: "2-digit", hour12: false
+      timeZone: loc.tz, hour: "2-digit", minute: "2-digit", hour12: false
     }).format(d);
   }
 
+  function toggleTimeControls() {
+    const tc = document.getElementById("timeControls");
+    tc.classList.toggle("hddn");
+  }
+
+  // ── Render ──
   function render() {
-    const dt       = getDateTime();
-    const sunPos   = SunCalc.getPosition(dt, loc.lat, loc.lng);
-    const moonPos  = SunCalc.getMoonPosition(dt, loc.lat, loc.lng);
-    const sunTimes = SunCalc.getTimes(dt, loc.lat, loc.lng);
-    const moonTimes= SunCalc.getMoonTimes(dt, loc.lat, loc.lng);
+    const dt        = getDateTime();
+    const sunPos    = SunCalc.getPosition(dt, loc.lat, loc.lng);
+    const moonPos   = SunCalc.getMoonPosition(dt, loc.lat, loc.lng);
+    const sunTimes  = SunCalc.getTimes(dt, loc.lat, loc.lng);
+    const moonTimes = SunCalc.getMoonTimes(dt, loc.lat, loc.lng);
 
     const sunAlt  = sunPos.altitude  * (180 / Math.PI);
     const moonAlt = moonPos.altitude * (180 / Math.PI);
     const sunAz   = sunPos.azimuth   * (180 / Math.PI) + 180;
     const moonAz  = moonPos.azimuth  * (180 / Math.PI) + 180;
 
-    const bg = getSkyColor(sunAlt);
-    document.getElementById("panelEast").style.background = bg;
-    document.getElementById("panelWest").style.background = bg;
+    const sunInEast = sunAz < 180;
+    const E = document.getElementById("panelEast");
+    const W = document.getElementById("panelWest");
+
+    applyPanelSky(E, sunAlt, sunInEast);
+    applyPanelSky(W, sunAlt, !sunInEast);
+    updateStars(E, sunAlt);
+    updateStars(W, sunAlt);
+
+    // Top bar matches sky zenith colour
+    document.querySelector(".top-bar").style.background = skyGradient(sunAlt).zenith;
 
     const skyEl = document.getElementById("sky");
     const skyH  = skyEl.offsetHeight;
-
-    // Body sizes must match CSS clamp values
     const sunR  = Math.min(Math.max(window.innerWidth * 0.08, 32), 54) / 2;
     const moonR = Math.min(Math.max(window.innerWidth * 0.055, 22), 38) / 2;
 
@@ -403,22 +554,22 @@ const LOCATIONS = {
       const ex = document.getElementById(id);
       if (ex) ex.remove();
       const r = id === "sun" ? sunR : moonR;
-      // Hide when the top edge (center + r) is still below horizon
       if (altDeg <= 0 && (altDeg / 90) * skyH + r <= 0) return;
       const div = document.createElement("div");
       div.id = id;
       div.className = "body " + (id === "sun" ? "sun-body" : "moon-body");
       div.style.left   = "50%";
-      // Subtract radius so the top edge of the circle = the altitude position
       div.style.bottom = (altDeg / 90) * skyH - r + "px";
+      // Make sun/moon tappable to show controls
+      div.style.cursor = "pointer";
+      div.addEventListener("click", () => { toggleTimeControls(); });
       panel.appendChild(div);
     }
 
-    const E = document.getElementById("panelEast");
-    const W = document.getElementById("panelWest");
-    place("sun",  sunAlt,  sunAz  < 180 ? E : W);
+    place("sun",  sunAlt,  sunInEast ? E : W);
     place("moon", moonAlt, moonAz < 180 ? E : W);
 
+    // Position controls overlay near whichever body is visible, prefer sun
     const axis = document.getElementById("altAxis");
     axis.innerHTML = "";
     [90,75,60,45,30,15,0].forEach(deg => {
@@ -428,15 +579,12 @@ const LOCATIONS = {
       axis.appendChild(t);
     });
 
-    // Helper: extract city-local minutes from a Date for the jump
     function dateToLocalMinutes(d) {
       const parts = new Intl.DateTimeFormat("en-US", {
-        timeZone: loc.tz,
-        hour: "numeric", minute: "numeric", hour12: false
+        timeZone: loc.tz, hour: "numeric", minute: "numeric", hour12: false
       }).formatToParts(d);
-      const h = +parts.find(p => p.type === "hour").value;
-      const m = +parts.find(p => p.type === "minute").value;
-      return h * 60 + m;
+      return +parts.find(p => p.type === "hour").value * 60
+           + +parts.find(p => p.type === "minute").value;
     }
 
     function jumpItem(label, time) {
@@ -453,28 +601,86 @@ const LOCATIONS = {
       jumpItem("Moonset",  moonTimes.set  || null) +
       `<div class="ground-item"><span>&#9790; Alt</span><strong>${moonAlt > 0 ? moonAlt.toFixed(1)+"°" : "Below"}</strong></div>`;
 
-    // Wire up jump clicks
     document.querySelectorAll(".ground-item.clickable").forEach(el => {
       el.addEventListener("click", () => {
         selMinutes = +el.dataset.jump;
+        scrubbed   = true;
+        isPaused   = true;
+        updatePlayPauseBtn();
         render();
       });
     });
 
+    // Update time display with blinking colon in live mode
+    const h = String(Math.floor(Math.floor(selMinutes) / 60)).padStart(2,"0");
+    const m = String(Math.floor(selMinutes) % 60).padStart(2,"0");
+    const colonClass = (!isPaused) ? "colon-live" : "";
+    document.getElementById("timeBtn").innerHTML =
+      `${h}<span class="${colonClass}">:</span>${m}`;
     document.getElementById("dateBtn").textContent = fmtDateLabel(selDate.y, selDate.m, selDate.d);
-    document.getElementById("timeBtn").textContent = fmtTime(selMinutes);
-    document.getElementById("timeSlider").value = selMinutes;
+    document.getElementById("timeSlider").value = Math.floor(selMinutes);
   }
 
-  // ── Location switch → snap to local now ──
-  selEl.addEventListener("change", () => {
-    loc        = JSON.parse(selEl.value);
-    selDate    = localToday(loc.tz);
-    selMinutes = localNowMinutes(loc.tz);
+  // ── Play / pause ──
+  function updatePlayPauseBtn() {
+    document.getElementById("btnPlayPause").textContent = isPaused ? "▶" : "⏸︎";
+  }
+
+  document.getElementById("btnPlayPause").addEventListener("click", () => {
+    isPaused = !isPaused;
+    if (!isPaused && speedIndex === 0 && !scrubbed) {
+      // Not scrubbed — snap back to real local time
+      selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
+      selDate    = localToday(loc.tz);
+    }
+    // If scrubbed, just unpause from wherever selMinutes is
+    updatePlayPauseBtn();
     render();
   });
 
-  // ── Date picker ──
+  // ── Speed cycling ──
+  document.getElementById("btnSpeed").addEventListener("click", () => {
+    speedIndex = (speedIndex + 1) % SPEEDS.length;
+    const lbl = document.getElementById("speedLabel");
+    lbl.textContent = SPEED_LABELS[speedIndex];
+    lbl.classList.toggle("visible", speedIndex > 0);
+  });
+
+  let scrubbed = false; // true when user has manually moved away from real time
+
+  // ── Live tick — fires every real second ──
+  function startLive() {
+    if (liveInterval) clearInterval(liveInterval);
+    liveInterval = setInterval(() => {
+      if (isPaused) return;
+      if (speedIndex === 0 && !scrubbed) {
+        // 1x real time — read wall clock directly, no drift
+        selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
+        selDate    = localToday(loc.tz);
+      } else {
+        // Accelerated or scrubbed — advance by SPEEDS[speedIndex] minutes per second
+        selMinutes += SPEEDS[speedIndex];
+        if (selMinutes >= 1440) {
+          selMinutes -= 1440;
+          const d = new Date(selDate.y, selDate.m, selDate.d + 1);
+          selDate = { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() };
+        }
+      }
+      render();
+    }, 1000);
+  }
+
+  // ── Wire up existing controls ──
+  selEl.addEventListener("change", () => {
+    loc        = JSON.parse(selEl.value);
+    selDate    = localToday(loc.tz);
+    selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
+    isPaused   = false;
+    scrubbed   = false;
+    updatePlayPauseBtn();
+    render();
+  });
+
   const dateInput = document.getElementById("dateInput");
   document.getElementById("dateBtn").addEventListener("click", () => {
     dateInput.value = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}`;
@@ -483,24 +689,30 @@ const LOCATIONS = {
   });
   dateInput.addEventListener("change", () => {
     const [y, m, d] = dateInput.value.split("-");
-    selDate = { y: +y, m: +m - 1, d: +d };
+    selDate  = { y: +y, m: +m - 1, d: +d };
+    scrubbed = true;
+    isPaused = true;
+    updatePlayPauseBtn();
     dateInput.style.pointerEvents = "none";
     render();
   });
 
-  // ── Time toggle + scrub ──
   document.getElementById("timeBtn").addEventListener("click", () => {
     sliderOpen = !sliderOpen;
     document.getElementById("sliderTray").classList.toggle("open", sliderOpen);
   });
   document.getElementById("timeSlider").addEventListener("input", e => {
     selMinutes = +e.target.value;
+    scrubbed   = true;
+    isPaused   = true;
+    updatePlayPauseBtn();
     render();
   });
 
   function waitAndRender() {
     if (typeof SunCalc === "undefined") { setTimeout(waitAndRender, 50); return; }
     render();
+    startLive();
   }
   waitAndRender();
 })();
