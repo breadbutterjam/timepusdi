@@ -317,10 +317,29 @@ const LOCATIONS = {
   let selMinutes = localNowMinutes(loc.tz);
   let sliderOpen = false;
 
+  // Build a real UTC-correct Date from the city's local y/m/d + minutes
   function getDateTime() {
-    const dt = new Date(selDate.y, selDate.m, selDate.d);
-    dt.setHours(Math.floor(selMinutes / 60), selMinutes % 60, 0, 0);
-    return dt;
+    // Format a local-time string and parse it as if it's in the city's tz
+    const hh = String(Math.floor(selMinutes / 60)).padStart(2,"0");
+    const mm = String(selMinutes % 60).padStart(2,"0");
+    const iso = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}T${hh}:${mm}:00`;
+    // Use Temporal-free approach: find the UTC offset for this tz at roughly this moment
+    // by formatting a known UTC time and comparing
+    const approx = new Date(`${iso}Z`); // treat as UTC first to get ballpark
+    const localStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: loc.tz,
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", second:"2-digit", hour12: false
+    }).format(approx);
+    // Parse what the tz thinks approx UTC is
+    const [datePart, timePart] = localStr.split(", ");
+    const [mo, dy, yr] = datePart.split("/");
+    const [tH, tM, tS] = timePart.split(":");
+    const tzDate = new Date(Date.UTC(+yr, +mo-1, +dy, +tH, +tM, +tS));
+    // Offset = approx - tzDate (difference between UTC and what tz rendered)
+    const offsetMs = approx - tzDate;
+    // Final correct UTC moment
+    return new Date(approx.getTime() + offsetMs);
   }
 
   function fmtTime(m) {
@@ -339,8 +358,12 @@ const LOCATIONS = {
     return "#0a0e1f";
   }
 
+  // Format a Date in the currently selected city's local timezone
   function fmt(d) {
-    return d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: loc.tz,
+      hour: "2-digit", minute: "2-digit", hour12: false
+    }).format(d);
   }
 
   function render() {
