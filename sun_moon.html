@@ -68,7 +68,7 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
 /* ── TIME SLIDER TRAY — overlays just below top bar ── */
 .slider-tray {
   position: absolute;
-  top: 24px;
+  top: 20px;
   left: 0; right: 0;
   z-index: 19;
   height: 0;
@@ -120,7 +120,6 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   z-index: 2;
 }
 .divider {
-  opacity: 0.35;
   position: absolute;
   top: 0; bottom: 0;
   left: 50%;
@@ -149,17 +148,18 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   position: absolute;
   border-radius: 50%;
   z-index: 5;
-  transform: translate(-50%, 50%);
+  transform: translateX(-50%);
 }
 .sun-body {
   width: clamp(32px, 8vw, 54px);
   height: clamp(32px, 8vw, 54px);
-  background: #ccff00;
+  /* color, glow, size set dynamically in JS */
 }
 .moon-body {
   width: clamp(22px, 5.5vw, 38px);
   height: clamp(22px, 5.5vw, 38px);
-  background: #e8e8d0;
+  background: radial-gradient(circle at 38% 38%, #f0f0e8 0%, #d0d0c0 55%, #a8a89a 100%);
+  box-shadow: 0 0 6px 2px rgba(200,210,220,0.18);
 }
 
 /* ── HORIZON + GROUND ── */
@@ -516,6 +516,96 @@ const LOCATIONS = {
     starLayer.style.opacity = starOpacity;
   }
 
+  // ── Sun appearance by altitude ──
+
+  // Sun colour: white-yellow at high alt → amber → deep orange at horizon
+  function sunColor(alt) {
+    // Above 15°: bright yellow-white; 15→0°: shift to deep orange
+    if (alt >= 15) return { core: '#fff5c0', mid: '#ffe050', edge: '#ffc200' };
+    const t = Math.max(0, alt / 15); // 1 at 15°, 0 at horizon
+    const core = lerpColor('#ff6a00', '#fff5c0', t);
+    const mid  = lerpColor('#cc3300', '#ffe050', t);
+    const edge = lerpColor('#8b1a00', '#ffc200', t);
+    return { core, mid, edge };
+  }
+
+  // Sun glow: tight pale halo at high alt → wide fiery bloom near horizon
+  function sunGlow(alt, r) {
+    if (alt >= 20) {
+      // High sun — tight pale halo
+      return `0 0 ${r * 0.6}px ${r * 0.2}px rgba(255,240,150,0.35)`;
+    }
+    if (alt >= 0) {
+      const t = alt / 20; // 1 at 20°, 0 at horizon
+      const spread = r * (1.5 - t * 1.2);   // wider near horizon
+      const blur   = r * (2.5 - t * 1.8);
+      const ra = Math.round(255);
+      const ga = Math.round(lerpColor('#ff4400','#fff099', t).match(/\d+/g)[1]);
+      const ba = Math.round(20 + t * 80);
+      const alpha = 0.25 + (1 - t) * 0.45;
+      return `0 0 ${blur}px ${spread}px rgba(${ra},${ga},${ba},${alpha})`;
+    }
+    return 'none';
+  }
+
+  // Sun size scale: slightly larger near horizon (moon illusion)
+  function sunScale(alt) {
+    if (alt >= 15) return 1;
+    const t = Math.max(0, alt / 15);
+    return 1 + (1 - t) * 0.22; // up to 22% larger at horizon
+  }
+
+  // Apply all sun styles to the div
+  function styleSun(div, alt, r) {
+    const { core, mid, edge } = sunColor(alt);
+    const scale = sunScale(alt);
+    div.style.transform = `translateX(-50%) scale(${scale})`;
+    div.style.transformOrigin = 'bottom center';
+
+    if (alt <= 5) {
+      // Flat disc — blend from gradient to solid between 5° and 2°
+      const t = Math.max(0, Math.min(1, (5 - alt) / 3)); // 0 at 5°, 1 at 2° and below
+      if (t >= 1) {
+        // Fully flat — just the solid edge colour (deep red/orange)
+        div.style.background = edge;
+        div.style.boxShadow  = sunGlow(alt, r);
+      } else {
+        // Crossfade: blend gradient opacity out, solid colour in
+        div.style.background =
+          `radial-gradient(circle at 50% 50%,
+            ${core} 0%,
+            ${mid}  ${45 - t * 45}%,
+            ${edge} ${78 - t * 28}%,
+            ${edge} 100%)`;
+        div.style.boxShadow = sunGlow(alt, r);
+      }
+    } else {
+      // Full gradient sphere
+      div.style.background =
+        `radial-gradient(circle at 50% 50%, ${core} 0%, ${mid} 45%, ${edge} 78%, rgba(0,0,0,0) 100%)`;
+      div.style.boxShadow = sunGlow(alt, r);
+    }
+  }
+
+  // ── Ground illumination during golden hour ──
+  function updateGroundIllumination(sunAlt) {
+    const groundBar = document.getElementById('groundBar');
+    const horizonBar = document.querySelector('.horizon-bar');
+    if (sunAlt > -4 && sunAlt < 18) {
+      // t=1 at alt=4°, fades to 0 at -4° and 18°
+      const t = Math.max(0, 1 - Math.abs(sunAlt - 4) / 12);
+      const warmAlpha = t * 0.45;
+      const horiAlpha = t * 0.7;
+      groundBar.style.background =
+        `linear-gradient(to bottom, rgba(200,90,10,${warmAlpha}) 0%, transparent 35%), #1a5c0a`;
+      horizonBar.style.background =
+        `rgba(220,120,20,${horiAlpha})`;
+    } else {
+      groundBar.style.background = '#1a5c0a';
+      horizonBar.style.background = 'rgba(255,255,255,0.12)';
+    }
+  }
+
   function fmt(d) {
     return new Intl.DateTimeFormat("en-US", {
       timeZone: loc.tz, hour: "2-digit", minute: "2-digit", hour12: false
@@ -527,56 +617,38 @@ const LOCATIONS = {
     tc.classList.toggle("hddn");
   }
 
-  // ── Render ──
-  function render() {
+  // ── Cache DOM refs — looked up once, reused every frame ──
+  const E          = document.getElementById("panelEast");
+  const W          = document.getElementById("panelWest");
+  const topBar     = document.querySelector(".top-bar");
+  const groundEl   = document.getElementById("groundBar");
+  const horizEl    = document.querySelector(".horizon-bar");
+  const timeBtnEl  = document.getElementById("timeBtn");
+  const dateBtnEl  = document.getElementById("dateBtn");
+  const sliderEl   = document.getElementById("timeSlider");
+
+  // ── Create persistent sun/moon elements once, reposition each frame ──
+  function createBody(id, className, panel) {
+    const div = document.createElement("div");
+    div.id = id;
+    div.className = "body " + className;
+    div.style.left    = "50%";
+    div.style.cursor  = "pointer";
+    div.style.display = "none";
+    div.addEventListener("click", () => toggleTimeControls());
+    panel.appendChild(div);
+    return div;
+  }
+  const sunEl  = createBody("sun",  "sun-body",  E);
+  const moonEl = createBody("moon", "moon-body", E);
+
+  // ── STATIC render — DOM rebuild, only called on location/date change ──
+  function renderStatic() {
     const dt        = getDateTime();
-    const sunPos    = SunCalc.getPosition(dt, loc.lat, loc.lng);
-    const moonPos   = SunCalc.getMoonPosition(dt, loc.lat, loc.lng);
     const sunTimes  = SunCalc.getTimes(dt, loc.lat, loc.lng);
     const moonTimes = SunCalc.getMoonTimes(dt, loc.lat, loc.lng);
 
-    const sunAlt  = sunPos.altitude  * (180 / Math.PI);
-    const moonAlt = moonPos.altitude * (180 / Math.PI);
-    const sunAz   = sunPos.azimuth   * (180 / Math.PI) + 180;
-    const moonAz  = moonPos.azimuth  * (180 / Math.PI) + 180;
-
-    const sunInEast = sunAz < 180;
-    const E = document.getElementById("panelEast");
-    const W = document.getElementById("panelWest");
-
-    applyPanelSky(E, sunAlt, sunInEast);
-    applyPanelSky(W, sunAlt, !sunInEast);
-    updateStars(E, sunAlt);
-    updateStars(W, sunAlt);
-
-    // Top bar matches sky zenith colour
-    document.querySelector(".top-bar").style.background = skyGradient(sunAlt).zenith;
-
-    const skyEl = document.getElementById("sky");
-    const skyH  = skyEl.offsetHeight;
-    const sunR  = Math.min(Math.max(window.innerWidth * 0.08, 32), 54) / 2;
-    const moonR = Math.min(Math.max(window.innerWidth * 0.055, 22), 38) / 2;
-
-    function place(id, altDeg, panel) {
-      const ex = document.getElementById(id);
-      if (ex) ex.remove();
-      const r = id === "sun" ? sunR : moonR;
-      if (altDeg <= 0 && (altDeg / 90) * skyH + r <= 0) return;
-      const div = document.createElement("div");
-      div.id = id;
-      div.className = "body " + (id === "sun" ? "sun-body" : "moon-body");
-      div.style.left   = "50%";
-      div.style.bottom = (altDeg / 90) * skyH - r + "px";
-      // Make sun/moon tappable to show controls
-      div.style.cursor = "pointer";
-      div.addEventListener("click", () => { toggleTimeControls(); });
-      panel.appendChild(div);
-    }
-
-    place("sun",  sunAlt,  sunInEast ? E : W);
-    place("moon", moonAlt, moonAz < 180 ? E : W);
-
-    // Position controls overlay near whichever body is visible, prefer sun
+    // Altitude axis
     const axis = document.getElementById("altAxis");
     axis.innerHTML = "";
     [90,75,60,45,30,15,0].forEach(deg => {
@@ -600,32 +672,82 @@ const LOCATIONS = {
       return `<div class="ground-item clickable" data-jump="${mins}"><span>${label}</span><strong>${fmt(time)}</strong></div>`;
     }
 
-    document.getElementById("groundBar").innerHTML =
+    groundEl.innerHTML =
       jumpItem("Sunrise", sunTimes.sunrise) +
       jumpItem("Sunset",  sunTimes.sunset) +
-      `<div class="ground-item"><span>&#9728; Alt</span><strong>${sunAlt > 0 ? sunAlt.toFixed(1)+"°" : "Below"}</strong></div>` +
+      `<div class="ground-item" id="sunAltLabel"><span>&#9728; Alt</span><strong>--</strong></div>` +
       jumpItem("Moonrise", moonTimes.rise || null) +
       jumpItem("Moonset",  moonTimes.set  || null) +
-      `<div class="ground-item"><span>&#9790; Alt</span><strong>${moonAlt > 0 ? moonAlt.toFixed(1)+"°" : "Below"}</strong></div>`;
+      `<div class="ground-item" id="moonAltLabel"><span>&#9790; Alt</span><strong>--</strong></div>`;
 
-    document.querySelectorAll(".ground-item.clickable").forEach(el => {
+    groundEl.querySelectorAll(".ground-item.clickable").forEach(el => {
       el.addEventListener("click", () => {
         selMinutes = +el.dataset.jump;
         scrubbed   = true;
         isPaused   = true;
         updatePlayPauseBtn();
-        render();
+        renderFrame();
       });
     });
+  }
 
-    // Update time display with blinking colon in live mode
+  // ── FRAME render — zero DOM creation, runs every tick ──
+  function renderFrame() {
+    const dt      = getDateTime();
+    const sunPos  = SunCalc.getPosition(dt, loc.lat, loc.lng);
+    const moonPos = SunCalc.getMoonPosition(dt, loc.lat, loc.lng);
+
+    const sunAlt  = sunPos.altitude  * (180 / Math.PI);
+    const moonAlt = moonPos.altitude * (180 / Math.PI);
+    const sunAz   = sunPos.azimuth   * (180 / Math.PI) + 180;
+    const moonAz  = moonPos.azimuth  * (180 / Math.PI) + 180;
+
+    // Sky & environment
+    const sunInEast = sunAz < 180;
+    applyPanelSky(E, sunAlt, sunInEast);
+    applyPanelSky(W, sunAlt, !sunInEast);
+    updateStars(E, sunAlt);
+    updateStars(W, sunAlt);
+    topBar.style.background = skyGradient(sunAlt).zenith;
+    updateGroundIllumination(sunAlt);
+
+    // Body positioning
+    const skyH = document.getElementById("sky").offsetHeight;
+    const sunR  = Math.min(Math.max(window.innerWidth * 0.08,  32), 54) / 2;
+    const moonR = Math.min(Math.max(window.innerWidth * 0.055, 22), 38) / 2;
+
+    function positionBody(el, altDeg, r, targetPanel) {
+      if (el.parentElement !== targetPanel) targetPanel.appendChild(el);
+      const bottomPx = (altDeg / 90) * skyH - r;
+      // Keep in DOM until 6px past the top edge clears the horizon — overflow:hidden does the visual clipping
+      const visible = bottomPx + 2 * r + 6 > 0;
+      el.style.display = visible ? "block" : "none";
+      if (visible) el.style.bottom = bottomPx + "px";
+    }
+
+    positionBody(sunEl,  sunAlt,  sunR,  sunInEast    ? E : W);
+    positionBody(moonEl, moonAlt, moonR, moonAz < 180 ? E : W);
+    if (sunEl.style.display !== "none") styleSun(sunEl, sunAlt, sunR);
+
+    // Alt labels — update text only
+    const sLabel = document.getElementById("sunAltLabel");
+    const mLabel = document.getElementById("moonAltLabel");
+    if (sLabel) sLabel.querySelector("strong").textContent = sunAlt  > 0 ? sunAlt.toFixed(1)+"°"  : "Below";
+    if (mLabel) mLabel.querySelector("strong").textContent = moonAlt > 0 ? moonAlt.toFixed(1)+"°" : "Below";
+
+    // Top bar time + date
     const h = String(Math.floor(Math.floor(selMinutes) / 60)).padStart(2,"0");
     const m = String(Math.floor(selMinutes) % 60).padStart(2,"0");
-    const colonClass = (!isPaused) ? "colon-live" : "";
-    document.getElementById("timeBtn").innerHTML =
-      `${h}<span class="${colonClass}">:</span>${m}`;
-    document.getElementById("dateBtn").textContent = fmtDateLabel(selDate.y, selDate.m, selDate.d);
-    document.getElementById("timeSlider").value = Math.floor(selMinutes);
+    const colonClass = !isPaused ? "colon-live" : "";
+    timeBtnEl.innerHTML  = `${h}<span class="${colonClass}">:</span>${m}`;
+    dateBtnEl.textContent = fmtDateLabel(selDate.y, selDate.m, selDate.d);
+    sliderEl.value = Math.floor(selMinutes);
+  }
+
+  // ── render() = static rebuild + one frame ──
+  function render() {
+    renderStatic();
+    renderFrame();
   }
 
   // ── Play / pause ──
@@ -640,20 +762,17 @@ const LOCATIONS = {
       // playPauseBtn.style.fontSize = "";
       playPauseBtn.classList.remove("bigerIcon");
     }
-
   }
 
   document.getElementById("btnPlayPause").addEventListener("click", () => {
     isPaused = !isPaused;
-    
     if (!isPaused && speedIndex === 0 && !scrubbed) {
       // Not scrubbed — snap back to real local time
       selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
       selDate    = localToday(loc.tz);
     }
-    // If scrubbed, just unpause from wherever selMinutes is
     updatePlayPauseBtn();
-    render();
+    renderFrame();
   });
 
   // ── Speed cycling ──
@@ -664,9 +783,11 @@ const LOCATIONS = {
     lbl.classList.toggle("visible", speedIndex > 0);
   });
 
+  const TICK_MS = 50; // render interval in ms (~20fps)
+
   let scrubbed = false; // true when user has manually moved away from real time
 
-  // ── Live tick — fires every real second ──
+  // ── Live tick — fires every TICK_MS ──
   function startLive() {
     if (liveInterval) clearInterval(liveInterval);
     liveInterval = setInterval(() => {
@@ -676,16 +797,16 @@ const LOCATIONS = {
         selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
         selDate    = localToday(loc.tz);
       } else {
-        // Accelerated or scrubbed — advance by SPEEDS[speedIndex] minutes per second
-        selMinutes += SPEEDS[speedIndex];
+        // Accelerated: advance proportional to tick size
+        selMinutes += SPEEDS[speedIndex] * TICK_MS / 1000;
         if (selMinutes >= 1440) {
           selMinutes -= 1440;
           const d = new Date(selDate.y, selDate.m, selDate.d + 1);
           selDate = { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() };
         }
       }
-      render();
-    }, 1000);
+      renderFrame(); // frame only — no DOM rebuild
+    }, TICK_MS);
   }
 
   // ── Wire up existing controls ──
@@ -696,7 +817,7 @@ const LOCATIONS = {
     isPaused   = false;
     scrubbed   = false;
     updatePlayPauseBtn();
-    render();
+    render(); // full rebuild on city change
   });
 
   const dateInput = document.getElementById("dateInput");
@@ -712,7 +833,7 @@ const LOCATIONS = {
     isPaused = true;
     updatePlayPauseBtn();
     dateInput.style.pointerEvents = "none";
-    render();
+    render(); // full rebuild — date changed, rise/set times need recalculating
   });
 
   document.getElementById("timeBtn").addEventListener("click", () => {
@@ -724,7 +845,7 @@ const LOCATIONS = {
     scrubbed   = true;
     isPaused   = true;
     updatePlayPauseBtn();
-    render();
+    renderFrame(); // position update only — no static rebuild
   });
 
   function waitAndRender() {
