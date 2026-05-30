@@ -182,6 +182,16 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   color: rgba(255,255,255,0.85);
   line-height: 1.3;
 }
+
+.ground-item.clickable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ground-item.clickable:active strong,
+.ground-item.clickable:hover strong {
+  color: #ccff00;
+}
+
 .ground-item span {
   display: block;
   font-size: 10px;
@@ -418,14 +428,38 @@ const LOCATIONS = {
       axis.appendChild(t);
     });
 
-    document.getElementById("groundBar").innerHTML = `
-      <div class="ground-item"><span>Sunrise</span><strong>${fmt(sunTimes.sunrise)}</strong></div>
-      <div class="ground-item"><span>Sunset</span><strong>${fmt(sunTimes.sunset)}</strong></div>
-      <div class="ground-item"><span>&#9728; Alt</span><strong>${sunAlt > 0 ? sunAlt.toFixed(1)+"°" : "Below"}</strong></div>
-      <div class="ground-item"><span>Moonrise</span><strong>${moonTimes.rise ? fmt(moonTimes.rise) : "--:--"}</strong></div>
-      <div class="ground-item"><span>Moonset</span><strong>${moonTimes.set ? fmt(moonTimes.set) : "--:--"}</strong></div>
-      <div class="ground-item"><span>&#9790; Alt</span><strong>${moonAlt > 0 ? moonAlt.toFixed(1)+"°" : "Below"}</strong></div>
-    `;
+    // Helper: extract city-local minutes from a Date for the jump
+    function dateToLocalMinutes(d) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: loc.tz,
+        hour: "numeric", minute: "numeric", hour12: false
+      }).formatToParts(d);
+      const h = +parts.find(p => p.type === "hour").value;
+      const m = +parts.find(p => p.type === "minute").value;
+      return h * 60 + m;
+    }
+
+    function jumpItem(label, time) {
+      if (!time) return `<div class="ground-item"><span>${label}</span><strong>--:--</strong></div>`;
+      const mins = dateToLocalMinutes(time);
+      return `<div class="ground-item clickable" data-jump="${mins}"><span>${label}</span><strong>${fmt(time)}</strong></div>`;
+    }
+
+    document.getElementById("groundBar").innerHTML =
+      jumpItem("Sunrise", sunTimes.sunrise) +
+      jumpItem("Sunset",  sunTimes.sunset) +
+      `<div class="ground-item"><span>&#9728; Alt</span><strong>${sunAlt > 0 ? sunAlt.toFixed(1)+"°" : "Below"}</strong></div>` +
+      jumpItem("Moonrise", moonTimes.rise || null) +
+      jumpItem("Moonset",  moonTimes.set  || null) +
+      `<div class="ground-item"><span>&#9790; Alt</span><strong>${moonAlt > 0 ? moonAlt.toFixed(1)+"°" : "Below"}</strong></div>`;
+
+    // Wire up jump clicks
+    document.querySelectorAll(".ground-item.clickable").forEach(el => {
+      el.addEventListener("click", () => {
+        selMinutes = +el.dataset.jump;
+        render();
+      });
+    });
 
     document.getElementById("dateBtn").textContent = fmtDateLabel(selDate.y, selDate.m, selDate.d);
     document.getElementById("timeBtn").textContent = fmtTime(selMinutes);
