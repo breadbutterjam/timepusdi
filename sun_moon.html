@@ -158,8 +158,11 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
 .moon-body {
   width: clamp(22px, 5.5vw, 38px);
   height: clamp(22px, 5.5vw, 38px);
-  background: radial-gradient(circle at 38% 38%, #f0f0e8 0%, #d0d0c0 55%, #a8a89a 100%);
-  box-shadow: 0 0 6px 2px rgba(200,210,220,0.18);
+  /* phase, glow and opacity set dynamically in JS */
+  transform: translateX(-50%);
+  position: absolute;
+  border-radius: 50%;
+  overflow: hidden; /* clips the phase shadow disc */
 }
 
 /* ── HORIZON + GROUND ── */
@@ -435,18 +438,20 @@ const LOCATIONS = {
 
   // Sky gradient stops [zenith, horizon] for a given sun altitude
   function skyGradient(sunAlt) {
-    // Key states: deep night, astro twilight, civil twilight, golden hour, full day
-    // Each: [zenithColor, horizonColor]
+    // Returns top/upper/mid/lower/horizon colour stops for a 5-stop gradient
+    // Each state defines the full sky column at that sun altitude
     const states = [
-      { alt: -18, zenith: '#03050f', horizon: '#080d1a' },  // deep night
-      { alt:  -6, zenith: '#0a0e1f', horizon: '#1a2040' },  // astro twilight
-      { alt:   0, zenith: '#1a2a5e', horizon: '#c87020' },  // horizon glow at sunrise/set
-      { alt:   6, zenith: '#2255a0', horizon: '#e8a040' },  // golden hour
-      { alt:  15, zenith: '#3a7fc1', horizon: '#87ceeb' },  // post-golden
-      { alt:  90, zenith: '#1a6acd', horizon: '#69c0f5' },  // full day
+      { alt: -18, top: '#010208', upper: '#03050f', mid: '#05080f', lower: '#080d1a', horizon: '#080d1a' }, // deep night
+      { alt:  -8, top: '#05080f', upper: '#080d1f', mid: '#0d1530', lower: '#141e3a', horizon: '#111830' }, // astronomical twilight
+      { alt:  -4, top: '#080d1f', upper: '#0f1840', mid: '#1a2855', lower: '#2a3060', horizon: '#1e2850' }, // nautical twilight
+      { alt:   0, top: '#0f1840', upper: '#1a2860', mid: '#2a3878', lower: '#8b3a10', horizon: '#c86010' }, // civil twilight / sunrise-set
+      { alt:   4, top: '#162250', upper: '#1e3570', mid: '#3060a0', lower: '#d08820', horizon: '#e8a030' }, // golden hour low
+      { alt:  10, top: '#1e3a80', upper: '#2a55a0', mid: '#4a80c0', lower: '#a0c8e0', horizon: '#c0dff0' }, // golden hour high
+      { alt:  20, top: '#1a5ab8', upper: '#2870c8', mid: '#4090d0', lower: '#80c0e8', horizon: '#a8d8f0' }, // post-golden
+      { alt:  90, top: '#1060c0', upper: '#1a6acd', mid: '#3585d8', lower: '#60aaec', horizon: '#69c0f5' }, // full day
     ];
-    // Find bracket
-    let lo = states[0], hi = states[states.length-1];
+
+    let lo = states[0], hi = states[states.length - 1];
     for (let i = 0; i < states.length - 1; i++) {
       if (sunAlt >= states[i].alt && sunAlt <= states[i+1].alt) {
         lo = states[i]; hi = states[i+1]; break;
@@ -454,69 +459,183 @@ const LOCATIONS = {
     }
     const t = Math.max(0, Math.min(1, (sunAlt - lo.alt) / (hi.alt - lo.alt)));
     return {
-      zenith:  lerpColor(lo.zenith,  hi.zenith,  t),
+      top:     lerpColor(lo.top,     hi.top,     t),
+      upper:   lerpColor(lo.upper,   hi.upper,   t),
+      mid:     lerpColor(lo.mid,     hi.mid,     t),
+      lower:   lerpColor(lo.lower,   hi.lower,   t),
       horizon: lerpColor(lo.horizon, hi.horizon, t),
+      // keep zenith alias for top-bar colour
+      zenith:  lerpColor(lo.top,     hi.top,     t),
     };
   }
 
-  // Apply gradient + optional horizon glow to a panel
+  // Apply 5-stop gradient + optional horizon glow to a panel
   function applyPanelSky(panel, sunAlt, hasSun) {
-    const { zenith, horizon } = skyGradient(sunAlt);
-    let gradient = `linear-gradient(to bottom, ${zenith} 0%, ${horizon} 100%)`;
+    const c = skyGradient(sunAlt);
+    let gradient = `linear-gradient(to bottom,
+      ${c.top}     0%,
+      ${c.upper}  25%,
+      ${c.mid}    50%,
+      ${c.lower}  78%,
+      ${c.horizon}100%)`;
 
-    // Horizon glow: only in panel containing the sun, during golden hour / twilight
+    // Horizon glow in sun's panel during twilight / golden hour
     if (hasSun && sunAlt > -8 && sunAlt < 15) {
-      const glowIntensity = 1 - Math.abs(sunAlt - 3) / 12; // peaks near 3° alt
-      const glow = Math.max(0, Math.min(1, glowIntensity));
+      const gi = 1 - Math.abs(sunAlt - 3) / 12;
+      const glow = Math.max(0, Math.min(1, gi));
       const glowColor = sunAlt > 0
-        ? `rgba(255, 160, 30, ${glow * 0.55})`
-        : `rgba(200, 100, 20, ${glow * 0.4})`;
-      gradient = `radial-gradient(ellipse 80% 30% at 50% 100%, ${glowColor} 0%, transparent 70%),
-                  linear-gradient(to bottom, ${zenith} 0%, ${horizon} 100%)`;
+        ? `rgba(255,160,30,${(glow * 0.55).toFixed(2)})`
+        : `rgba(200,100,20,${(glow * 0.4).toFixed(2)})`;
+      gradient = `radial-gradient(ellipse 80% 28% at 50% 100%, ${glowColor} 0%, transparent 70%),
+        linear-gradient(to bottom,
+          ${c.top}     0%,
+          ${c.upper}  25%,
+          ${c.mid}    50%,
+          ${c.lower}  78%,
+          ${c.horizon}100%)`;
     }
     panel.style.background = gradient;
   }
 
-  // Generate or update stars layer on a panel
+  // Seeded pseudo-random number generator (mulberry32)
+  function makeRng(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // ── Inject twinkle keyframes once ──
+  (function injectTwinkleCSS() {
+    if (document.getElementById('twinkle-style')) return;
+    const style = document.createElement('style');
+    style.id = 'twinkle-style';
+    style.textContent = `
+      @keyframes twinkle-a { 0%,100%{opacity:0.85} 50%{opacity:0.2} }
+      @keyframes twinkle-b { 0%,100%{opacity:0.6}  50%{opacity:0.9} }
+      @keyframes twinkle-c { 0%,100%{opacity:0.4}  40%{opacity:1.0} 80%{opacity:0.3} }
+      @keyframes twinkle-d { 0%,100%{opacity:0.7}  30%{opacity:0.15} 70%{opacity:0.95} }
+
+      @keyframes shoot {
+        0%   { transform: translate(0,0) scaleX(1); opacity: 0; }
+        5%   { opacity: 1; }
+        85%  { opacity: 0.9; }
+        100% { transform: translate(var(--dx), var(--dy)) scaleX(0.1); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  })();
+
+  const TWINKLE_ANIMS = ['twinkle-a','twinkle-b','twinkle-c','twinkle-d'];
+
   function updateStars(panel, sunAlt) {
     let starLayer = panel.querySelector('.star-layer');
-    const starOpacity = Math.max(0, Math.min(1, (-sunAlt - 4) / 10)); // fade in below -4°
+    const starOpacity = Math.max(0, Math.min(1, (-sunAlt - 4) / 10));
 
-    if (starOpacity <= 0) {
-      if (starLayer) starLayer.style.opacity = 0;
-      return;
-    }
     if (!starLayer) {
       starLayer = document.createElement('div');
       starLayer.className = 'star-layer';
-      starLayer.style.cssText = `
-        position:absolute; inset:0; z-index:1; pointer-events:none;
-        transition: opacity 2s ease;
-      `;
-      // Seed deterministic stars using panel id as seed variation
-      const seed = panel.id === 'panelEast' ? 0 : 1000;
-      const count = 28;
+      starLayer.style.cssText =
+        'position:absolute;inset:0;z-index:1;pointer-events:none;transition:opacity 3s ease;';
+
+      const rng   = makeRng(panel.id === 'panelEast' ? 0xA3F1 : 0x5C8E);
+      const count = 36;
+
       for (let i = 0; i < count; i++) {
+        const px     = rng() * 100;
+        const py     = rng() * 68;           // top 68% of sky only
+        const sz     = rng() < 0.15 ? 2 : 1; // ~15% are larger stars
+        const baseOp = 0.35 + rng() * 0.6;
+        const anim   = TWINKLE_ANIMS[i % TWINKLE_ANIMS.length];
+        const dur    = (2.2 + rng() * 3.5).toFixed(1);
+        const delay  = -(rng() * 4).toFixed(1);
+
         const s = document.createElement('div');
-        // Simple deterministic pseudo-random using index
-        const px = ((i * 137 + seed) % 97) / 97 * 100;
-        const py = ((i * 97  + seed) % 83) / 83 * 72; // keep stars in top 72% (sky, not ground)
-        const sz = i % 5 === 0 ? 2 : 1;
-        const op = 0.4 + (i % 3) * 0.2;
         s.style.cssText = `
-          position:absolute; border-radius:50%; background:#fff;
+          position:absolute;
+          border-radius:50%;
+          background:#fff;
           width:${sz}px; height:${sz}px;
-          left:${px}%; top:${py}%;
-          opacity:${op};
+          left:${px.toFixed(2)}%; top:${py.toFixed(2)}%;
+          opacity:${baseOp.toFixed(2)};
+          animation:${anim} ${dur}s ${delay}s ease-in-out infinite;
         `;
         starLayer.appendChild(s);
       }
       panel.appendChild(starLayer);
     }
+
     starLayer.style.opacity = starOpacity;
   }
 
-  // ── Sun appearance by altitude ──
+  // ── Shooting stars — fire occasionally during night ──
+  const shootingRng = makeRng(0xDEAD);
+  let shootingInterval = null;
+
+  function fireShootingStar(sunAlt) {
+    if (sunAlt > -6) return; // only in darkness
+    // Pick a random panel
+    const panel = shootingRng() < 0.5 ? E : W;
+    const star  = document.createElement('div');
+
+    // Start position: top 55% of sky, anywhere horizontally
+    const startX = shootingRng() * 90 + 5;   // 5–95%
+    const startY = shootingRng() * 55;         // 0–55%
+
+    // Travel direction: always angled down-right or down-left, shallow angle
+    const angle  = (25 + shootingRng() * 30) * (shootingRng() < 0.5 ? 1 : -1); // ±25–55°
+    const dist   = 80 + shootingRng() * 120;  // travel distance px
+    const dx     = Math.cos(angle * Math.PI / 180) * dist;
+    const dy     = Math.sin(Math.abs(angle) * Math.PI / 180) * dist;
+    const dur    = 0.6 + shootingRng() * 0.7; // 0.6–1.3s
+    const len    = 40 + shootingRng() * 60;   // tail length px
+
+    star.style.cssText = `
+      position: absolute;
+      left: ${startX}%;
+      top:  ${startY}%;
+      width: ${len}px;
+      height: 1.5px;
+      border-radius: 1px;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 100%);
+      transform-origin: right center;
+      transform: rotate(${angle}deg);
+      --dx: ${dx}px;
+      --dy: ${dy}px;
+      animation: shoot ${dur}s ease-in forwards;
+      pointer-events: none;
+      z-index: 2;
+    `;
+
+    panel.appendChild(star);
+    star.addEventListener('animationend', () => star.remove());
+  }
+
+  function startShootingStars() {
+    if (shootingInterval) return;
+    // Fire a star every 4–10 seconds on average using random intervals
+    function scheduleNext() {
+      const delay = 4000 + shootingRng() * 6000;
+      shootingInterval = setTimeout(() => {
+        // Get current sun altitude from latest position calculation
+        const dt     = getDateTime();
+        const sunPos = SunCalc.getPosition(dt, loc.lat, loc.lng);
+        const sunAlt = sunPos.altitude * (180 / Math.PI);
+        fireShootingStar(sunAlt);
+        shootingInterval = null;
+        scheduleNext();
+      }, delay);
+    }
+    scheduleNext();
+  }
+
+  function stopShootingStars() {
+    if (shootingInterval) { clearTimeout(shootingInterval); shootingInterval = null; }
+    // Remove any mid-flight stars
+    [E, W].forEach(p => p.querySelectorAll('div[style*="shoot"]').forEach(s => s.remove()));
+  }
 
   // Sun colour: white-yellow at high alt → amber → deep orange at horizon
   function sunColor(alt) {
@@ -588,6 +707,29 @@ const LOCATIONS = {
   }
 
   // ── Ground illumination during golden hour ──
+  // ── Moon appearance ──
+  function styleMoon(div, alt, r, sunAlt) {
+    const illum    = SunCalc.getMoonIllumination(getDateTime());
+    const fraction = illum.fraction; // 0=new, 1=full
+
+    // Simple sphere gradient — no phase rendering
+    div.innerHTML  = '';
+    div.style.background = 'radial-gradient(circle at 38% 38%, #f5f5e8 0%, #d0d0c0 55%, #a8a89a 100%)';
+    div.style.transform  = 'translateX(-50%)';
+
+    // ── Moon glow — silver-blue, stronger at full moon ──
+    const glowBlur   = r * (1.2 + fraction * 2.5);
+    const glowSpread = r * fraction * 0.8;
+    const glowAlpha  = 0.08 + fraction * 0.38;
+
+    // Fade in daylight
+    const dayFade    = Math.max(0, Math.min(1, 1 - sunAlt / 40));
+    div.style.opacity   = Math.max(0.25, dayFade).toFixed(2);
+    div.style.boxShadow = fraction > 0.05
+      ? `0 0 ${glowBlur}px ${glowSpread}px rgba(200,215,240,${(glowAlpha * dayFade).toFixed(2)})`
+      : 'none';
+  }
+
   function updateGroundIllumination(sunAlt) {
     const groundBar = document.getElementById('groundBar');
     const horizonBar = document.querySelector('.horizon-bar');
@@ -727,7 +869,8 @@ const LOCATIONS = {
 
     positionBody(sunEl,  sunAlt,  sunR,  sunInEast    ? E : W);
     positionBody(moonEl, moonAlt, moonR, moonAz < 180 ? E : W);
-    if (sunEl.style.display !== "none") styleSun(sunEl, sunAlt, sunR);
+    if (sunEl.style.display  !== "none") styleSun(sunEl,   sunAlt,  sunR);
+    if (moonEl.style.display !== "none") styleMoon(moonEl, moonAlt, moonR, sunAlt);
 
     // Alt labels — update text only
     const sLabel = document.getElementById("sunAltLabel");
@@ -753,7 +896,7 @@ const LOCATIONS = {
   // ── Play / pause ──
   function updatePlayPauseBtn() {
     document.getElementById("btnPlayPause").textContent = isPaused ? "▶" : "⏸︎";
-
+    
     const playPauseBtn = document.getElementById("btnPlayPause");
     if (!isPaused) {
       playPauseBtn.classList.add("bigerIcon");
@@ -852,6 +995,7 @@ const LOCATIONS = {
     if (typeof SunCalc === "undefined") { setTimeout(waitAndRender, 50); return; }
     render();
     startLive();
+    startShootingStars();
   }
   waitAndRender();
 })();
