@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check PNR</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        #fetchedOn {
+            margin-top: 0.5em;
+            font-size: 0.8em;
+            color: #222;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #shareBtn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            color: #555;
+            position: relative;
+        }
+
+        #shareBtn:hover {
+            color: #000;
+        }
+
+        #shareBtn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        #copyToast {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 28px;
+            background: #333;
+            color: #fff;
+            font-size: 0.75em;
+            padding: 3px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        #copyToast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body onload="onLoad();">
+    <h1>Enter PNR</h1>
+    <div class="input-row">
+        <input type="text" id="pnrInput" placeholder="Enter PNR">
+        <button onclick="fetchPNRDetails()">Submit</button>
+        <button id="shareBtn" onclick="copyShareLink()" title="Copy shareable link">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"/>
+                <circle cx="6" cy="12" r="3"/>
+                <circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+            <span id="copyToast">Copied!</span>
+        </button>
+    </div>
+    <br>
+    <div id="pnrDetails"></div>
+    <div id="fetchedOn"></div>
+
+    <script>
+        let o, a;
+
+        function getPNRFromURL() {
+            const search = window.location.search;
+            if (search && search.length > 1) {
+                const candidate = search.slice(1);
+                if (/^\d+$/.test(candidate)) return candidate;
+            }
+            return null;
+        }
+
+        function updateURLWithPNR(pnr) {
+            try {
+                const newURL = window.location.pathname + (pnr ? '?' + encodeURIComponent(pnr) : '');
+                window.history.replaceState(null, '', newURL);
+            } catch (e) {
+                // Silently ignore in sandboxed/srcdoc contexts
+            }
+        }
+
+        function fetchPNRDetails() {
+            const pnr = document.getElementById('pnrInput').value.trim();
+            if (!pnr) return;
+
+            updateURLWithPNR(pnr);
+
+            const data = null;
+            const xhr = new XMLHttpRequest();
+            xhr.withCredentials = true;
+
+            xhr.addEventListener('readystatechange', function () {
+                if (this.readyState === this.DONE) {
+                    o = this.responseText;
+                    a = JSON.parse(o);
+                    printStatus();
+                }
+            });
+
+            xhr.open('GET', 'https://irctc-indian-railway-pnr-status.p.rapidapi.com/getPNRStatus/' + pnr);
+            xhr.setRequestHeader('x-rapidapi-key', '9422a5373bmshfb1212e98b62778p177a11jsn9c478092cfff');
+            xhr.setRequestHeader('x-rapidapi-host', 'irctc-indian-railway-pnr-status.p.rapidapi.com');
+
+            xhr.send(data);
+        }
+
+        function printStatus() {
+            let str = '';
+            if (a.success === false) {
+                str = 'Error: ' + a.message;
+                document.getElementById('pnrDetails').innerHTML = str;
+                return;
+            }
+
+            const passengerList = a.data.passengerList;
+            for (let i = 0; i < passengerList.length; i++) {
+                str += 'Passenger ' + (i + 1) + ' Status: ' + passengerList[i].currentStatusDetails + '<br>';
+            }
+            document.getElementById('pnrDetails').innerHTML = str;
+            document.getElementById('fetchedOn').innerHTML = a.data.timeStamp;
+        }
+
+        function copyShareLink() {
+            const pnr = document.getElementById('pnrInput').value.trim();
+            const base = window.location.origin + window.location.pathname;
+            const shareURL = base + (pnr ? '?' + encodeURIComponent(pnr) : '');
+
+            navigator.clipboard.writeText(shareURL).then(() => {
+                const toast = document.getElementById('copyToast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 1800);
+            });
+        }
+
+        function onLoad() {
+            const pnrFromURL = getPNRFromURL();
+            if (pnrFromURL) {
+                document.getElementById('pnrInput').value = pnrFromURL;
+                fetchPNRDetails();
+            }
+
+            document.getElementById('pnrInput').focus();
+        }
+    </script>
+</body>
+</html>
