@@ -1,57 +1,39 @@
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET");
 
-  try {
-    const now = new Date();
+    try {
+        let { date } = req.query;
 
-    // Get day of year
-    const start = new Date(now.getFullYear(), 0, 0);
-    const diff = now - start;
-    const oneDay = 1000 * 60 * 60 * 24;
-    const dayOfYear = Math.floor(diff / oneDay);
+        // fallback to current time
+        if (!date) {
+            date = new Date().toISOString();
+        }
 
-    const hour = now.getUTCHours();
+        // 🔑 IMPORTANT: Dial-a-moon expects minute precision (no seconds/ms)
+        const formattedDate = new Date(date)
+            .toISOString()
+            .slice(0, 16); // YYYY-MM-DDTHH:mm
 
-    // NASA frame calculation
-    const frame = dayOfYear * 24 + hour;
+        const nasaUrl = `https://svs.gsfc.nasa.gov/api/dialamoon/${formattedDate}`;
 
-    // Pad to 4 digits
-    const frameStr = String(frame).padStart(4, "0");
+        const nasaRes = await fetch(nasaUrl);
 
-    // ✅ 2026 dataset (stable)
-    const baseUrl =
-      "https://svs.gsfc.nasa.gov/vis/a000000/a005400/a005415/frames/730x730_1x1_30p/";
+        if (!nasaRes.ok) {
+            throw new Error("NASA API failed");
+        }
 
-    const imageUrl = `${baseUrl}moon.${frameStr}.jpg`;
+        const data = await nasaRes.json();
 
-    res.status(200).json({
-      image: imageUrl,
-      frame: frameStr,
-      date: now.toISOString()
-    });
+        return res.status(200).json({
+            image: data.image?.url,
+            phase: data.phase,
+            date: data.time,
+            frame: data.image?.filename?.match(/\d+/)?.[0] || null
+        });
 
-  } catch (error) {
-    res.status(500).json({ error: "Failed to generate moon image" });
-  }
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: "Failed to fetch moon data" });
+    }
 }
-
-
-/* 
-
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-
-  try {
-    const response = await fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY");
-    const data = await response.json();
-
-    res.status(200).json({
-      image: data.url,
-      title: data.title
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch NASA data" });
-  }
-}
-
-*/
