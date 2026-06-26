@@ -564,12 +564,29 @@
                 .filter(Boolean)
                 .sort((a, b) => a.date - b.date);
         }    
-
+        
         async function getMoonImageUrl(date = new Date()) {
+            const isoString = date.toISOString(); // full ISO is fine
+
+            try {
+                const response = await fetch(`/api/moon?date=${isoString}`);
+                const data = await response.json();
+
+                console.log("Moon API response:", data);
+
+                return data.image || null; // your API returns { image, title }
+            } catch (error) {
+                console.error("Error fetching moon image:", error);
+                return null;
+            }
+        }
+
+        /* async function getMoonImageUrl(date = new Date()) {
             // Convert Date → YYYY-MM-DDTHH:mm (API format)
             const isoString = date.toISOString().slice(0, 16);
             console.log("Fetching moon image for:", isoString);
-            const apiUrl = `https://svs.gsfc.nasa.gov/api/dialamoon/${isoString}`;
+            // const apiUrl = `https://svs.gsfc.nasa.gov/api/dialamoon/${isoString}`;
+            const apiUrl = `https://timepusdi.vercel.app/api/moon`;
 
             try {
                 const response = await fetch(apiUrl);
@@ -580,7 +597,7 @@
                 console.error("Error fetching moon image:", error);
                 return null;
             }
-        }
+        } */
 
         function updateCalendar(date) {
             const today = new Date();
@@ -705,7 +722,7 @@
                 // moonImage.style.opacity = 0.2; // Show loading state
                 showLoading();
                 getMoonImageUrl(currentSelectedDate).then(url => {
-                    // console.log(url);
+                    console.log(url);
                     moonImage.src = url || imageUrl;
                     moonImageCache[currentSelectedDate.toISOString().slice(0, 10)] = url;
                     // moonImage.style.opacity = 1; // Remove loading state
