@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NASA Moon Viewer</title>
+
+<style>
+    body {
+        font-family: Arial;
+        text-align: center;
+        background: #0b0f2a;
+        color: white;
+    }
+
+    img {
+        width: 300px;
+        margin-top: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(255,255,255,0.3);
+    }
+
+    input, button {
+        padding: 10px;
+        margin: 10px;
+        font-size: 16px;
+    }
+</style>
+</head>
+
+<body>
+
+<h1>🌕 NASA Moon Phase Viewer</h1>
+
+<input type="date" id="dateInput">
+<button onclick="loadMoon()">Get Moon Image</button>
+
+<div>
+    <img id="moonImage" src="" alt="Moon will appear here">
+</div>
+
+<script>
+
+// Convert date → NASA frame number
+function getMoonFrameNumber(date) {
+    const start = new Date(date.getFullYear(), 0, 1);
+    const diff = (date - start) / 1000; // seconds since start of year
+
+    const totalFrames = 8760; // NASA uses hourly frames
+    const secondsInYear = 365 * 24 * 3600;
+
+    let frame = Math.floor((diff / secondsInYear) * totalFrames);
+
+    return String(frame).padStart(4, '0');
+}
+
+// Generate NASA image URL
+function getMoonImageURL(date) {
+    console.log("Generating URL for date:", date);
+    const frame = getMoonFrameNumber(date);
+    console.log("Using frame number:", frame);
+    return `https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/640x640_1x1_30p/moon.${frame}.jpg`;
+}
+
+// Load image
+function loadMoon() {
+    const input = document.getElementById("dateInput").value;
+
+    if (!input) {
+        alert("Please select a date");
+        return;
+    }
+
+    const date = new Date(input);
+    const url = getMoonImageURL(date);
+
+    const img = document.getElementById("moonImage");
+    img.src = url;
+}
+
+</script>
+
+</body>
+</html>
