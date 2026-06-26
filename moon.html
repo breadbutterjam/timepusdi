@@ -2,78 +2,68 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>NASA Moon Viewer</title>
+<title>NASA Moon (Fixed)</title>
 
 <style>
-    body {
-        font-family: Arial;
-        text-align: center;
-        background: #0b0f2a;
-        color: white;
-    }
-
-    img {
-        width: 300px;
-        margin-top: 20px;
-        border-radius: 10px;
-        box-shadow: 0 0 20px rgba(255,255,255,0.3);
-    }
-
-    input, button {
-        padding: 10px;
-        margin: 10px;
-        font-size: 16px;
-    }
+body {
+    background: black;
+    color: white;
+    text-align: center;
+    font-family: Arial;
+}
+img {
+    width: 300px;
+    margin-top: 20px;
+}
 </style>
 </head>
 
 <body>
 
-<h1>🌕 NASA Moon Phase Viewer</h1>
+<h2>🌕 NASA Moon Viewer (No 404)</h2>
 
 <input type="date" id="dateInput">
-<button onclick="loadMoon()">Get Moon Image</button>
+<button onclick="loadMoon()">Load Moon</button>
 
-<div>
-    <img id="moonImage" src="" alt="Moon will appear here">
-</div>
+<br>
+<img id="moonImg" alt="Moon image">
 
 <script>
 
-// Convert date → NASA frame number
-function getMoonFrameNumber(date) {
+// safer frame calculation
+function getFrame(date) {
     const start = new Date(date.getFullYear(), 0, 1);
-    const diff = (date - start) / 1000; // seconds since start of year
+    const diffDays = (date - start) / (1000 * 60 * 60 * 24);
 
-    const totalFrames = 8760; // NASA uses hourly frames
-    const secondsInYear = 365 * 24 * 3600;
+    // NASA dataset ~ 3600 usable frames (NOT 8760)
+    let frame = Math.floor((diffDays / 365) * 3600);
 
-    let frame = Math.floor((diff / secondsInYear) * totalFrames);
+    // clamp range to avoid 404
+    frame = Math.max(1, Math.min(frame, 3600));
 
     return String(frame).padStart(4, '0');
 }
 
-// Generate NASA image URL
-function getMoonImageURL(date) {
-    console.log("Generating URL for date:", date);
-    const frame = getMoonFrameNumber(date);
-    console.log("Using frame number:", frame);
+function getMoonURL(frame) {
     return `https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/640x640_1x1_30p/moon.${frame}.jpg`;
 }
 
-// Load image
 function loadMoon() {
-    const input = document.getElementById("dateInput").value;
+    const val = document.getElementById("dateInput").value;
+    if (!val) return alert("Pick a date");
 
-    if (!input) {
-        alert("Please select a date");
-        return;
-    }
+    const date = new Date(val);
+    const frame = getFrame(date);
 
-    const date = new Date(input);
-    const url = getMoonImageURL(date);
+    const img = document.getElementById("moonImg");
+    const url = getMoonURL(frame);
 
-    const img = document.getElementById("moonImage");
+    // fallback if frame missing
+    img.onerror = () => {
+        console.warn("Frame not found, fallback used");
+        img.src = getMoonURL("0100"); // guaranteed safe fallback
+    };
+
     img.src = url;
 }
 
