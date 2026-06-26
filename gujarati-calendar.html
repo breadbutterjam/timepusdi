@@ -568,7 +568,7 @@
         async function getMoonImageUrl(date = new Date()) {
             // Convert Date → YYYY-MM-DDTHH:mm (API format)
             const isoString = date.toISOString().slice(0, 16);
-
+            console.log("Fetching moon image for:", isoString);
             const apiUrl = `https://svs.gsfc.nasa.gov/api/dialamoon/${isoString}`;
 
             try {
