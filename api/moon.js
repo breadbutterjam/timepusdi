@@ -2,6 +2,46 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
 
   try {
+    const now = new Date();
+
+    // Get day of year
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now - start;
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+
+    const hour = now.getUTCHours();
+
+    // NASA frame calculation
+    const frame = dayOfYear * 24 + hour;
+
+    // Pad to 4 digits
+    const frameStr = String(frame).padStart(4, "0");
+
+    // ✅ 2026 dataset (stable)
+    const baseUrl =
+      "https://svs.gsfc.nasa.gov/vis/a000000/a005400/a005415/frames/730x730_1x1_30p/";
+
+    const imageUrl = `${baseUrl}moon.${frameStr}.jpg`;
+
+    res.status(200).json({
+      image: imageUrl,
+      frame: frameStr,
+      date: now.toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: "Failed to generate moon image" });
+  }
+}
+
+
+/* 
+
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+
+  try {
     const response = await fetch("https://api.nasa.gov/planetary/apod?api_key=DEMO_KEY");
     const data = await response.json();
 
@@ -14,35 +54,4 @@ export default async function handler(req, res) {
   }
 }
 
-
-/* 
-export default async function handler(req, res) {
-    try {
-        const { date } = req.query;
-
-        if (!date) {
-            return res.status(400).json({ error: "Missing date" });
-        }
-
-        // Convert date → fixed time (noon UTC for now)
-        const time = `${date}T12:00`;
-
-        const nasaURL = `https://svs.gsfc.nasa.gov/api/dialamoon/${time}`;
-
-        const response = await fetch(nasaURL);
-        const data = await response.json();
-
-        // Only return what you need
-        res.setHeader("Access-Control-Allow-Origin", "*");
-
-        res.status(200).json({
-            imageUrl: data.image.url,
-            phase: data.phase,
-            age: data.age
-        });
-
-    } catch (err) {
-        res.status(500).json({ error: "NASA fetch failed" });
-    }
-}
 */
