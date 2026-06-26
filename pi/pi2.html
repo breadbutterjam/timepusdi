@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pi Explorer</title>
+<style>
+:root{
+--bg:#0f1220;
+--orb:#E9B7B7;
+}
+html,body{margin:0;height:100%;background:radial-gradient(circle at center,#1a2040,#0b0e18);font-family:system-ui,sans-serif;color:white;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center;cursor:pointer}
+#orb{
+width:280px;height:280px;border-radius:50%;
+background:var(--orb);
+filter:blur(.2px);
+box-shadow:0 0 60px var(--orb);
+display:flex;align-items:center;justify-content:center;
+transition:background-color .5s, box-shadow .5s, transform .35s;
+}
+#orb.pulse{transform:scale(1.12)}
+#digit{font-size:8rem;font-weight:700;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.4)}
+#info{position:fixed;bottom:24px;text-align:center;width:100%;opacity:.8}
+#hint{position:fixed;top:20px;width:100%;text-align:center;opacity:.8}
+</style>
+</head>
+<body>
+<div id="orb"><div id="digit"></div></div>
+<div id="hint">Click anywhere or press Space / → to advance</div>
+<div id="info"></div>
+<script>
+const pi="31415926535897932384626433832795028841971693993751";
+const colors=["#E9B7B7","#EFD0B2","#F2E7B5","#D7E7C4","#C8E7D7","#C5E6E9","#C8DDF1","#D2D0F2","#E2D0F0","#F0D1E2"];
+const notes={0:261.63,1:293.66,2:329.63,3:392,4:440,5:523.25,6:587.33,7:659.25,8:783.99,9:880};
+let i=0;
+const orb=document.getElementById("orb"),digit=document.getElementById("digit"),info=document.getElementById("info");
+const ctx=new (window.AudioContext||window.webkitAudioContext)();
+function bell(f){
+ if(ctx.state==="suspended")ctx.resume();
+ const now=ctx.currentTime;
+ [1,2,3].forEach((m,j)=>{
+  const o=ctx.createOscillator(),g=ctx.createGain();
+  o.type="sine";o.frequency.value=f*m;
+  g.gain.setValueAtTime(0.09/(j+1),now);
+  g.gain.exponentialRampToValueAtTime(0.0001,now+0.8);
+  o.connect(g);g.connect(ctx.destination);
+  o.start(now);o.stop(now+0.8);
+ });
+}
+function render(){
+ const d=+pi[i];
+ digit.textContent=d;
+ document.documentElement.style.setProperty("--orb",colors[d]);
+ orb.style.background=colors[d];
+ orb.style.boxShadow=`0 0 60px ${colors[d]}`;
+ info.textContent=`Digit ${i+1} of ${pi.length}`;
+ orb.classList.add("pulse");
+ setTimeout(()=>orb.classList.remove("pulse"),220);
+ bell(notes[d]);
+}
+function next(){i=(i+1)%pi.length;render();}
+render();
+document.body.addEventListener("click",next);
+document.addEventListener("keydown",e=>{if(e.code==="Space"||e.code==="ArrowRight"){e.preventDefault();next();}});
+</script>
+</body>
+</html>
