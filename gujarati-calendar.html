@@ -569,7 +569,8 @@
             const isoString = date.toISOString(); // full ISO is fine
 
             try {
-                const response = await fetch(`/api/moon?date=${isoString}`);
+                // const response = await fetch(`/api/moon?date=${isoString}`);
+                const response = await fetch(`https://timepusdi.vercel.app/api/moon?date=${isoString}`);
                 const data = await response.json();
 
                 console.log("Moon API response:", data);
