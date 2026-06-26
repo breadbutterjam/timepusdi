@@ -25,10 +25,11 @@ function resetAll(){
 
 function nextDigit(){
     currInd++;
-
+    console.log("currInd: ", currInd);
     document.querySelector(".resetBtnArea").innerText = String(currInd-1).trim();
 
     document.querySelector(".mainContent").innerText = arrData.charAt(currInd);
+    document.querySelector(".digitCountCont").innerText = String(currInd-1).trim();
     // document.querySelector(".mainCont").style.fontSize = "21.7em";
 
 }
