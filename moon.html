@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>NASA Moon (Fixed)</title>
+<title>NASA Moon (ORB Fixed)</title>
 
 <style>
 body {
@@ -20,51 +20,38 @@ img {
 
 <body>
 
-<h2>🌕 NASA Moon Viewer (No 404)</h2>
+<h2>🌕 NASA Moon Viewer (ORB Safe)</h2>
 
-<input type="date" id="dateInput">
-<button onclick="loadMoon()">Load Moon</button>
+<input type="number" id="frame" placeholder="Enter frame (1–3600)">
+<button onclick="loadMoon()">Load</button>
 
 <br>
 <img id="moonImg" alt="Moon image">
 
 <script>
 
-// safer frame calculation
-function getFrame(date) {
-    const start = new Date(date.getFullYear(), 0, 1);
-    const diffDays = (date - start) / (1000 * 60 * 60 * 24);
-
-    // NASA dataset ~ 3600 usable frames (NOT 8760)
-    let frame = Math.floor((diffDays / 365) * 3600);
-
-    // clamp range to avoid 404
-    frame = Math.max(1, Math.min(frame, 3600));
-
-    return String(frame).padStart(4, '0');
-}
-
-function getMoonURL(frame) {
+function getNASAUrl(frame) {
     return `https://svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/640x640_1x1_30p/moon.${frame}.jpg`;
 }
 
-function loadMoon() {
-    const val = document.getElementById("dateInput").value;
-    if (!val) return alert("Pick a date");
+function getProxyUrl(frame) {
+    return `https://images.weserv.nl/?url=svs.gsfc.nasa.gov/vis/a000000/a005100/a005187/frames/640x640_1x1_30p/moon.${frame}.jpg`;
+}
 
-    const date = new Date(val);
-    const frame = getFrame(date);
+function loadMoon() {
+    let frame = document.getElementById("frame").value || "0100";
+    frame = String(frame).padStart(4, '0');
 
     const img = document.getElementById("moonImg");
-    const url = getMoonURL(frame);
 
-    // fallback if frame missing
+    // try NASA first
     img.onerror = () => {
-        console.warn("Frame not found, fallback used");
-        img.src = getMoonURL("0100"); // guaranteed safe fallback
+        console.warn("NASA blocked → using proxy");
+        img.onerror = null;
+        img.src = getProxyUrl(frame);
     };
 
-    img.src = url;
+    img.src = getNASAUrl(frame);
 }
 
 </script>
