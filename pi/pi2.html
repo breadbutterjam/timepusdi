@@ -21,9 +21,9 @@ display:flex;align-items:center;justify-content:center;
 transition:background-color .5s, box-shadow .5s, transform .35s;
 }
 #orb.pulse{transform:scale(1.12)}
-#digit{font-size:8rem;font-weight:700;color:#fff;text-shadow:0 2px 18px rgba(0,0,0,.4)}
-#info{position:fixed;bottom:24px;text-align:center;width:100%;opacity:.8}
-#hint{position:fixed;top:20px;width:100%;text-align:center;opacity:.8}
+#digit{font-size:8rem;font-weight:700;color:#0b101a4a;text-shadow:0 2px 18px rgba(0,0,0,.4)}
+#info{position:fixed;bottom:24px;text-align:center;width:100%;opacity:.2}
+#hint{position:fixed;top:20px;width:100%;text-align:center;opacity:.2}
 </style>
 </head>
 <body>
@@ -55,9 +55,10 @@ function render(){
  document.documentElement.style.setProperty("--orb",colors[d]);
  orb.style.background=colors[d];
  orb.style.boxShadow=`0 0 60px ${colors[d]}`;
- info.textContent=`Digit ${i+1} of ${pi.length}`;
- orb.classList.add("pulse");
- setTimeout(()=>orb.classList.remove("pulse"),220);
+//  info.textContent=`Digit ${i+1} of ${pi.length}`;
+ info.textContent=`Digit ${i+1}`;
+//  orb.classList.add("pulse");
+//  setTimeout(()=>orb.classList.remove("pulse"),220);
  bell(notes[d]);
 }
 function next(){i=(i+1)%pi.length;render();}
