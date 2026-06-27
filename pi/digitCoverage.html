@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Pi</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<!-- <script type="text/javascript" src="..\jQuery.js"></script> -->
+	<!-- <script type="text/javascript" src="script.js"></script> -->
+	<!-- <script type="text/javascript" src="data.js"></script> -->
+	<script>
+		let MAX_COUNT = 100;
+		let CURRENT_COUNT = 0;
+		// let outputElem;
+		function init() {
+			console.log("init called");
+			// outputElem = document.getElementById("output");
+		}
+		let arrDigs = [];
+		let digCount = 0;
+		const NUM_DIGITS = 1000;
+		function calc() {
+			let nStart = digCount * NUM_DIGITS;
+			fetch("https://api.pi.delivery/v1/pi?start=" + nStart + "&numberOfDigits=" + NUM_DIGITS)
+			.then(response => response.json())
+			.then(data => {
+				console.log("Pi Digits:", data.content);
+				// a = data.content
+				arrDigs.push(data.content);
+				// outputElem.innerHTML = arrDigs.join("");
+				digCount++;
+				document.getElementById("piLoaded").innerText = "Loaded " + (digCount * NUM_DIGITS) + " digits of Pi.";
+				CURRENT_COUNT++;
+				if(CURRENT_COUNT < MAX_COUNT) {
+					calc();
+				} else {
+					console.log("Finished loading Pi digits.");
+				}
+			})
+			.catch(error => console.error("Error fetching Pi:", error));
+			}
+		
+		let b;
+		let arrIndiceDigits = [];
+		let dMax = -1;
+		function calcCoverage() {
+			let numDigits = parseInt(document.getElementById("numDigits").value);
+			b = arrDigs.join("").replaceAll("\n", "").replaceAll(",", "")
+			arrIndiceDigits = [];
+			dMax = -1;
+			let numDigsNotFound = 0;
+			for (var i=0; i<=numDigits; i++) {
+				if (b.indexOf(i) == -1) {
+					console.log("Digit " + i + " not found in the first " + numDigits + " digits of Pi.");
+					numDigsNotFound++;
+				} else {
+					dMax = b.indexOf(i) > dMax ? b.indexOf(i) : dMax;
+					arrIndiceDigits.push([i, b.indexOf(i)]);
+				}
+			}
+
+			if (numDigsNotFound === 0) {
+				console.log("All digits from 0 to " + (numDigits) + " are present in the first " + dMax + " digits of Pi.");
+			} else {
+				console.log(numDigsNotFound + " digits are not found in the first " + numDigits + " digits of Pi.");
+			}
+		}
+
+		
+	</script>
+</head>
+<body onload="init()">
+	<input type="button" id="btnPi" value="Load Pi" onclick="calc()"><span id="piLoaded"></span><br>
+	<input type="number" id="numDigits" placeholder="Calculate Coverage till" value="9"><input type="button" id="calcCoverage" value="Calculate Coverage" onclick="calcCoverage()">
+	<div id="output"></div>
+</body>
+</html>
