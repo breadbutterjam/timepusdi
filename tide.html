@@ -207,9 +207,9 @@
           box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
         }
 
-        #clockIcon.modified {
-          /* background-color: rgba(59, 130, 246, 0.9); */
-        }
+        /* #clockIcon.modified {
+          /* background-color: rgba(59, 130, 246, 0.9); 
+        } */
 
         #clockIcon svg {
           width: 24px;
@@ -469,7 +469,9 @@
           </svg>
         </div>
     </div>
+<script src="tideData.js"></script>    
 <script>
+    // console.log("Initializing tide simulation...");
     const maxOceanLevel = 60; // as % of viewport height
     const minOceanLevel = 20; // as % of viewport height
 
@@ -718,7 +720,7 @@
       };
     }
     
-
+    /*
     const TIDE_DATA = [{
     date: "2026-05-24",
     tides: [
@@ -1460,7 +1462,10 @@
     sunset: "19:18"
   }
 ]
+    */
 
+    // console.log("Flatten all tides into one array with full Date objects");
+    // console.log("tide data", TIDE_DATA);
     // Flatten all tides into one array with full Date objects
     const allTides = TIDE_DATA.flatMap(day => {
         return day.tides.map(tide => {

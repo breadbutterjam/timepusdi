@@ -5,6 +5,19 @@
         { type: "low", time: "14:03", height: 1.86 },
         { type: "high", time: "20:13", height: 3.69 }
       ], sunrise: "06:05", sunset: "19:04" },
+
+NEED DATA IN THIS FORMAT
+ { date: "2026-05-12", tides: [
+        { type: "low", time: "02:03", height: 1.56 },
+        { type: "high", time: "08:15", height: 3.25 },
+        { type: "low", time: "14:03", height: 1.86 },
+        { type: "high", time: "20:13", height: 3.69 }
+      ], sunrise: "06:05", sunset: "19:04" },   
+      
+Step 1: go to https://www.tide-forecast.com/locations/Bombay-India/tides/latest
+Step 2: copy this entire code base in dev console
+Step 3: run getTideData() in dev console
+Step 4: copy the output from console and paste it in tideData.js file
 */
 let tideBoxes;
 tideBoxes = document.getElementsByClassName("tide_flex_start")[0].children;
@@ -97,8 +110,13 @@ function getTideData() {
     tideData.push(getDataFromTideBox(tideBoxes[i]));
   }
 
-  let finalData = toJSObjectString(tideData);
-  copy(finalData);
-
+  // console.log(tideData);
+  // let finalData = toJSObjectString(tideData);
+  // copy(finalData);
+  copy(
+  JSON.stringify(tideData, null, 2)
+    .replace(/"([^"]+)":/g, '$1:')
+);
+  console.log("Tide data copied to clipboard in JSON format.");
   return tideData;
 }
