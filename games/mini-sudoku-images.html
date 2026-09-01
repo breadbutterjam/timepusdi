@@ -143,8 +143,10 @@
   .cell.given{ cursor:default; }
 
   .cell-icon{
-    width:62%;
-    height:62%;
+    /* width:62%;
+    height:62%; */
+    width:100%;
+    height:100%;
     object-fit:contain;
     pointer-events:none;
   }
@@ -154,8 +156,8 @@
     content:'';
     position:absolute;
     top:6px;
-    right:6px;
-    width:6px;
+    right:1px;
+    width:1px;
     height:6px;
     border-radius:50%;
     background:var(--user-fill);
@@ -333,11 +335,11 @@
 <script id="symbols-config" type="application/json">
 {
   "symbols": [
-    { "value": 1, "name": "Ant",    "image": "images/ant.png" },
-    { "value": 2, "name": "Elephant",    "image": "images/elephant.png" },
+    { "value": 1, "name": "Elephant",    "image": "images/elephant.png" },
+    { "value": 2, "name": "Dog",    "image": "images/dodo.png" },
     { "value": 3, "name": "Giraffe",    "image": "images/giraffe.png" },
     { "value": 4, "name": "Hippo",    "image": "images/hippo.png" },
-    { "value": 5, "name": "Meerkat", "image": "images/meerkat.png" },
+    { "value": 5, "name": "Parrot", "image": "images/parrot.png" },
     { "value": 6, "name": "Panda",   "image": "images/panda.png" }
   ]
 }
