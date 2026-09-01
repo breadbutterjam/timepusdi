@@ -19,6 +19,7 @@
     --ink-soft:      #5C6B60;
     --accent:        #35634A;
     --accent-soft:   #DCE7DD;
+    --user-fill:     #1B6B3D;
     --select:        #F4C95D;
     --select-soft:   #FBEBBE;
     --line-strong:   #1E2A22;
@@ -135,9 +136,14 @@
     cursor:default;
   }
 
+  .cell.user{
+    color:var(--user-fill);
+    font-weight:600;
+  }
+
   .cell.related{ background:var(--accent-soft); }
 
-  .cell.same-value{ color:var(--accent); font-weight:600; }
+  .cell.same-value{ box-shadow:inset 0 0 0 2px var(--accent); }
 
   .cell.selected{ background:var(--select-soft); }
 
@@ -208,6 +214,17 @@
   .pad button:active{
     background:var(--accent-soft);
     border-color:var(--accent);
+  }
+
+  .pad button:disabled{
+    opacity:0.32;
+    cursor:default;
+    background:var(--surface);
+  }
+
+  .pad button:disabled:active{
+    background:var(--surface);
+    border-color:var(--line-soft);
   }
 
   /* ------------------------------------------------------
@@ -458,6 +475,7 @@
         cell.textContent = v === 0 ? '' : v;
 
         if(given[r][c]) cell.classList.add('given');
+        else if(v !== 0) cell.classList.add('user');
         if(conflicts.has(r + ',' + c)) cell.classList.add('conflict');
 
         if(selected){
@@ -474,6 +492,21 @@
         boardEl.appendChild(cell);
       }
     }
+    updatePad();
+  }
+
+  function updatePad(){
+    const counts = Array(7).fill(0);
+    for(let r = 0; r < 6; r++){
+      for(let c = 0; c < 6; c++){
+        const v = values[r][c];
+        if(v !== 0) counts[v]++;
+      }
+    }
+    padButtons.forEach((btn, i) => {
+      const n = i + 1;
+      btn.disabled = counts[n] >= 6;
+    });
   }
 
   function selectCell(r, c){
@@ -534,11 +567,13 @@
      NUMBER PAD
   ====================================================== */
 
+  const padButtons = [];
   for(let n = 1; n <= 6; n++){
     const btn = document.createElement('button');
     btn.textContent = n;
     btn.addEventListener('click', () => setValue(n));
     padEl.appendChild(btn);
+    padButtons.push(btn);
   }
 
   undoBtn.addEventListener('click', undo);
