@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Mini Sudoku</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+
+  /* ======================================================
+     DESIGN TOKENS
+     Swap the symbol set in symbols.json — no code changes
+     needed as long as it has exactly 6 or 9 entries.
+  ====================================================== */
+  :root{
+    --bg:            #EEF0EA;
+    --surface:       #FFFFFF;
+    --ink:           #1E2A22;
+    --ink-soft:      #5C6B60;
+    --accent:        #35634A;
+    --accent-soft:   #DCE7DD;
+    --user-fill:     #1B6B3D;
+    --select:        #F4C95D;
+    --select-soft:   #FBEBBE;
+    --line-strong:   #1E2A22;
+    --line-soft:     #C9D1C6;
+    --danger:        #B23A2E;
+    --danger-soft:   #F3D9D4;
+
+    --font-display:  'Fraunces', Georgia, serif;
+    --font-ui:       'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    --radius-sm:     8px;
+    --radius-md:     14px;
+
+    --board-max:     420px;
+  }
+
+  /* ======================================================
+     BASE / LAYOUT
+  ====================================================== */
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  html,body{
+    margin:0;
+    min-height:100%;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:var(--font-ui);
+    touch-action:manipulation;
+  }
+
+  body{
+    display:flex;
+    justify-content:center;
+    padding:28px 18px 40px;
+  }
+
+  .app{
+    width:100%;
+    max-width:var(--board-max);
+    display:flex;
+    flex-direction:column;
+    gap:22px;
+  }
+
+  .notice{
+    max-width:420px;
+    margin:60px auto;
+    padding:0 20px;
+    font-family:var(--font-ui);
+    line-height:1.6;
+    color:var(--ink);
+  }
+  .notice code{
+    background:var(--accent-soft);
+    padding:2px 6px;
+    border-radius:4px;
+  }
+
+  /* ------------------------------------------------------
+     HEADER
+  ------------------------------------------------------ */
+  .header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+  }
+
+  .title{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:26px;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+
+  .meta{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+    font-variant-numeric:tabular-nums;
+    color:var(--ink-soft);
+    font-size:15px;
+  }
+
+  .meta strong{
+    color:var(--ink);
+    font-weight:600;
+  }
+
+  /* ------------------------------------------------------
+     BOARD
+  ------------------------------------------------------ */
+  .board-wrap{
+    position:relative;
+  }
+
+  .board{
+    display:grid;
+    aspect-ratio:1;
+    width:100%;
+    background:var(--line-strong);
+    border:3px solid var(--line-strong);
+    border-radius:var(--radius-md);
+    overflow:hidden;
+    gap:1px;
+  }
+
+  .cell{
+    background:var(--surface);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    user-select:none;
+    position:relative;
+  }
+
+  .cell.given{ cursor:default; }
+
+  .cell-icon{
+    width:62%;
+    height:62%;
+    object-fit:contain;
+    pointer-events:none;
+  }
+
+  /* small dot marks a cell the player filled in, vs. a given clue */
+  .cell.user::after{
+    content:'';
+    position:absolute;
+    top:6px;
+    right:6px;
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:var(--user-fill);
+  }
+
+  .cell.related{ background:var(--accent-soft); }
+
+  .cell.same-value{ box-shadow:inset 0 0 0 2px var(--accent); }
+
+  .cell.selected{ background:var(--select-soft); }
+
+  .cell.selected.given{ background:var(--select-soft); }
+
+  .cell.conflict{ background:var(--danger-soft); box-shadow:inset 0 0 0 2px var(--danger); }
+
+  /* ------------------------------------------------------
+     WIN OVERLAY
+  ------------------------------------------------------ */
+  .win-banner{
+    position:absolute;
+    inset:0;
+    background:rgba(30,42,34,0.92);
+    color:#fff;
+    border-radius:var(--radius-md);
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    text-align:center;
+    padding:20px;
+  }
+
+  .win-banner.show{ display:flex; }
+
+  .win-banner .win-title{
+    font-family:var(--font-display);
+    font-size:28px;
+    font-weight:600;
+  }
+
+  .win-banner .win-time{
+    font-size:15px;
+    color:var(--accent-soft);
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ------------------------------------------------------
+     SYMBOL PAD
+  ------------------------------------------------------ */
+  .pad{
+    display:grid;
+    grid-template-columns:repeat(3, 1fr);
+    gap:10px;
+  }
+
+  .pad button{
+    height:56px;
+    border-radius:var(--radius-sm);
+    border:1.5px solid var(--line-soft);
+    background:var(--surface);
+    cursor:pointer;
+    transition:background 0.12s ease, border-color 0.12s ease, opacity 0.12s ease;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  .pad-icon{
+    width:28px;
+    height:28px;
+    object-fit:contain;
+    pointer-events:none;
+  }
+
+  .pad button:active{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+  }
+
+  .pad button:disabled{
+    opacity:0.32;
+    cursor:default;
+    background:var(--surface);
+  }
+
+  .pad button:disabled:active{
+    background:var(--surface);
+    border-color:var(--line-soft);
+  }
+
+  /* ------------------------------------------------------
+     ACTION ROW
+  ------------------------------------------------------ */
+  .actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+
+  .actions button{
+    height:48px;
+    border-radius:var(--radius-sm);
+    border:1.5px solid var(--line-soft);
+    background:var(--surface);
+    font-family:var(--font-ui);
+    font-weight:500;
+    font-size:15px;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:opacity 0.12s ease;
+  }
+
+  .actions button:disabled{
+    opacity:0.4;
+    cursor:default;
+  }
+
+  .actions button:active:not(:disabled){
+    background:var(--accent-soft);
+    color:var(--ink);
+  }
+
+  .new-game{
+    width:100%;
+    height:50px;
+    border-radius:var(--radius-sm);
+    border:none;
+    background:var(--accent);
+    color:#fff;
+    font-family:var(--font-ui);
+    font-weight:600;
+    font-size:15px;
+    cursor:pointer;
+  }
+
+  .new-game:active{ opacity:0.85; }
+
+</style>
+</head>
+<body>
+
+<div class="app" id="app" style="display:none">
+
+  <div class="header">
+    <h1 class="title">Mini Sudoku</h1>
+    <div class="meta"><strong id="timer">0:00</strong></div>
+  </div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+    <div class="win-banner" id="winBanner">
+      <div class="win-title">Solved</div>
+      <div class="win-time" id="winTime"></div>
+    </div>
+  </div>
+
+  <div class="pad" id="pad"></div>
+
+  <div class="actions">
+    <button id="undoBtn">Undo</button>
+    <button id="eraseBtn">Erase</button>
+  </div>
+
+  <button class="new-game" id="newGameBtn">New game</button>
+
+</div>
+
+<!-- ======================================================
+     SYMBOL CONFIG — edit this block to change the icon set.
+     Provide exactly 6 entries for a 6x6 board (2x3 boxes)
+     or exactly 9 entries for a full 9x9 board (3x3 boxes).
+     "image" is a relative path to a file in /images.
+====================================================== -->
+<script id="symbols-config" type="application/json">
+{
+  "symbols": [
+    { "value": 1, "name": "Ant",    "image": "images/ant.png" },
+    { "value": 2, "name": "Elephant",    "image": "images/elephant.png" },
+    { "value": 3, "name": "Giraffe",    "image": "images/giraffe.png" },
+    { "value": 4, "name": "Hippo",    "image": "images/hippo.png" },
+    { "value": 5, "name": "Meerkat", "image": "images/meerkat.png" },
+    { "value": 6, "name": "Panda",   "image": "images/panda.png" }
+  ]
+}
+</script>
+
+<script>
+(function(){
+
+  /* ======================================================
+     CONFIG — read from the inline JSON block above
+  ====================================================== */
+
+  let SYMBOLS = [];   // [{value, name, image}, ...] ordered by value
+  let SIZE    = 0;    // 6 or 9
+  let BOX_H   = 0;    // box height in rows
+  let BOX_W   = 0;    // box width in cols
+
+  function showFatalNotice(html){
+    document.body.innerHTML = '<div class="notice">' + html + '</div>';
+  }
+
+  function loadSymbols(){
+    let data;
+    try{
+      const raw = document.getElementById('symbols-config').textContent;
+      data = JSON.parse(raw);
+    }catch(err){
+      showFatalNotice('The symbol config block contains invalid JSON. Check the <code>&lt;script id="symbols-config"&gt;</code> block near the top of the file.');
+      throw err;
+    }
+
+    const list = data && data.symbols;
+    if(!list || (list.length !== 6 && list.length !== 9)){
+      showFatalNotice('The symbol config must contain exactly 6 or 9 symbol entries (found ' + (list ? list.length : 0) + ').');
+      throw new Error('invalid symbol count');
+    }
+
+    SYMBOLS = list.slice().sort((a, b) => a.value - b.value);
+    SIZE = SYMBOLS.length;
+    if(SIZE === 6){ BOX_H = 2; BOX_W = 3; }
+    else { BOX_H = 3; BOX_W = 3; }
+  }
+
+  function symbolFor(value){
+    return SYMBOLS[value - 1];
+  }
+
+  /* ======================================================
+     PUZZLE GENERATION  (size x size, boxes = BOX_H x BOX_W)
+  ====================================================== */
+
+  function emptyGrid(){
+    return Array.from({length:SIZE}, () => Array(SIZE).fill(0));
+  }
+
+  function shuffle(arr){
+    for(let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function isValid(grid, r, c, val){
+    for(let i = 0; i < SIZE; i++){
+      if(grid[r][i] === val) return false;
+      if(grid[i][c] === val) return false;
+    }
+    const boxR = Math.floor(r / BOX_H) * BOX_H;
+    const boxC = Math.floor(c / BOX_W) * BOX_W;
+    for(let i = boxR; i < boxR + BOX_H; i++){
+      for(let j = boxC; j < boxC + BOX_W; j++){
+        if(grid[i][j] === val) return false;
+      }
+    }
+    return true;
+  }
+
+  function generateSolved(){
+    const grid = emptyGrid();
+    const total = SIZE * SIZE;
+    function fill(idx){
+      if(idx === total) return true;
+      const r = Math.floor(idx / SIZE), c = idx % SIZE;
+      const nums = shuffle(Array.from({length:SIZE}, (_, i) => i + 1));
+      for(const v of nums){
+        if(isValid(grid, r, c, v)){
+          grid[r][c] = v;
+          if(fill(idx + 1)) return true;
+          grid[r][c] = 0;
+        }
+      }
+      return false;
+    }
+    fill(0);
+    return grid;
+  }
+
+  function countSolutions(grid, limit){
+    let count = 0;
+    const total = SIZE * SIZE;
+    function bt(idx){
+      if(count >= limit) return;
+      if(idx === total){ count++; return; }
+      const r = Math.floor(idx / SIZE), c = idx % SIZE;
+      if(grid[r][c] !== 0){ bt(idx + 1); return; }
+      for(let v = 1; v <= SIZE; v++){
+        if(isValid(grid, r, c, v)){
+          grid[r][c] = v;
+          bt(idx + 1);
+          grid[r][c] = 0;
+          if(count >= limit) return;
+        }
+      }
+    }
+    bt(0);
+    return count;
+  }
+
+  function deepCopy(grid){
+    return grid.map(row => row.slice());
+  }
+
+  function generatePuzzle(){
+    const solved = generateSolved();
+    const puzzle = deepCopy(solved);
+    const total = SIZE * SIZE;
+    const positions = shuffle(Array.from({length: total}, (_, i) => i));
+
+    for(const pos of positions){
+      const r = Math.floor(pos / SIZE), c = pos % SIZE;
+      const backup = puzzle[r][c];
+      puzzle[r][c] = 0;
+      const test = deepCopy(puzzle);
+      if(countSolutions(test, 2) !== 1){
+        puzzle[r][c] = backup;
+      }
+    }
+    return { puzzle, solved };
+  }
+
+  /* ======================================================
+     GAME STATE
+  ====================================================== */
+
+  let solution, given, values, selected, history, timerId, seconds, won;
+  let padButtons = [];
+
+  const boardEl   = document.getElementById('board');
+  const padEl     = document.getElementById('pad');
+  const timerEl   = document.getElementById('timer');
+  const undoBtn   = document.getElementById('undoBtn');
+  const eraseBtn  = document.getElementById('eraseBtn');
+  const winBanner = document.getElementById('winBanner');
+  const winTimeEl = document.getElementById('winTime');
+
+  function buildPad(){
+    padEl.innerHTML = '';
+    padButtons = [];
+    SYMBOLS.forEach(sym => {
+      const btn = document.createElement('button');
+      const img = document.createElement('img');
+      img.src = sym.image;
+      img.alt = sym.name;
+      img.className = 'pad-icon';
+      btn.appendChild(img);
+      btn.addEventListener('click', () => setValue(sym.value));
+      padEl.appendChild(btn);
+      padButtons.push(btn);
+    });
+    boardEl.style.gridTemplateColumns = `repeat(${SIZE}, 1fr)`;
+    boardEl.style.gridTemplateRows = `repeat(${SIZE}, 1fr)`;
+  }
+
+  function startNewGame(){
+    const { puzzle, solved } = generatePuzzle();
+    solution = solved;
+    given = puzzle.map(row => row.map(v => v !== 0));
+    values = deepCopy(puzzle);
+    selected = null;
+    history = [];
+    seconds = 0;
+    won = false;
+    winBanner.classList.remove('show');
+    updateTimerDisplay();
+    clearInterval(timerId);
+    timerId = setInterval(() => {
+      seconds++;
+      updateTimerDisplay();
+    }, 1000);
+    renderBoard();
+    updateActionButtons();
+  }
+
+  function updateTimerDisplay(){
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    timerEl.textContent = m + ':' + String(s).padStart(2, '0');
+  }
+
+  function conflictSet(){
+    const conflicts = new Set();
+    for(let r = 0; r < SIZE; r++){
+      for(let c = 0; c < SIZE; c++){
+        const v = values[r][c];
+        if(v === 0) continue;
+        for(let i = 0; i < SIZE; i++){
+          if(i !== c && values[r][i] === v) conflicts.add(r + ',' + c);
+          if(i !== r && values[i][c] === v) conflicts.add(r + ',' + c);
+        }
+        const boxR = Math.floor(r / BOX_H) * BOX_H, boxC = Math.floor(c / BOX_W) * BOX_W;
+        for(let i = boxR; i < boxR + BOX_H; i++){
+          for(let j = boxC; j < boxC + BOX_W; j++){
+            if((i !== r || j !== c) && values[i][j] === v) conflicts.add(r + ',' + c);
+          }
+        }
+      }
+    }
+    return conflicts;
+  }
+
+  function renderBoard(){
+    boardEl.innerHTML = '';
+    const conflicts = conflictSet();
+    const selVal = selected ? values[selected.r][selected.c] : 0;
+
+    for(let r = 0; r < SIZE; r++){
+      for(let c = 0; c < SIZE; c++){
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.dataset.r = r;
+        cell.dataset.c = c;
+
+        const v = values[r][c];
+        if(v !== 0){
+          const sym = symbolFor(v);
+          const img = document.createElement('img');
+          img.src = sym.image;
+          img.alt = sym.name;
+          img.className = 'cell-icon';
+          cell.appendChild(img);
+        }
+
+        if(given[r][c]) cell.classList.add('given');
+        else if(v !== 0) cell.classList.add('user');
+        if(conflicts.has(r + ',' + c)) cell.classList.add('conflict');
+
+        if(selected){
+          const sameRow = r === selected.r;
+          const sameCol = c === selected.c;
+          const sameBox = Math.floor(r / BOX_H) === Math.floor(selected.r / BOX_H) &&
+                           Math.floor(c / BOX_W) === Math.floor(selected.c / BOX_W);
+          if(sameRow || sameCol || sameBox) cell.classList.add('related');
+          if(r === selected.r && c === selected.c) cell.classList.add('selected');
+          if(selVal !== 0 && v === selVal) cell.classList.add('same-value');
+        }
+
+        if((c + 1) % BOX_W === 0 && c !== SIZE - 1){
+          cell.style.borderRight = '2.5px solid var(--line-strong)';
+        }
+        if((r + 1) % BOX_H === 0 && r !== SIZE - 1){
+          cell.style.borderBottom = '2.5px solid var(--line-strong)';
+        }
+
+        cell.addEventListener('click', () => selectCell(r, c));
+        boardEl.appendChild(cell);
+      }
+    }
+    updatePad();
+  }
+
+  function updatePad(){
+    const counts = Array(SIZE + 1).fill(0);
+    for(let r = 0; r < SIZE; r++){
+      for(let c = 0; c < SIZE; c++){
+        const v = values[r][c];
+        if(v !== 0) counts[v]++;
+      }
+    }
+    padButtons.forEach((btn, i) => {
+      const n = i + 1;
+      btn.disabled = counts[n] >= SIZE;
+    });
+  }
+
+  function selectCell(r, c){
+    if(won) return;
+    selected = { r, c };
+    renderBoard();
+  }
+
+  function setValue(v){
+    if(won || !selected) return;
+    const { r, c } = selected;
+    if(given[r][c]) return;
+    const prev = values[r][c];
+    if(prev === v) return;
+    history.push({ r, c, prev });
+    values[r][c] = v;
+    renderBoard();
+    updateActionButtons();
+    checkWin();
+  }
+
+  function eraseSelected(){
+    if(won || !selected) return;
+    const { r, c } = selected;
+    if(given[r][c]) return;
+    if(values[r][c] === 0) return;
+    history.push({ r, c, prev: values[r][c] });
+    values[r][c] = 0;
+    renderBoard();
+    updateActionButtons();
+  }
+
+  function undo(){
+    if(won || history.length === 0) return;
+    const move = history.pop();
+    values[move.r][move.c] = move.prev;
+    renderBoard();
+    updateActionButtons();
+  }
+
+  function updateActionButtons(){
+    undoBtn.disabled = history.length === 0;
+  }
+
+  function checkWin(){
+    for(let r = 0; r < SIZE; r++){
+      for(let c = 0; c < SIZE; c++){
+        if(values[r][c] !== solution[r][c]) return;
+      }
+    }
+    won = true;
+    clearInterval(timerId);
+    winTimeEl.textContent = 'Solved in ' + timerEl.textContent;
+    winBanner.classList.add('show');
+  }
+
+  undoBtn.addEventListener('click', undo);
+  eraseBtn.addEventListener('click', eraseSelected);
+  document.getElementById('newGameBtn').addEventListener('click', startNewGame);
+
+  /* ======================================================
+     INIT
+  ====================================================== */
+  try{
+    loadSymbols();
+    document.getElementById('app').style.display = 'flex';
+    buildPad();
+    startNewGame();
+  }catch(err){ /* notice already shown */ }
+
+})();
+</script>
+</body>
+</html>
