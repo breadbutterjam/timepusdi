@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Field Notes — Life Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="config.js"></script>
+<style>
+
+  /* ============================================================
+     DESIGN TOKENS — edit these to retheme the whole dashboard
+     ============================================================ */
+  :root {
+    /* --- base palette --- */
+    --navy:        #00091E;   /* page background — the "cover" */
+    --navy-deep:   #000513;   /* recessed areas, shadows */
+    --paper:       #F4EEDF;   /* parchment panel background */
+    --paper-dim:   #EBE3CE;   /* slightly recessed paper (rows, tags) */
+    --ink:         #202B23;   /* primary text on paper */
+    --ink-soft:    #5C6B5E;   /* secondary text on paper */
+    --cream:       #EDE6D3;   /* primary text on navy */
+    --cream-soft:  #A9AFA1;   /* secondary text on navy */
+    --brass:       #C08A3E;   /* accent — stamps, highlights, active state */
+    --hairline:    #C9BFA4;   /* divider lines on paper */
+    --hairline-navy: rgba(237, 230, 211, 0.18); /* divider lines on navy */
+
+    /* --- stay-type colors (Travel & Stays) --- */
+    --home:  #4B6B53;
+    --hotel: #3E6E8E;
+    --bnb:   #A24E3D;
+    --none:  #B7AD93; /* day trip / no stay recorded */
+
+    /* --- engine-type colors (Cars) --- */
+    --petrol: #C08A3E;
+    --diesel: #7A4A2E;
+    --ev:     #3E8E7E;
+
+    /* --- type --- */
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-mono: 'Space Mono', 'Courier New', monospace;
+
+    /* --- layout --- */
+    --page-max-width: 720px;
+    --radius: 3px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--navy);
+    color: var(--cream);
+    font-family: var(--font-display);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: var(--page-max-width);
+    margin: 0 auto;
+    padding: 16px 24px 96px;
+  }
+
+  /* ============================================================
+     MASTHEAD + MODULE NAV
+     ============================================================ */
+  .masthead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--hairline-navy);
+    padding-bottom: 12px;
+  }
+
+  .masthead h1 {
+    font-size: 22px;
+    font-weight: 500;
+    margin: 0;
+    letter-spacing: 0.02em;
+  }
+
+  .module-nav {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .module-nav button {
+    font-family: var(--font-mono);
+    color: var(--cream-soft);
+    background: none;
+    border: 1px solid rgba(237, 230, 211, 0.2);
+    padding: 5px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .module-nav button:hover { color: var(--cream); border-color: var(--brass); }
+
+  .module-nav button.active {
+    color: var(--navy);
+    background: var(--brass);
+    border-color: var(--brass);
+  }
+
+  /* ============================================================
+     MODULE SHELL — shared by every section, one visible at a time
+     ============================================================ */
+  .module { margin-top: 0; display: none; }
+  .module.active { display: block; }
+
+  .module-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .module-head h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--cream);
+    letter-spacing: 0.01em;
+  }
+
+  .module-head h2::before {
+    content: "";
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--brass);
+    margin-right: 9px;
+    position: relative;
+    top: -2px;
+  }
+
+  .year-tabs {
+    display: flex;
+    gap: 4px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+
+  .year-tabs button {
+    background: none;
+    border: 1px solid rgba(237, 230, 211, 0.25);
+    color: var(--cream-soft);
+    padding: 5px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  .year-tabs button.active {
+    color: var(--navy);
+    background: var(--brass);
+    border-color: var(--brass);
+  }
+
+  /* ============================================================
+     HERO PANEL — the paper stats panel, reused per module
+     ============================================================ */
+  .hero {
+    background: var(--paper);
+    color: var(--ink);
+    border-radius: 6px;
+    padding: 28px 32px 26px;
+    box-shadow: 0 24px 48px -24px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: "";
+    position: absolute;
+    top: -60px;
+    right: -60px;
+    width: 160px;
+    height: 160px;
+    border: 10px solid var(--brass);
+    border-radius: 50%;
+    opacity: 0.08;
+  }
+
+  .hero-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
+
+  .hero-number {
+    font-size: 58px;
+    font-weight: 600;
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+
+  .hero-number span {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    margin-left: 10px;
+  }
+
+  .hero-sub {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin: 4px 0 20px;
+  }
+
+  /* trio of stats side by side (Cities module) */
+  .stat-trio {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+  }
+
+  .stat-trio .stat-block .hero-number { font-size: 40px; }
+  .stat-trio .stat-block .hero-label { margin-bottom: 2px; }
+
+  /* stacked breakdown bar — reused for nights (Travel) and counts (Cars) */
+  .stay-bar {
+    display: flex;
+    width: 100%;
+    height: 14px;
+    border-radius: 7px;
+    overflow: hidden;
+    background: var(--paper-dim);
+  }
+
+  .stay-bar-seg {
+    height: 100%;
+    width: 0%;
+    transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .stay-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+
+  .stay-legend .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    position: relative;
+    top: -1px;
+  }
+
+  .stay-legend strong { color: var(--ink); font-weight: 700; }
+
+  /* ============================================================
+     LEDGER — spine + entries (Travel, Movies)
+     ============================================================ */
+  .ledger { margin-top: 24px; }
+
+  .ledger-heading {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--cream-soft);
+    margin: 0 0 18px 2px;
+  }
+
+  .spine { position: relative; padding-left: 26px; }
+
+  .spine::before {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--hairline-navy);
+  }
+
+  .entry { position: relative; padding-bottom: 26px; }
+  .entry:last-child { padding-bottom: 0; }
+
+  .entry::before {
+    content: "";
+    position: absolute;
+    left: -26px;
+    top: 5px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--entry-color, var(--none));
+    box-shadow: 0 0 0 3px var(--navy);
+  }
+
+  .entry-dates {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--brass);
+    margin-bottom: 5px;
+  }
+
+  .entry-desc {
+    font-size: 17px;
+    color: var(--cream);
+    margin-bottom: 8px;
+    font-weight: 400;
+  }
+
+  .entry-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 3px 9px;
+    border-radius: 10px;
+    background: var(--paper-dim);
+    color: var(--ink);
+  }
+
+  .tag.accent { background: var(--entry-color, var(--none)); color: var(--paper); }
+
+  .meta-sep { color: var(--cream-soft); font-family: var(--font-mono); font-size: 11px; }
+  .mono-meta { font-family: var(--font-mono); font-size: 11.5px; color: var(--cream-soft); }
+
+  /* ============================================================
+     CARS — grid of plate cards
+     ============================================================ */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 24px;
+  }
+
+  .car-card {
+    background: rgba(237, 230, 211, 0.06);
+    border: 1px solid var(--hairline-navy);
+    border-radius: 5px;
+    padding: 14px 16px;
+  }
+
+  .car-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .car-name {
+    font-size: 15px;
+    color: var(--cream);
+    line-height: 1.3;
+  }
+
+  .car-nick { color: var(--cream-soft); font-size: 13px; }
+
+  .car-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--cream-soft);
+    line-height: 1.6;
+  }
+
+  .car-meta strong { color: var(--cream); font-weight: 400; }
+
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  /* ============================================================
+     BOOKS — shelf list
+     ============================================================ */
+  .shelf { margin-top: 24px; }
+
+  .book-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--hairline-navy);
+  }
+
+  .book-row:last-child { border-bottom: none; }
+
+  .book-title {
+    font-size: 16px;
+    color: var(--cream);
+    margin: 0 0 4px;
+  }
+
+  .book-author {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--cream-soft);
+  }
+
+  .book-right {
+    text-align: right;
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--cream-soft);
+  }
+
+  .book-right .tag { display: inline-block; margin-bottom: 6px; }
+  .tag.reading { background: var(--brass); color: var(--navy-deep); }
+
+  /* ============================================================
+     CITIES — grouped by state
+     ============================================================ */
+  .state-groups { margin-top: 24px; }
+
+  .state-group { margin-bottom: 18px; }
+
+  .state-name {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--brass);
+    margin-bottom: 8px;
+  }
+
+  .city-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .city-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(237, 230, 211, 0.06);
+    border: 1px solid var(--hairline-navy);
+    border-radius: 20px;
+    padding: 5px 12px 5px 6px;
+    font-size: 14px;
+    color: var(--cream);
+  }
+
+  .visit-badge {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    background: var(--brass);
+    color: var(--navy-deep);
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .passed-through {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--hairline-navy);
+  }
+
+  .passed-through .state-name { color: var(--cream-soft); }
+
+  footer.note {
+    margin-top: 56px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--cream-soft);
+    border-top: 1px solid var(--hairline-navy);
+    padding-top: 16px;
+  }
+
+  @media (max-width: 480px) {
+    .hero-number { font-size: 44px; }
+    .masthead { flex-direction: column; align-items: flex-start; gap: 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="masthead">
+    <h1>Field Notes</h1>
+    <nav class="module-nav" id="moduleNav">
+      <button data-section="travel">Travel</button>
+      <button data-section="cars">Cars</button>
+      <button data-section="books">Books</button>
+      <button data-section="cities">Cities</button>
+      <button data-section="movies">Movies</button>
+    </nav>
+  </div>
+
+  <!-- ============================================================
+       TRAVEL & STAYS
+       ============================================================ -->
+  <section id="travel" class="module">
+    <div class="module-head">
+      <h2>Travel &amp; Stays</h2>
+      <div class="year-tabs" id="yearTabs"></div>
+    </div>
+
+    <div class="hero">
+      <p class="hero-label">Days on trips — <span id="heroYearLabel"></span></p>
+      <p class="hero-number" id="heroDaysOnTrips">—<span id="heroYtdTag"></span></p>
+      <p class="hero-sub" id="heroStayDaysLine"></p>
+      <div class="stay-bar" id="stayBar"></div>
+      <div class="stay-legend" id="stayLegend"></div>
+    </div>
+
+    <div class="ledger">
+      <p class="ledger-heading">Trips this year</p>
+      <div class="spine" id="tripSpine"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CARS DRIVEN
+       ============================================================ -->
+  <section id="cars" class="module">
+    <div class="module-head"><h2>Cars Driven</h2></div>
+
+    <div class="hero">
+      <p class="hero-label">Total cars driven</p>
+      <p class="hero-number" id="carsTotal">—</p>
+      <p class="hero-sub">by engine type</p>
+      <div class="stay-bar" id="carsBar"></div>
+      <div class="stay-legend" id="carsLegend"></div>
+    </div>
+
+    <div class="grid" id="carsGrid"></div>
+  </section>
+
+  <!-- ============================================================
+       BOOKS
+       ============================================================ -->
+  <section id="books" class="module">
+    <div class="module-head"><h2>Books</h2></div>
+
+    <div class="hero">
+      <p class="hero-label">Books finished — YTD</p>
+      <p class="hero-number" id="booksTotal">—</p>
+      <p class="hero-sub" id="booksReadingNow"></p>
+    </div>
+
+    <div class="shelf" id="booksList"></div>
+  </section>
+
+  <!-- ============================================================
+       CITIES
+       ============================================================ -->
+  <section id="cities" class="module">
+    <div class="module-head"><h2>Cities</h2></div>
+
+    <div class="hero">
+      <div class="stat-trio">
+        <div class="stat-block">
+          <p class="hero-label">Cities</p>
+          <p class="hero-number" id="citiesCount">—</p>
+        </div>
+        <div class="stat-block">
+          <p class="hero-label">States</p>
+          <p class="hero-number" id="statesCount">—</p>
+        </div>
+        <div class="stat-block">
+          <p class="hero-label">Visited, not stayed</p>
+          <p class="hero-number" id="passedCount">—</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="state-groups" id="stateGroups"></div>
+  </section>
+
+  <!-- ============================================================
+       MOVIES
+       ============================================================ -->
+  <section id="movies" class="module">
+    <div class="module-head"><h2>Movies</h2></div>
+
+    <div class="hero">
+      <p class="hero-label">Movies seen in theatre — YTD</p>
+      <p class="hero-number" id="moviesTotal">—</p>
+      <p class="hero-sub" id="moviesGapLine"></p>
+    </div>
+
+    <div class="ledger">
+      <p class="ledger-heading">Screenings this year</p>
+      <div class="spine" id="movieSpine"></div>
+    </div>
+  </section>
+
+  <footer class="note">Source: yearly Google Sheets, ported by hand for now · Cars/Books/Cities/Movies are first visual passes on static data</footer>
+
+</div>
+
+<script>
+  /* ============================================================
+     DATA — hardcoded from sheets for this visual pass.
+     Swap each block for a CSV fetch once the look is signed off.
+     ============================================================ */
+  let TRAVEL_DATA = {
+    2026: [
+      { daysOnTrip: 4, from: 'Tue, 27-Jan', to: 'Fri, 30-Jan', desc: 'Poona — Anniversary Trip - BnB Anuradha', stayType: 'BnB', daysOfStay: 3, mode: 'Gaadi - Bobcat' },
+      { daysOnTrip: 7, from: 'Sun, 15-Feb', to: 'Sat, 21-Feb', desc: 'Goa — Villa Rah', stayType: 'Home', daysOfStay: 6, mode: 'Train' },
+      { daysOnTrip: 6, from: 'Tue, 24-Feb', to: 'Sun, 1-Mar', desc: 'Chittorgarh - Udaipur', stayType: 'Home', daysOfStay: 5, mode: 'Train' },
+      { daysOnTrip: 2, from: 'Sun, 1-Mar', to: 'Mon, 2-Mar', desc: 'Gandevi — getting Merly back', stayType: 'Home', daysOfStay: 1, mode: 'Train + CRV' },
+      { daysOnTrip: 2, from: 'Wed, 15-Apr', to: 'Thu, 16-Apr', desc: 'April Bday — Alibaug / Nagaon', stayType: 'Hotel', daysOfStay: 1, mode: 'Gaadi - Bobcat' },
+      { daysOnTrip: 1, from: 'Sat, 16-May', to: 'Sat, 16-May', desc: 'Lavasu day trip — Boyzes', stayType: null, daysOfStay: 0, mode: 'Gaadi - Mercedes' },
+      { daysOnTrip: 6, from: 'Fri, 19-Jun', to: 'Wed, 24-Jun', desc: 'Rajkot — Vaat thai gai che - Tu bahut change ho gayi hai re chinki', stayType: 'Home', daysOfStay: 5, mode: 'Train' },
+    ]
+  };
+
+  let CARS_DATA = [
+    { brand: 'Mahindra', make: 'XUV 300 (Bobcat)', engine: 'Petrol', type: 'Automatic', ownedBy: '-', where: 'Bombay', wheels: '' },
+    { brand: 'Honda', make: 'Activa', engine: 'Petrol', type: 'Automatic', ownedBy: 'Singh Parivaar', where: 'Chittorgarh', wheels: '2 wheeler' },
+    { brand: 'Mahindra', make: 'Scorpio', engine: 'Diesel', type: 'Manual', ownedBy: 'SK Rental', where: 'Chittorgarh', wheels: '' },
+    { brand: 'Honda', make: 'CRV', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Gandevi', wheels: '' },
+    { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Manual', ownedBy: 'Vashi brother', where: 'Gandevi - parking', wheels: '' },
+    { brand: 'Tata', make: 'Punch', engine: 'EV', type: 'Automatic', ownedBy: 'Tata Motors Trident', where: 'Bombay', wheels: 'Test Drive' },
+    { brand: 'Kia', make: 'Carens Clavis', engine: 'EV', type: 'Automatic', ownedBy: 'Desai', where: 'Mumbai Pune expressway', wheels: '' },
+    { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Bhatts', where: 'Bombay - Kurla', wheels: '' },
+    { brand: 'Mercedes', make: 'R350', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Pawna lake - Vashi [Lavasu day trip]', wheels: '' },
+    { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Rushi', where: 'Rajkot', wheels: '' },
+    { brand: 'Honda', make: 'Access', engine: 'Petrol', type: 'Automatic', ownedBy: 'Vora Parivar', where: 'Rajkot', wheels: '2 wheeler' },
+    { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'HareRamaHareKrishna', where: 'Bombay - Kiran Darshan parking', wheels: 'Parking' },
+    { brand: 'Toyota', make: 'Innova', engine: 'Diesel', type: 'Automatic', ownedBy: 'Sumit Kalbaug', where: 'Bombay - Kiran Darshan parking', wheels: 'Parking' },
+    { brand: 'Volkswagen', make: 'Polo', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Bombay - Impromptu Dinner plans at MiniPunjab -- Dhyaanu pickup cricket practice', wheels: '' },
+  ];
+
+  let BOOKS_DATA = [
+    { title: 'India in Triangles', author: 'Shruthi Rao', medium: 'Physical book', start: 'Mon, 5-Jan', finish: 'Mon, 5-Jan', notes: 'Kitaab Khana' },
+    { title: "50 Greatest Short Stories", author: "Terry O'Brien", medium: 'Kindle', start: 'Tue, 6-Jan', finish: 'Wed, 28-Jan', notes: 'Amazon - Kindle (free with Prime)' },
+    { title: 'Small Is Beautiful: A Study of Economics As If People Mattered', author: 'E. F. Schumacher', medium: 'Physical book', start: 'Fri, 16-Jan', finish: 'Sat, 7-Feb', notes: 'Fractal library' },
+    { title: 'Change by Design', author: 'Tim Brown', medium: 'Physical book', start: 'Sun, 8-Feb', finish: 'Thu, 19-Mar', notes: 'Fractal library' },
+    { title: "Hitchhiker's Guide to the Galaxy", author: 'Douglas Adams', medium: 'Physical book', start: 'Sun, 22-Mar', finish: null, notes: 'Owned. Restaurant at end of universe: end 19-Apr' },
+  ];
+
+  const CITIES_DATA = {
+    citiesCount: 7,
+    statesCount: 4,
+    passedCount: 2,
+    visited: [
+      { city: 'Bombay', state: 'Maharashtra', visit: 'n+' },
+      { city: 'Pune', state: 'Maharashtra', visit: 'n+' },
+      { city: 'Nagaon', state: 'Maharashtra', visit: '1st' },
+      { city: 'Anjuna', state: 'Goa', visit: 'n+' },
+      { city: 'Chittorgarh', state: 'Rajasthan', visit: '2nd' },
+      { city: 'Gandevi', state: 'Gujarat', visit: 'n+' },
+      { city: 'Rajkot', state: 'Gujarat', visit: 'n+' },
+    ],
+    passedThrough: ['Udaipur', 'Lavasa'],
+  };
+
+  let MOVIES_DATA = [
+    { movie: 'Happy Patel', date: 'Tue, 20-Jan', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 19 },
+    { movie: 'Dhurandhar 2', date: 'Thu, 19-Mar', where: 'Juhu PVR', withWhom: 'Bae, RnP, Mihirbhai + Nehal, Mr. Bhatt', daysSince: 58 },
+    { movie: 'Hail Mary', date: 'Fri, 17-Apr', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 29 },
+    { movie: 'Devil Wears Prada', date: 'Thu, 14-May', where: 'Juhu PVR', withWhom: 'Bae, Panda', daysSince: 27 },
+    { movie: 'The Sheep Detective', date: 'Mon, 25-May', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 11 },
+    { movie: 'Spiderman: Brand New Day', date: 'Sun, 2-Aug', where: 'Ajanta', withWhom: 'Bae, Pooja, Bhatts, Kids', daysSince: 69 },
+    { movie: 'The Odyssey', date: 'Sat, 8-Aug', where: 'Juhu PVR', withWhom: 'Bae, RnP, Mr. Bhatt', daysSince: 6 },
+  ];
+
+  const STAY_COLORS = { Home: 'var(--home)', Hotel: 'var(--hotel)', BnB: 'var(--bnb)', none: 'var(--none)' };
+  const STAY_ORDER = ['Home', 'Hotel', 'BnB', 'none'];
+  const ENGINE_COLORS = { Petrol: 'var(--petrol)', Diesel: 'var(--diesel)', EV: 'var(--ev)' };
+
+  function normEngine(e) {
+    if (/diesel/i.test(e)) return 'Diesel';
+    if (/ev/i.test(e)) return 'EV';
+    return 'Petrol';
+  }
+
+  /* ============================================================
+     LIVE DATA — fetches each configured Google Sheet (published
+     as CSV) and overwrites the fallback arrays above. Any sheet
+     left as a "PASTE_..." placeholder in config.js is skipped,
+     so the dashboard just keeps showing sample data for that
+     module until a real link is added. Fill config.js, not here.
+     ============================================================ */
+  function isConfigured(url) {
+    return typeof url === 'string' && url && !url.startsWith('PASTE_');
+  }
+
+  function fetchCsv(url) {
+    // cache-bust so edits show up immediately instead of waiting out browser/CDN caching
+    const bustedUrl = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
+    return new Promise((resolve, reject) => {
+      Papa.parse(bustedUrl, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: results => resolve(results.data),
+        error: err => reject(err),
+      });
+    });
+  }
+
+  async function loadTravel() {
+    const cfg = (typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.travel) || {};
+    for (const [year, url] of Object.entries(cfg)) {
+      if (!isConfigured(url)) continue;
+      try {
+        const rows = await fetchCsv(url);
+        TRAVEL_DATA[year] = rows
+          .filter(r => r['Days on trips'])
+          .map(r => ({
+            daysOnTrip: parseInt(r['Days on trips']) || 0,
+            from: r['From'] || '',
+            to: r['To'] || '',
+            desc: r['Description'] || '',
+            stayType: (r['Stay type'] || '').trim() || null,
+            daysOfStay: parseInt(r['Days of Stay']) || 0,
+            mode: r['Mode'] || '', // optional — add a Mode column to the summary sheet to populate this
+          }));
+      } catch (e) { console.warn('Travel sheet fetch failed for', year, e); }
+    }
+  }
+
+  async function loadCars() {
+    const url = typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.cars;
+    if (!isConfigured(url)) return;
+    try {
+      const rows = await fetchCsv(url);
+      CARS_DATA = rows
+        .filter(r => r['Brand'])
+        .map(r => ({
+          brand: r['Brand'] || '',
+          make: r['Make'] || '',
+          engine: r['Engine'] || '',
+          type: r['Type'] || '',
+          ownedBy: (r['Owned by'] || '').trim() || '-',
+          where: r['Where'] || '',
+          wheels: r['Wheels'] || '',
+        }));
+    } catch (e) { console.warn('Cars sheet fetch failed', e); }
+  }
+
+  async function loadBooks() {
+    const url = typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.books;
+    if (!isConfigured(url)) return;
+    try {
+      const rows = await fetchCsv(url);
+      BOOKS_DATA = rows
+        .filter(r => r['Title'])
+        .map(r => ({
+          title: r['Title'] || '',
+          author: r['Author'] || '',
+          medium: r['read on'] || '',
+          start: r['start'] || '',
+          finish: (r['finish'] || '').trim() || null,
+          notes: r['link / notes'] || '',
+        }));
+    } catch (e) { console.warn('Books sheet fetch failed', e); }
+  }
+
+  async function loadMovies() {
+    const url = typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.movies;
+    if (!isConfigured(url)) return;
+    try {
+      const rows = await fetchCsv(url);
+      MOVIES_DATA = rows
+        .filter(r => r['Movie'])
+        .map(r => ({
+          movie: r['Movie'] || '',
+          date: r['Date'] || '',
+          where: r['Where'] || '',
+          withWhom: r['With'] || '',
+          daysSince: parseInt(r['days since']) || 0,
+        }));
+    } catch (e) { console.warn('Movies sheet fetch failed', e); }
+  }
+
+  // Cities is intentionally not wired yet — see chat notes on
+  // tidying that sheet's header row before we hook it up.
+
+  /* ---------------- Travel & Stays ---------------- */
+  let currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
+
+  function renderYearTabs() {
+    const el = document.getElementById('yearTabs');
+    el.innerHTML = '';
+    Object.keys(TRAVEL_DATA).sort().forEach(year => {
+      const btn = document.createElement('button');
+      btn.textContent = year;
+      if (Number(year) === currentYear) btn.classList.add('active');
+      btn.onclick = () => { currentYear = Number(year); renderTravel(); };
+      el.appendChild(btn);
+    });
+  }
+
+  function animateBar(container, segments) {
+    container.innerHTML = '';
+    segments.forEach(s => {
+      const seg = document.createElement('div');
+      seg.className = 'stay-bar-seg';
+      seg.style.background = s.color;
+      container.appendChild(seg);
+      requestAnimationFrame(() => requestAnimationFrame(() => { seg.style.width = s.pct + '%'; }));
+    });
+  }
+
+  function renderTravel() {
+    renderYearTabs();
+    const trips = TRAVEL_DATA[currentYear];
+    const totalDaysOnTrips = trips.reduce((s, t) => s + t.daysOnTrip, 0);
+    const totalStayDays = trips.reduce((s, t) => s + t.daysOfStay, 0);
+
+    document.getElementById('heroYearLabel').textContent = currentYear + ' YTD';
+    document.getElementById('heroDaysOnTrips').innerHTML = totalDaysOnTrips + '<span>days</span>';
+    document.getElementById('heroStayDaysLine').textContent =
+      totalStayDays + ' nights away from home, across ' + trips.length + ' trips';
+
+    const byType = { Home: 0, Hotel: 0, BnB: 0, none: 0 };
+    trips.forEach(t => { byType[t.stayType || 'none'] += t.daysOfStay; });
+    const stayTotal = Object.values(byType).reduce((a, b) => a + b, 0) || 1;
+
+    const segments = [];
+    const legend = document.getElementById('stayLegend');
+    legend.innerHTML = '';
+    STAY_ORDER.forEach(type => {
+      const nights = byType[type];
+      if (nights === 0) return;
+      segments.push({ pct: (nights / stayTotal) * 100, color: STAY_COLORS[type] });
+      const item = document.createElement('span');
+      item.innerHTML = `<span class="dot" style="background:${STAY_COLORS[type]}"></span>${type === 'none' ? 'Day trip' : type}: <strong>${nights}</strong> night${nights === 1 ? '' : 's'}`;
+      legend.appendChild(item);
+    });
+    animateBar(document.getElementById('stayBar'), segments);
+
+    const spine = document.getElementById('tripSpine');
+    spine.innerHTML = '';
+    trips.forEach(t => {
+      const color = STAY_COLORS[t.stayType || 'none'];
+      const entry = document.createElement('div');
+      entry.className = 'entry';
+      entry.style.setProperty('--entry-color', color);
+      entry.innerHTML = `
+        <div class="entry-dates">${t.from} → ${t.to} · ${t.daysOnTrip} day${t.daysOnTrip === 1 ? '' : 's'}</div>
+        <div class="entry-desc">${t.desc}</div>
+        <div class="entry-meta">
+          <span class="tag accent">${t.stayType || 'Day trip'}</span>
+          ${t.daysOfStay ? `<span class="meta-sep">·</span><span class="mono-meta">${t.daysOfStay} night${t.daysOfStay === 1 ? '' : 's'}</span>` : ''}
+          <span class="meta-sep">·</span><span class="mono-meta">${t.mode}</span>
+        </div>`;
+      spine.appendChild(entry);
+    });
+  }
+
+  /* ---------------- Cars Driven ---------------- */
+  function renderCars() {
+    document.getElementById('carsTotal').textContent = CARS_DATA.length;
+
+    const byEngine = { Petrol: 0, Diesel: 0, EV: 0 };
+    CARS_DATA.forEach(c => { byEngine[normEngine(c.engine)]++; });
+    const total = CARS_DATA.length;
+
+    const segments = [];
+    const legend = document.getElementById('carsLegend');
+    legend.innerHTML = '';
+    ['Petrol', 'Diesel', 'EV'].forEach(type => {
+      const count = byEngine[type];
+      if (!count) return;
+      segments.push({ pct: (count / total) * 100, color: ENGINE_COLORS[type] });
+      const item = document.createElement('span');
+      item.innerHTML = `<span class="dot" style="background:${ENGINE_COLORS[type]}"></span>${type}: <strong>${count}</strong>`;
+      legend.appendChild(item);
+    });
+    animateBar(document.getElementById('carsBar'), segments);
+
+    const grid = document.getElementById('carsGrid');
+    grid.innerHTML = '';
+    CARS_DATA.forEach(c => {
+      const engineType = normEngine(c.engine);
+      const isMine = c.ownedBy.trim() === '-';
+      const wheelsNote = c.wheels && !/2 wheeler/i.test(c.wheels) ? c.wheels : null;
+      const card = document.createElement('div');
+      card.className = 'car-card';
+      const nickMatch = c.make.match(/^(.*?)\s*\((.+)\)$/);
+      const nameHtml = nickMatch
+        ? `${c.brand} ${nickMatch[1]} <span class="car-nick">(${nickMatch[2]})</span>`
+        : `${c.brand} ${c.make}`;
+      card.innerHTML = `
+        <div class="car-top">
+          <span class="car-name">${nameHtml}</span>
+          <span class="tag" style="background:${ENGINE_COLORS[engineType]};color:var(--paper)">${engineType}</span>
+        </div>
+        <div class="car-meta">
+          ${c.type}${/2 wheeler/i.test(c.wheels) ? ' · 2-wheeler' : ''}${wheelsNote ? ' · ' + wheelsNote : ''}<br>
+          <strong>${isMine ? 'Yours' : c.ownedBy}</strong> · ${c.where}
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  /* ---------------- Books ---------------- */
+  function renderBooks() {
+    const finished = BOOKS_DATA.filter(b => b.finish);
+    const reading = BOOKS_DATA.filter(b => !b.finish);
+    document.getElementById('booksTotal').textContent = finished.length;
+    document.getElementById('booksReadingNow').textContent =
+      reading.length ? `Reading now: ${reading.map(b => b.title).join(', ')}` : '';
+
+    const list = document.getElementById('booksList');
+    list.innerHTML = '';
+    BOOKS_DATA.forEach(b => {
+      const row = document.createElement('div');
+      row.className = 'book-row';
+      row.innerHTML = `
+        <div>
+          <p class="book-title">${b.title}</p>
+          <p class="book-author">${b.author}</p>
+        </div>
+        <div class="book-right">
+          <span class="tag ${b.finish ? '' : 'reading'}">${b.finish ? b.medium : 'Reading now'}</span><br>
+          ${b.finish ? `${b.start} → ${b.finish}` : `since ${b.start}`}
+        </div>`;
+      list.appendChild(row);
+    });
+  }
+
+  /* ---------------- Cities ---------------- */
+  function renderCities() {
+    document.getElementById('citiesCount').textContent = CITIES_DATA.citiesCount;
+    document.getElementById('statesCount').textContent = CITIES_DATA.statesCount;
+    document.getElementById('passedCount').textContent = CITIES_DATA.passedCount;
+
+    const byState = {};
+    CITIES_DATA.visited.forEach(v => {
+      (byState[v.state] = byState[v.state] || []).push(v);
+    });
+
+    const el = document.getElementById('stateGroups');
+    el.innerHTML = '';
+    Object.keys(byState).forEach(state => {
+      const group = document.createElement('div');
+      group.className = 'state-group';
+      const chips = byState[state].map(v =>
+        `<span class="city-chip"><span class="visit-badge">${v.visit}</span>${v.city}</span>`
+      ).join('');
+      group.innerHTML = `<p class="state-name">${state}</p><div class="city-chips">${chips}</div>`;
+      el.appendChild(group);
+    });
+
+    const passed = document.createElement('div');
+    passed.className = 'passed-through';
+    passed.innerHTML = `<p class="state-name">Seen from the road, not stayed</p>
+      <div class="city-chips">${CITIES_DATA.passedThrough.map(c => `<span class="city-chip">${c}</span>`).join('')}</div>`;
+    el.appendChild(passed);
+  }
+
+  /* ---------------- Movies ---------------- */
+  function renderMovies() {
+    document.getElementById('moviesTotal').textContent = MOVIES_DATA.length;
+    const avgGap = Math.round(MOVIES_DATA.reduce((s, m) => s + m.daysSince, 0) / MOVIES_DATA.length);
+    document.getElementById('moviesGapLine').textContent = `~${avgGap} days between trips to the theatre, on average`;
+
+    const spine = document.getElementById('movieSpine');
+    spine.innerHTML = '';
+    MOVIES_DATA.forEach(m => {
+      const entry = document.createElement('div');
+      entry.className = 'entry';
+      entry.style.setProperty('--entry-color', 'var(--brass)');
+      entry.innerHTML = `
+        <div class="entry-dates">${m.date}</div>
+        <div class="entry-desc">${m.movie}</div>
+        <div class="entry-meta">
+          <span class="tag accent">${m.where}</span>
+          <span class="meta-sep">·</span><span class="mono-meta">with ${m.withWhom}</span>
+          <span class="meta-sep">·</span><span class="mono-meta">${m.daysSince}d since last</span>
+        </div>`;
+      spine.appendChild(entry);
+    });
+  }
+
+  /* ---------------- Tab switching ---------------- */
+  function showSection(name) {
+    document.querySelectorAll('.module').forEach(m => m.classList.toggle('active', m.id === name));
+    document.querySelectorAll('#moduleNav button').forEach(b => b.classList.toggle('active', b.dataset.section === name));
+  }
+
+  document.getElementById('moduleNav').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-section]');
+    if (btn) showSection(btn.dataset.section);
+  });
+
+  async function init() {
+    await Promise.all([loadTravel(), loadCars(), loadBooks(), loadMovies()]);
+    currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
+    renderTravel();
+    renderCars();
+    renderBooks();
+    renderCities();
+    renderMovies();
+    showSection('travel');
+  }
+
+  init();
+</script>
+
+</body>
+</html>
