@@ -248,6 +248,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 18px;
+    justify-content: space-between;
     margin-top: 14px;
     font-family: var(--font-mono);
     font-size: 12px;
@@ -265,6 +266,60 @@
   }
 
   .stay-legend strong { color: var(--ink); font-weight: 700; }
+
+  .stay-legend .stay-underline {
+    border-bottom: 2px solid var(--underline-color, var(--ink-soft));
+    padding-bottom: 1px;
+  }
+
+  /* ============================================================
+     YTD / FULL YEAR TOGGLE (Travel hero, top-right)
+     ============================================================ */
+  .ytd-toggle {
+    position: absolute;
+    top: 24px;
+    right: 28px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-soft);
+  }
+
+  .ytd-toggle .toggle-label.active { color: var(--ink); font-weight: 700; }
+
+  .switch { position: relative; display: inline-block; width: 32px; height: 17px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--paper-dim);
+    border: 1px solid var(--hairline);
+    transition: 0.2s;
+    border-radius: 18px;
+  }
+
+  .slider::before {
+    position: absolute;
+    content: "";
+    height: 11px;
+    width: 11px;
+    left: 2px;
+    bottom: 2px;
+    background-color: var(--ink-soft);
+    transition: 0.2s;
+    border-radius: 50%;
+  }
+
+  .switch input:checked + .slider { background-color: var(--brass); border-color: var(--brass); }
+  .switch input:checked + .slider::before { transform: translateX(15px); background-color: var(--paper); }
+
+  @media (max-width: 480px) {
+    .ytd-toggle { position: static; margin-bottom: 12px; }
+  }
 
   /* ============================================================
      LEDGER — spine + entries (Travel, Movies)
@@ -509,10 +564,17 @@
     </div>
 
     <div class="hero">
-      <p class="hero-label">Days on trips — <span id="heroYearLabel"></span></p>
+      <div class="ytd-toggle" id="ytdToggleWrap">
+        <span class="toggle-label" data-mode="full">Full year</span>
+        <label class="switch">
+          <input type="checkbox" id="ytdToggle" checked>
+          <span class="slider"></span>
+        </label>
+        <span class="toggle-label" data-mode="ytd">YTD</span>
+      </div>
+      <p class="hero-label">Days on trips</p>
       <p class="hero-number" id="heroDaysOnTrips">—<span id="heroYtdTag"></span></p>
       <p class="hero-sub" id="heroStayDaysLine"></p>
-      <p class="hero-sub" id="heroFullYearLine" style="opacity:.65;margin-top:-14px;"></p>
       <div class="stay-bar" id="stayBar"></div>
       <div class="stay-legend" id="stayLegend"></div>
     </div>
@@ -871,36 +933,45 @@
 
   /* ---------------- Travel & Stays ---------------- */
   let currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
+  let ytdMode = true;
+
+  const STAY_PHRASE = { Home: 'at home', Hotel: 'at a hotel', BnB: 'at a BnB' };
+
+  function updateToggleLabels() {
+    document.querySelectorAll('#ytdToggleWrap .toggle-label').forEach(el => {
+      el.classList.toggle('active', el.dataset.mode === (ytdMode ? 'ytd' : 'full'));
+    });
+  }
+
+  document.getElementById('ytdToggle').addEventListener('change', e => {
+    ytdMode = e.target.checked;
+    updateToggleLabels();
+    renderTravel();
+  });
 
   function renderTravel() {
     buildYearTabs('travelYearTabs', TRAVEL_DATA, () => currentYear, y => currentYear = y, renderTravel);
+    updateToggleLabels();
     const allTrips = TRAVEL_DATA[currentYear] || [];
 
-    // YTD = only trips on/before today's month-day, so a past year is
-    // comparable to how far the current year has gotten so far
-    const ytdTrips = allTrips.filter(t => {
+    // in YTD mode, only trips on/before today's month-day count toward
+    // the headline stats — lets a past year compare fairly to how far
+    // the current year has gotten. Full-year mode counts everything.
+    const isFuture = t => {
       const ord = parseTripMonthDay(t.from);
-      return ord === null ? true : ord <= TODAY_ORDINAL;
-    });
+      return ord !== null && ord > TODAY_ORDINAL;
+    };
+    const statsTrips = ytdMode ? allTrips.filter(t => !isFuture(t)) : allTrips;
 
-    const totalDaysOnTrips = ytdTrips.reduce((s, t) => s + t.daysOnTrip, 0);
-    const totalStayDays = ytdTrips.reduce((s, t) => s + t.daysOfStay, 0);
+    const totalDaysOnTrips = statsTrips.reduce((s, t) => s + t.daysOnTrip, 0);
+    const totalStayDays = statsTrips.reduce((s, t) => s + t.daysOfStay, 0);
 
-    document.getElementById('heroYearLabel').textContent = 'through ' + TODAY_LABEL;
     document.getElementById('heroDaysOnTrips').innerHTML = totalDaysOnTrips + '<span>days</span>';
     document.getElementById('heroStayDaysLine').textContent =
-      totalStayDays + ' nights away from home, across ' + ytdTrips.length + ' trips';
-
-    const fullYearLine = document.getElementById('heroFullYearLine');
-    if (ytdTrips.length !== allTrips.length) {
-      const fullDays = allTrips.reduce((s, t) => s + t.daysOnTrip, 0);
-      fullYearLine.textContent = `(full year so far logged: ${fullDays} days across ${allTrips.length} trips)`;
-    } else {
-      fullYearLine.textContent = '';
-    }
+      totalStayDays + ' nights away from home, across ' + statsTrips.length + ' trips';
 
     const byType = { Home: 0, Hotel: 0, BnB: 0, none: 0 };
-    ytdTrips.forEach(t => { byType[t.stayType || 'none'] += t.daysOfStay; });
+    statsTrips.forEach(t => { byType[t.stayType || 'none'] += t.daysOfStay; });
     const stayTotal = Object.values(byType).reduce((a, b) => a + b, 0) || 1;
 
     const segments = [];
@@ -911,12 +982,13 @@
       if (nights === 0) return;
       segments.push({ pct: (nights / stayTotal) * 100, color: STAY_COLORS[type] });
       const item = document.createElement('span');
-      item.innerHTML = `<span class="dot" style="background:${STAY_COLORS[type]}"></span>${type === 'none' ? 'Day trip' : type}: <strong>${nights}</strong> night${nights === 1 ? '' : 's'}`;
+      item.innerHTML = `<strong>${nights}</strong> night${nights === 1 ? '' : 's'} <span class="stay-underline" style="--underline-color:${STAY_COLORS[type]}">${STAY_PHRASE[type] || type}</span>`;
       legend.appendChild(item);
     });
     animateBar(document.getElementById('stayBar'), segments);
 
-    // ledger shows the full year's log, not just the YTD-capped subset
+    // ledger always lists the full year; in YTD mode, trips beyond
+    // today's cutoff are dimmed rather than removed
     const spine = document.getElementById('tripSpine');
     spine.innerHTML = '';
     allTrips.forEach(t => {
@@ -924,6 +996,7 @@
       const entry = document.createElement('div');
       entry.className = 'entry';
       entry.style.setProperty('--entry-color', color);
+      if (ytdMode && isFuture(t)) entry.style.opacity = '0.4';
       entry.innerHTML = `
         <div class="entry-dates">${t.from} → ${t.to} · ${t.daysOnTrip} day${t.daysOnTrip === 1 ? '' : 's'}</div>
         <div class="entry-desc">${t.desc}</div>
