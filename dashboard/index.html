@@ -322,6 +322,19 @@
   }
 
   /* ============================================================
+     TRIP LEDGER — scrolls within itself so the hero stays put.
+     100dvh (dynamic viewport height) is used with a 100vh fallback
+     first, since iOS Safari's address bar shrinks the visible area
+     in a way plain vh doesn't account for.
+     ============================================================ */
+  #tripSpine {
+    overflow-y: auto;
+    padding-right: 6px;
+    max-height: calc(100vh - 360px);
+    max-height: calc(100dvh - 360px);
+  }
+
+  /* ============================================================
      LEDGER — spine + entries (Travel, Movies)
      ============================================================ */
   .ledger { margin-top: 24px; }
@@ -572,7 +585,6 @@
         </label>
         <span class="toggle-label" data-mode="ytd">YTD</span>
       </div>
-      <p class="hero-label">Days on trips</p>
       <p class="hero-number" id="heroDaysOnTrips">—<span id="heroYtdTag"></span></p>
       <p class="hero-sub" id="heroStayDaysLine"></p>
       <div class="stay-bar" id="stayBar"></div>
@@ -580,7 +592,6 @@
     </div>
 
     <div class="ledger">
-      <p class="ledger-heading">Trips this year</p>
       <div class="spine" id="tripSpine"></div>
     </div>
   </section>
@@ -934,6 +945,7 @@
   /* ---------------- Travel & Stays ---------------- */
   let currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
   let ytdMode = true;
+  const CURRENT_CALENDAR_YEAR = TODAY.getFullYear();
 
   const STAY_PHRASE = { Home: 'at home', Hotel: 'at a hotel', BnB: 'at a BnB' };
 
@@ -951,24 +963,26 @@
 
   function renderTravel() {
     buildYearTabs('travelYearTabs', TRAVEL_DATA, () => currentYear, y => currentYear = y, renderTravel);
-    updateToggleLabels();
     const allTrips = TRAVEL_DATA[currentYear] || [];
 
-    // in YTD mode, only trips on/before today's month-day count toward
-    // the headline stats — lets a past year compare fairly to how far
-    // the current year has gotten. Full-year mode counts everything.
+    // the current calendar year is always YTD (there's no "future" to
+    // toggle off) — hide the switch and force the mode in that case
+    const isCurrentCalendarYear = currentYear === CURRENT_CALENDAR_YEAR;
+    document.getElementById('ytdToggleWrap').style.display = isCurrentCalendarYear ? 'none' : 'flex';
+    const effectiveYtd = isCurrentCalendarYear ? true : ytdMode;
+    updateToggleLabels();
+
     const isFuture = t => {
       const ord = parseTripMonthDay(t.from);
       return ord !== null && ord > TODAY_ORDINAL;
     };
-    const statsTrips = ytdMode ? allTrips.filter(t => !isFuture(t)) : allTrips;
+    const statsTrips = effectiveYtd ? allTrips.filter(t => !isFuture(t)) : allTrips;
 
     const totalDaysOnTrips = statsTrips.reduce((s, t) => s + t.daysOnTrip, 0);
-    const totalStayDays = statsTrips.reduce((s, t) => s + t.daysOfStay, 0);
 
-    document.getElementById('heroDaysOnTrips').innerHTML = totalDaysOnTrips + '<span>days</span>';
+    document.getElementById('heroDaysOnTrips').innerHTML = totalDaysOnTrips + '<span> days on a trip</span>';
     document.getElementById('heroStayDaysLine').textContent =
-      totalStayDays + ' nights away from home, across ' + statsTrips.length + ' trips';
+      `across ${statsTrips.length} trip${statsTrips.length === 1 ? '' : 's'}`;
 
     const byType = { Home: 0, Hotel: 0, BnB: 0, none: 0 };
     statsTrips.forEach(t => { byType[t.stayType || 'none'] += t.daysOfStay; });
@@ -996,7 +1010,7 @@
       const entry = document.createElement('div');
       entry.className = 'entry';
       entry.style.setProperty('--entry-color', color);
-      if (ytdMode && isFuture(t)) entry.style.opacity = '0.4';
+      if (effectiveYtd && isFuture(t)) entry.style.opacity = '0.4';
       entry.innerHTML = `
         <div class="entry-dates">${t.from} → ${t.to} · ${t.daysOnTrip} day${t.daysOnTrip === 1 ? '' : 's'}</div>
         <div class="entry-desc">${t.desc}</div>
