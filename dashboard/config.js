@@ -13,7 +13,7 @@
 const SHEET_CONFIG = {
 
   travel: {
-    2026: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT4qTWpFhmacNm3_ZM5XrUPN_FxCCsNpnktrKRjpJvb0k7ficxtLdgeAX-6VZ9wILlHsunueQoloOrN/pub?gid=873914344&single=true&output=csv',
+    2026: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT4qTWpFhmacNm3_ZM5XrUPN_FxCCsNpnktrKRjpJvb0k7ficxtLdgeAX-6VZ9wILlHsunueQoloOrN/pub?gid=873914344&single=true&output=csv', //2026 - All (Summary)
     2025: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vT-v488Y0Pu9gNGwv54ql2SZu8Z045AkXW6SZzvkj7AbExFn_9I6AJL53qEbFcxPoOYZKsJ0lCUNfpV/pub?gid=126427389&single=true&output=csv', //2025 - All (Summary)
   },
 
