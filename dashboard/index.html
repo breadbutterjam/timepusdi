@@ -505,13 +505,14 @@
   <section id="travel" class="module">
     <div class="module-head">
       <h2>Travel &amp; Stays</h2>
-      <div class="year-tabs" id="yearTabs"></div>
+      <div class="year-tabs" id="travelYearTabs"></div>
     </div>
 
     <div class="hero">
       <p class="hero-label">Days on trips — <span id="heroYearLabel"></span></p>
       <p class="hero-number" id="heroDaysOnTrips">—<span id="heroYtdTag"></span></p>
       <p class="hero-sub" id="heroStayDaysLine"></p>
+      <p class="hero-sub" id="heroFullYearLine" style="opacity:.65;margin-top:-14px;"></p>
       <div class="stay-bar" id="stayBar"></div>
       <div class="stay-legend" id="stayLegend"></div>
     </div>
@@ -526,10 +527,13 @@
        CARS DRIVEN
        ============================================================ -->
   <section id="cars" class="module">
-    <div class="module-head"><h2>Cars Driven</h2></div>
+    <div class="module-head">
+      <h2>Cars Driven</h2>
+      <div class="year-tabs" id="carsYearTabs"></div>
+    </div>
 
     <div class="hero">
-      <p class="hero-label">Total cars driven</p>
+      <p class="hero-label">Total cars driven — <span id="carsYearLabel"></span></p>
       <p class="hero-number" id="carsTotal">—</p>
       <p class="hero-sub">by engine type</p>
       <div class="stay-bar" id="carsBar"></div>
@@ -543,10 +547,13 @@
        BOOKS
        ============================================================ -->
   <section id="books" class="module">
-    <div class="module-head"><h2>Books</h2></div>
+    <div class="module-head">
+      <h2>Books</h2>
+      <div class="year-tabs" id="booksYearTabs"></div>
+    </div>
 
     <div class="hero">
-      <p class="hero-label">Books finished — YTD</p>
+      <p class="hero-label">Books finished — <span id="booksYearLabel"></span></p>
       <p class="hero-number" id="booksTotal">—</p>
       <p class="hero-sub" id="booksReadingNow"></p>
     </div>
@@ -584,10 +591,13 @@
        MOVIES
        ============================================================ -->
   <section id="movies" class="module">
-    <div class="module-head"><h2>Movies</h2></div>
+    <div class="module-head">
+      <h2>Movies</h2>
+      <div class="year-tabs" id="moviesYearTabs"></div>
+    </div>
 
     <div class="hero">
-      <p class="hero-label">Movies seen in theatre — YTD</p>
+      <p class="hero-label">Movies seen in theatre — <span id="moviesYearLabel"></span></p>
       <p class="hero-number" id="moviesTotal">—</p>
       <p class="hero-sub" id="moviesGapLine"></p>
     </div>
@@ -598,7 +608,7 @@
     </div>
   </section>
 
-  <footer class="note">Source: yearly Google Sheets, ported by hand for now · Cars/Books/Cities/Movies are first visual passes on static data</footer>
+  <footer class="note">Source: yearly Google Sheets, published as CSV · Cities still on sample data pending a sheet cleanup</footer>
 
 </div>
 
@@ -619,30 +629,34 @@
     ]
   };
 
-  let CARS_DATA = [
-    { brand: 'Mahindra', make: 'XUV 300 (Bobcat)', engine: 'Petrol', type: 'Automatic', ownedBy: '-', where: 'Bombay', wheels: '' },
-    { brand: 'Honda', make: 'Activa', engine: 'Petrol', type: 'Automatic', ownedBy: 'Singh Parivaar', where: 'Chittorgarh', wheels: '2 wheeler' },
-    { brand: 'Mahindra', make: 'Scorpio', engine: 'Diesel', type: 'Manual', ownedBy: 'SK Rental', where: 'Chittorgarh', wheels: '' },
-    { brand: 'Honda', make: 'CRV', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Gandevi', wheels: '' },
-    { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Manual', ownedBy: 'Vashi brother', where: 'Gandevi - parking', wheels: '' },
-    { brand: 'Tata', make: 'Punch', engine: 'EV', type: 'Automatic', ownedBy: 'Tata Motors Trident', where: 'Bombay', wheels: 'Test Drive' },
-    { brand: 'Kia', make: 'Carens Clavis', engine: 'EV', type: 'Automatic', ownedBy: 'Desai', where: 'Mumbai Pune expressway', wheels: '' },
-    { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Bhatts', where: 'Bombay - Kurla', wheels: '' },
-    { brand: 'Mercedes', make: 'R350', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Pawna lake - Vashi [Lavasu day trip]', wheels: '' },
-    { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Rushi', where: 'Rajkot', wheels: '' },
-    { brand: 'Honda', make: 'Access', engine: 'Petrol', type: 'Automatic', ownedBy: 'Vora Parivar', where: 'Rajkot', wheels: '2 wheeler' },
-    { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'HareRamaHareKrishna', where: 'Bombay - Kiran Darshan parking', wheels: 'Parking' },
-    { brand: 'Toyota', make: 'Innova', engine: 'Diesel', type: 'Automatic', ownedBy: 'Sumit Kalbaug', where: 'Bombay - Kiran Darshan parking', wheels: 'Parking' },
-    { brand: 'Volkswagen', make: 'Polo', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Bombay - Impromptu Dinner plans at MiniPunjab -- Dhyaanu pickup cricket practice', wheels: '' },
-  ];
+  let CARS_DATA = {
+    2026: [
+      { brand: 'Mahindra', make: 'XUV 300 (Bobcat)', engine: 'Petrol', type: 'Automatic', ownedBy: '-', where: 'Bombay', wheels: '' },
+      { brand: 'Honda', make: 'Activa', engine: 'Petrol', type: 'Automatic', ownedBy: 'Singh Parivaar', where: 'Chittorgarh', wheels: '2 wheeler' },
+      { brand: 'Mahindra', make: 'Scorpio', engine: 'Diesel', type: 'Manual', ownedBy: 'SK Rental', where: 'Chittorgarh', wheels: '' },
+      { brand: 'Honda', make: 'CRV', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Gandevi', wheels: '' },
+      { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Manual', ownedBy: 'Vashi brother', where: 'Gandevi - parking', wheels: '' },
+      { brand: 'Tata', make: 'Punch', engine: 'EV', type: 'Automatic', ownedBy: 'Tata Motors Trident', where: 'Bombay', wheels: 'Test Drive' },
+      { brand: 'Kia', make: 'Carens Clavis', engine: 'EV', type: 'Automatic', ownedBy: 'Desai', where: 'Mumbai Pune expressway', wheels: '' },
+      { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Bhatts', where: 'Bombay - Kurla', wheels: '' },
+      { brand: 'Mercedes', make: 'R350', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Pawna lake - Vashi [Lavasu day trip]', wheels: '' },
+      { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Rushi', where: 'Rajkot', wheels: '' },
+      { brand: 'Honda', make: 'Access', engine: 'Petrol', type: 'Automatic', ownedBy: 'Vora Parivar', where: 'Rajkot', wheels: '2 wheeler' },
+      { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'HareRamaHareKrishna', where: 'Bombay - Kiran Darshan parking', wheels: 'Parking' },
+      { brand: 'Toyota', make: 'Innova', engine: 'Diesel', type: 'Automatic', ownedBy: 'Sumit Kalbaug', where: 'Bombay - Kiran Darshan parking', wheels: 'Parking' },
+      { brand: 'Volkswagen', make: 'Polo', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Bombay - Impromptu Dinner plans at MiniPunjab -- Dhyaanu pickup cricket practice', wheels: '' },
+    ]
+  };
 
-  let BOOKS_DATA = [
-    { title: 'India in Triangles', author: 'Shruthi Rao', medium: 'Physical book', start: 'Mon, 5-Jan', finish: 'Mon, 5-Jan', notes: 'Kitaab Khana' },
-    { title: "50 Greatest Short Stories", author: "Terry O'Brien", medium: 'Kindle', start: 'Tue, 6-Jan', finish: 'Wed, 28-Jan', notes: 'Amazon - Kindle (free with Prime)' },
-    { title: 'Small Is Beautiful: A Study of Economics As If People Mattered', author: 'E. F. Schumacher', medium: 'Physical book', start: 'Fri, 16-Jan', finish: 'Sat, 7-Feb', notes: 'Fractal library' },
-    { title: 'Change by Design', author: 'Tim Brown', medium: 'Physical book', start: 'Sun, 8-Feb', finish: 'Thu, 19-Mar', notes: 'Fractal library' },
-    { title: "Hitchhiker's Guide to the Galaxy", author: 'Douglas Adams', medium: 'Physical book', start: 'Sun, 22-Mar', finish: null, notes: 'Owned. Restaurant at end of universe: end 19-Apr' },
-  ];
+  let BOOKS_DATA = {
+    2026: [
+      { title: 'India in Triangles', author: 'Shruthi Rao', medium: 'Physical book', start: 'Mon, 5-Jan', finish: 'Mon, 5-Jan', notes: 'Kitaab Khana' },
+      { title: "50 Greatest Short Stories", author: "Terry O'Brien", medium: 'Kindle', start: 'Tue, 6-Jan', finish: 'Wed, 28-Jan', notes: 'Amazon - Kindle (free with Prime)' },
+      { title: 'Small Is Beautiful: A Study of Economics As If People Mattered', author: 'E. F. Schumacher', medium: 'Physical book', start: 'Fri, 16-Jan', finish: 'Sat, 7-Feb', notes: 'Fractal library' },
+      { title: 'Change by Design', author: 'Tim Brown', medium: 'Physical book', start: 'Sun, 8-Feb', finish: 'Thu, 19-Mar', notes: 'Fractal library' },
+      { title: "Hitchhiker's Guide to the Galaxy", author: 'Douglas Adams', medium: 'Physical book', start: 'Sun, 22-Mar', finish: null, notes: 'Owned. Restaurant at end of universe: end 19-Apr' },
+    ]
+  };
 
   const CITIES_DATA = {
     citiesCount: 7,
@@ -660,15 +674,17 @@
     passedThrough: ['Udaipur', 'Lavasa'],
   };
 
-  let MOVIES_DATA = [
-    { movie: 'Happy Patel', date: 'Tue, 20-Jan', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 19 },
-    { movie: 'Dhurandhar 2', date: 'Thu, 19-Mar', where: 'Juhu PVR', withWhom: 'Bae, RnP, Mihirbhai + Nehal, Mr. Bhatt', daysSince: 58 },
-    { movie: 'Hail Mary', date: 'Fri, 17-Apr', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 29 },
-    { movie: 'Devil Wears Prada', date: 'Thu, 14-May', where: 'Juhu PVR', withWhom: 'Bae, Panda', daysSince: 27 },
-    { movie: 'The Sheep Detective', date: 'Mon, 25-May', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 11 },
-    { movie: 'Spiderman: Brand New Day', date: 'Sun, 2-Aug', where: 'Ajanta', withWhom: 'Bae, Pooja, Bhatts, Kids', daysSince: 69 },
-    { movie: 'The Odyssey', date: 'Sat, 8-Aug', where: 'Juhu PVR', withWhom: 'Bae, RnP, Mr. Bhatt', daysSince: 6 },
-  ];
+  let MOVIES_DATA = {
+    2026: [
+      { movie: 'Happy Patel', date: 'Tue, 20-Jan', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 19 },
+      { movie: 'Dhurandhar 2', date: 'Thu, 19-Mar', where: 'Juhu PVR', withWhom: 'Bae, RnP, Mihirbhai + Nehal, Mr. Bhatt', daysSince: 58 },
+      { movie: 'Hail Mary', date: 'Fri, 17-Apr', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 29 },
+      { movie: 'Devil Wears Prada', date: 'Thu, 14-May', where: 'Juhu PVR', withWhom: 'Bae, Panda', daysSince: 27 },
+      { movie: 'The Sheep Detective', date: 'Mon, 25-May', where: 'Juhu PVR', withWhom: 'Bae', daysSince: 11 },
+      { movie: 'Spiderman: Brand New Day', date: 'Sun, 2-Aug', where: 'Ajanta', withWhom: 'Bae, Pooja, Bhatts, Kids', daysSince: 69 },
+      { movie: 'The Odyssey', date: 'Sat, 8-Aug', where: 'Juhu PVR', withWhom: 'Bae, RnP, Mr. Bhatt', daysSince: 6 },
+    ]
+  };
 
   const STAY_COLORS = { Home: 'var(--home)', Hotel: 'var(--hotel)', BnB: 'var(--bnb)', none: 'var(--none)' };
   const STAY_ORDER = ['Home', 'Hotel', 'BnB', 'none'];
@@ -691,6 +707,31 @@
     return typeof url === 'string' && url && !url.startsWith('PASTE_');
   }
 
+  // config entries can be a plain URL string, or { url, maxRows } when a
+  // sheet needs a manual row cap (see comment above tableRows below)
+  function resolveSheetEntry(entry) {
+    if (!entry) return { url: null, maxRows: null };
+    if (typeof entry === 'string') return { url: entry, maxRows: null };
+    return { url: entry.url || null, maxRows: entry.maxRows || null };
+  }
+
+  // Reads rows top-down and stops at the first blank cell in the key
+  // column (e.g. Title, Brand, Movie). This is what makes it safe to
+  // keep notes, recommendations, or scribbles below the real table in
+  // the same sheet — as long as one blank row separates them, anything
+  // after is ignored automatically. maxRows is an optional manual cap
+  // for the rare sheet where there's no such blank separator.
+  function tableRows(rows, keyHeader, maxRows) {
+    const out = [];
+    for (const r of rows) {
+      if (maxRows && out.length >= maxRows) break;
+      const val = (r[keyHeader] || '').toString().trim();
+      if (!val) break;
+      out.push(r);
+    }
+    return out;
+  }
+
   function fetchCsv(url) {
     // cache-bust so edits show up immediately instead of waiting out browser/CDN caching
     const bustedUrl = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
@@ -707,12 +748,12 @@
 
   async function loadTravel() {
     const cfg = (typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.travel) || {};
-    for (const [year, url] of Object.entries(cfg)) {
+    for (const [year, entry] of Object.entries(cfg)) {
+      const { url, maxRows } = resolveSheetEntry(entry);
       if (!isConfigured(url)) continue;
       try {
         const rows = await fetchCsv(url);
-        TRAVEL_DATA[year] = rows
-          .filter(r => r['Days on trips'])
+        TRAVEL_DATA[year] = tableRows(rows, 'Days on trips', maxRows)
           .map(r => ({
             daysOnTrip: parseInt(r['Days on trips']) || 0,
             from: r['From'] || '',
@@ -727,76 +768,95 @@
   }
 
   async function loadCars() {
-    const url = typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.cars;
-    if (!isConfigured(url)) return;
-    try {
-      const rows = await fetchCsv(url);
-      CARS_DATA = rows
-        .filter(r => r['Brand'])
-        .map(r => ({
-          brand: r['Brand'] || '',
-          make: r['Make'] || '',
-          engine: r['Engine'] || '',
-          type: r['Type'] || '',
-          ownedBy: (r['Owned by'] || '').trim() || '-',
-          where: r['Where'] || '',
-          wheels: r['Wheels'] || '',
-        }));
-    } catch (e) { console.warn('Cars sheet fetch failed', e); }
+    const cfg = (typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.cars) || {};
+    for (const [year, entry] of Object.entries(cfg)) {
+      const { url, maxRows } = resolveSheetEntry(entry);
+      if (!isConfigured(url)) continue;
+      try {
+        const rows = await fetchCsv(url);
+        CARS_DATA[year] = tableRows(rows, 'Brand', maxRows)
+          .map(r => ({
+            brand: r['Brand'] || '',
+            make: r['Make'] || '',
+            engine: r['Engine'] || '',
+            type: r['Type'] || '',
+            ownedBy: (r['Owned by'] || '').trim() || '-',
+            where: r['Where'] || '',
+            wheels: r['Wheels'] || '',
+          }));
+      } catch (e) { console.warn('Cars sheet fetch failed for', year, e); }
+    }
   }
 
   async function loadBooks() {
-    const url = typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.books;
-    if (!isConfigured(url)) return;
-    try {
-      const rows = await fetchCsv(url);
-      BOOKS_DATA = rows
-        .filter(r => r['Title'])
-        .map(r => ({
-          title: r['Title'] || '',
-          author: r['Author'] || '',
-          medium: r['read on'] || '',
-          start: r['start'] || '',
-          finish: (r['finish'] || '').trim() || null,
-          notes: r['link / notes'] || '',
-        }));
-    } catch (e) { console.warn('Books sheet fetch failed', e); }
+    const cfg = (typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.books) || {};
+    for (const [year, entry] of Object.entries(cfg)) {
+      const { url, maxRows } = resolveSheetEntry(entry);
+      if (!isConfigured(url)) continue;
+      try {
+        const rows = await fetchCsv(url);
+        BOOKS_DATA[year] = tableRows(rows, 'Title', maxRows)
+          .map(r => ({
+            title: r['Title'] || '',
+            author: r['Author'] || '',
+            medium: r['read on'] || '',
+            start: r['start'] || '',
+            finish: (r['finish'] || '').trim() || null,
+            notes: r['link / notes'] || '',
+          }));
+      } catch (e) { console.warn('Books sheet fetch failed for', year, e); }
+    }
   }
 
   async function loadMovies() {
-    const url = typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.movies;
-    if (!isConfigured(url)) return;
-    try {
-      const rows = await fetchCsv(url);
-      MOVIES_DATA = rows
-        .filter(r => r['Movie'])
-        .map(r => ({
-          movie: r['Movie'] || '',
-          date: r['Date'] || '',
-          where: r['Where'] || '',
-          withWhom: r['With'] || '',
-          daysSince: parseInt(r['days since']) || 0,
-        }));
-    } catch (e) { console.warn('Movies sheet fetch failed', e); }
+    const cfg = (typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.movies) || {};
+    for (const [year, entry] of Object.entries(cfg)) {
+      const { url, maxRows } = resolveSheetEntry(entry);
+      if (!isConfigured(url)) continue;
+      try {
+        const rows = await fetchCsv(url);
+        MOVIES_DATA[year] = tableRows(rows, 'Movie', maxRows)
+          .map(r => ({
+            movie: r['Movie'] || '',
+            date: r['Date'] || '',
+            where: r['Where'] || '',
+            withWhom: r['With'] || '',
+            daysSince: parseInt(r['days since']) || 0,
+          }));
+      } catch (e) { console.warn('Movies sheet fetch failed for', year, e); }
+    }
   }
 
   // Cities is intentionally not wired yet — see chat notes on
   // tidying that sheet's header row before we hook it up.
 
-  /* ---------------- Travel & Stays ---------------- */
-  let currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
-
-  function renderYearTabs() {
-    const el = document.getElementById('yearTabs');
+  /* ---------------- Shared: year tabs + month-day cutoff for YTD ---------------- */
+  function buildYearTabs(containerId, dataObj, getYear, setYear, onChange) {
+    const el = document.getElementById(containerId);
     el.innerHTML = '';
-    Object.keys(TRAVEL_DATA).sort().forEach(year => {
+    Object.keys(dataObj).sort().forEach(year => {
       const btn = document.createElement('button');
       btn.textContent = year;
-      if (Number(year) === currentYear) btn.classList.add('active');
-      btn.onclick = () => { currentYear = Number(year); renderTravel(); };
+      if (Number(year) === getYear()) btn.classList.add('active');
+      btn.onclick = () => { setYear(Number(year)); onChange(); };
       el.appendChild(btn);
     });
   }
+
+  function monthDayOrdinal(month, day) { return month * 100 + day; }
+
+  function parseTripMonthDay(dateStr) {
+    const m = (dateStr || '').match(/(\d{1,2})-([A-Za-z]{3})/);
+    if (!m) return null;
+    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const month = months.indexOf(m[2].toLowerCase());
+    if (month === -1) return null;
+    return monthDayOrdinal(month, parseInt(m[1], 10));
+  }
+
+  const TODAY = new Date();
+  const TODAY_ORDINAL = monthDayOrdinal(TODAY.getMonth(), TODAY.getDate());
+  const TODAY_LABEL = TODAY.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
   function animateBar(container, segments) {
     container.innerHTML = '';
@@ -809,19 +869,38 @@
     });
   }
 
-  function renderTravel() {
-    renderYearTabs();
-    const trips = TRAVEL_DATA[currentYear];
-    const totalDaysOnTrips = trips.reduce((s, t) => s + t.daysOnTrip, 0);
-    const totalStayDays = trips.reduce((s, t) => s + t.daysOfStay, 0);
+  /* ---------------- Travel & Stays ---------------- */
+  let currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
 
-    document.getElementById('heroYearLabel').textContent = currentYear + ' YTD';
+  function renderTravel() {
+    buildYearTabs('travelYearTabs', TRAVEL_DATA, () => currentYear, y => currentYear = y, renderTravel);
+    const allTrips = TRAVEL_DATA[currentYear] || [];
+
+    // YTD = only trips on/before today's month-day, so a past year is
+    // comparable to how far the current year has gotten so far
+    const ytdTrips = allTrips.filter(t => {
+      const ord = parseTripMonthDay(t.from);
+      return ord === null ? true : ord <= TODAY_ORDINAL;
+    });
+
+    const totalDaysOnTrips = ytdTrips.reduce((s, t) => s + t.daysOnTrip, 0);
+    const totalStayDays = ytdTrips.reduce((s, t) => s + t.daysOfStay, 0);
+
+    document.getElementById('heroYearLabel').textContent = 'through ' + TODAY_LABEL;
     document.getElementById('heroDaysOnTrips').innerHTML = totalDaysOnTrips + '<span>days</span>';
     document.getElementById('heroStayDaysLine').textContent =
-      totalStayDays + ' nights away from home, across ' + trips.length + ' trips';
+      totalStayDays + ' nights away from home, across ' + ytdTrips.length + ' trips';
+
+    const fullYearLine = document.getElementById('heroFullYearLine');
+    if (ytdTrips.length !== allTrips.length) {
+      const fullDays = allTrips.reduce((s, t) => s + t.daysOnTrip, 0);
+      fullYearLine.textContent = `(full year so far logged: ${fullDays} days across ${allTrips.length} trips)`;
+    } else {
+      fullYearLine.textContent = '';
+    }
 
     const byType = { Home: 0, Hotel: 0, BnB: 0, none: 0 };
-    trips.forEach(t => { byType[t.stayType || 'none'] += t.daysOfStay; });
+    ytdTrips.forEach(t => { byType[t.stayType || 'none'] += t.daysOfStay; });
     const stayTotal = Object.values(byType).reduce((a, b) => a + b, 0) || 1;
 
     const segments = [];
@@ -837,9 +916,10 @@
     });
     animateBar(document.getElementById('stayBar'), segments);
 
+    // ledger shows the full year's log, not just the YTD-capped subset
     const spine = document.getElementById('tripSpine');
     spine.innerHTML = '';
-    trips.forEach(t => {
+    allTrips.forEach(t => {
       const color = STAY_COLORS[t.stayType || 'none'];
       const entry = document.createElement('div');
       entry.className = 'entry';
@@ -850,19 +930,25 @@
         <div class="entry-meta">
           <span class="tag accent">${t.stayType || 'Day trip'}</span>
           ${t.daysOfStay ? `<span class="meta-sep">·</span><span class="mono-meta">${t.daysOfStay} night${t.daysOfStay === 1 ? '' : 's'}</span>` : ''}
-          <span class="meta-sep">·</span><span class="mono-meta">${t.mode}</span>
+          ${t.mode ? `<span class="meta-sep">·</span><span class="mono-meta">${t.mode}</span>` : ''}
         </div>`;
       spine.appendChild(entry);
     });
   }
 
   /* ---------------- Cars Driven ---------------- */
+  let currentCarsYear = Math.max(...Object.keys(CARS_DATA).map(Number));
+
   function renderCars() {
-    document.getElementById('carsTotal').textContent = CARS_DATA.length;
+    buildYearTabs('carsYearTabs', CARS_DATA, () => currentCarsYear, y => currentCarsYear = y, renderCars);
+    const cars = CARS_DATA[currentCarsYear] || [];
+
+    document.getElementById('carsYearLabel').textContent = currentCarsYear;
+    document.getElementById('carsTotal').textContent = cars.length;
 
     const byEngine = { Petrol: 0, Diesel: 0, EV: 0 };
-    CARS_DATA.forEach(c => { byEngine[normEngine(c.engine)]++; });
-    const total = CARS_DATA.length;
+    cars.forEach(c => { byEngine[normEngine(c.engine)]++; });
+    const total = cars.length || 1;
 
     const segments = [];
     const legend = document.getElementById('carsLegend');
@@ -879,7 +965,7 @@
 
     const grid = document.getElementById('carsGrid');
     grid.innerHTML = '';
-    CARS_DATA.forEach(c => {
+    cars.forEach(c => {
       const engineType = normEngine(c.engine);
       const isMine = c.ownedBy.trim() === '-';
       const wheelsNote = c.wheels && !/2 wheeler/i.test(c.wheels) ? c.wheels : null;
@@ -903,16 +989,22 @@
   }
 
   /* ---------------- Books ---------------- */
+  let currentBooksYear = Math.max(...Object.keys(BOOKS_DATA).map(Number));
+
   function renderBooks() {
-    const finished = BOOKS_DATA.filter(b => b.finish);
-    const reading = BOOKS_DATA.filter(b => !b.finish);
+    buildYearTabs('booksYearTabs', BOOKS_DATA, () => currentBooksYear, y => currentBooksYear = y, renderBooks);
+    const books = BOOKS_DATA[currentBooksYear] || [];
+
+    const finished = books.filter(b => b.finish);
+    const reading = books.filter(b => !b.finish);
+    document.getElementById('booksYearLabel').textContent = currentBooksYear;
     document.getElementById('booksTotal').textContent = finished.length;
     document.getElementById('booksReadingNow').textContent =
       reading.length ? `Reading now: ${reading.map(b => b.title).join(', ')}` : '';
 
     const list = document.getElementById('booksList');
     list.innerHTML = '';
-    BOOKS_DATA.forEach(b => {
+    books.forEach(b => {
       const row = document.createElement('div');
       row.className = 'book-row';
       row.innerHTML = `
@@ -959,14 +1051,20 @@
   }
 
   /* ---------------- Movies ---------------- */
+  let currentMoviesYear = Math.max(...Object.keys(MOVIES_DATA).map(Number));
+
   function renderMovies() {
-    document.getElementById('moviesTotal').textContent = MOVIES_DATA.length;
-    const avgGap = Math.round(MOVIES_DATA.reduce((s, m) => s + m.daysSince, 0) / MOVIES_DATA.length);
+    buildYearTabs('moviesYearTabs', MOVIES_DATA, () => currentMoviesYear, y => currentMoviesYear = y, renderMovies);
+    const movies = MOVIES_DATA[currentMoviesYear] || [];
+
+    document.getElementById('moviesYearLabel').textContent = currentMoviesYear;
+    document.getElementById('moviesTotal').textContent = movies.length;
+    const avgGap = movies.length ? Math.round(movies.reduce((s, m) => s + m.daysSince, 0) / movies.length) : 0;
     document.getElementById('moviesGapLine').textContent = `~${avgGap} days between trips to the theatre, on average`;
 
     const spine = document.getElementById('movieSpine');
     spine.innerHTML = '';
-    MOVIES_DATA.forEach(m => {
+    movies.forEach(m => {
       const entry = document.createElement('div');
       entry.className = 'entry';
       entry.style.setProperty('--entry-color', 'var(--brass)');
@@ -996,6 +1094,9 @@
   async function init() {
     await Promise.all([loadTravel(), loadCars(), loadBooks(), loadMovies()]);
     currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
+    currentCarsYear = Math.max(...Object.keys(CARS_DATA).map(Number));
+    currentBooksYear = Math.max(...Object.keys(BOOKS_DATA).map(Number));
+    currentMoviesYear = Math.max(...Object.keys(MOVIES_DATA).map(Number));
     renderTravel();
     renderCars();
     renderBooks();
