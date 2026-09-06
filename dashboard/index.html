@@ -614,7 +614,7 @@
         <div class="ytd-toggle" id="ytdToggleWrap">
           <span class="toggle-label" data-mode="full">Full year</span>
           <label class="switch">
-            <input type="checkbox" id="ytdToggle" checked>
+            <input type="checkbox" id="ytdToggle">
             <span class="slider"></span>
           </label>
           <span class="toggle-label" data-mode="ytd">YTD</span>
@@ -626,6 +626,14 @@
       </div>
 
       <div id="allView" style="display:none">
+        <div class="ytd-toggle" id="ytdToggleAllWrap">
+          <span class="toggle-label" data-mode="full">Full year</span>
+          <label class="switch">
+            <input type="checkbox" id="ytdToggleAll">
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-label" data-mode="ytd">YTD</span>
+        </div>
         <p class="hero-number" id="heroDaysOnTripsAll">—</p>
         <p class="hero-sub" id="heroStayDaysLineAll"></p>
         <div id="yearChart"></div>
@@ -633,7 +641,7 @@
       </div>
     </div>
 
-    <div class="ledger" id="travelLedgerWrap">
+    <div class="ledger">
       <div class="spine" id="tripSpine"></div>
     </div>
   </section>
@@ -1007,22 +1015,60 @@
 
   /* ---------------- Travel & Stays ---------------- */
   let currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
-  let ytdMode = true;
+  let ytdMode = false;
+  let ytdModeAll = false;
   const CURRENT_CALENDAR_YEAR = TODAY.getFullYear();
 
   const STAY_PHRASE = { Home: 'at home', Hotel: 'at a hotel', BnB: 'at a BnB' };
 
-  function updateToggleLabels() {
-    document.querySelectorAll('#ytdToggleWrap .toggle-label').forEach(el => {
-      el.classList.toggle('active', el.dataset.mode === (ytdMode ? 'ytd' : 'full'));
+  const isFutureTrip = t => {
+    const ord = parseTripMonthDay(t.from);
+    return ord !== null && ord > TODAY_ORDINAL;
+  };
+
+  function updateToggleLabels(wrapId, mode) {
+    document.querySelectorAll('#' + wrapId + ' .toggle-label').forEach(el => {
+      el.classList.toggle('active', el.dataset.mode === (mode ? 'ytd' : 'full'));
     });
   }
 
   document.getElementById('ytdToggle').addEventListener('change', e => {
     ytdMode = e.target.checked;
-    updateToggleLabels();
     renderTravel();
   });
+
+  document.getElementById('ytdToggleAll').addEventListener('change', e => {
+    ytdModeAll = e.target.checked;
+    renderTravel();
+  });
+
+  // Shared ledger renderer — used for both the single-year list and the
+  // combined "All" list. `trips` already carries a `.year` field when
+  // called from the All view, so entries can show which year they're from.
+  function renderTripLedger(trips, effectiveYtd) {
+    const spine = document.getElementById('tripSpine');
+    spine.innerHTML = '';
+    trips.forEach(t => {
+      const dotColor = STAY_COLORS[(t.legs[0] && t.legs[0].stayType) || 'none'];
+      const entry = document.createElement('div');
+      entry.className = 'entry';
+      entry.style.setProperty('--entry-color', dotColor);
+      if (effectiveYtd && isFutureTrip(t)) entry.style.opacity = '0.4';
+      const legTags = t.legs.map(leg => {
+        const c = STAY_COLORS[leg.stayType || 'none'];
+        const nightsText = leg.daysOfStay ? ` · ${leg.daysOfStay} night${leg.daysOfStay === 1 ? '' : 's'}` : '';
+        return `<span class="tag" style="background:${c};color:var(--paper)">${leg.stayType || 'Day trip'}${nightsText}</span>`;
+      }).join('');
+      entry.innerHTML = `
+        <div class="entry-dates">${t.year ? t.year + ' · ' : ''}${t.from} → ${t.to} · ${t.daysOnTrip} day${t.daysOnTrip === 1 ? '' : 's'}</div>
+        <div class="entry-desc">${t.desc}</div>
+        <div class="entry-meta">
+          ${legTags}
+          ${t.mode ? `<span class="meta-sep">·</span><span class="mono-meta">${t.mode}</span>` : ''}
+        </div>`;
+      spine.appendChild(entry);
+    });
+  }
 
   let travelView = 'year'; // 'year' | 'all'
 
@@ -1049,13 +1095,11 @@
     if (travelView === 'all') {
       document.getElementById('yearView').style.display = 'none';
       document.getElementById('allView').style.display = 'block';
-      document.getElementById('travelLedgerWrap').style.display = 'none';
       renderTravelAll();
       return;
     }
     document.getElementById('yearView').style.display = 'block';
     document.getElementById('allView').style.display = 'none';
-    document.getElementById('travelLedgerWrap').style.display = 'block';
     const allTrips = TRAVEL_DATA[currentYear] || [];
 
     // the current calendar year is always YTD (there's no "future" to
@@ -1063,13 +1107,9 @@
     const isCurrentCalendarYear = currentYear === CURRENT_CALENDAR_YEAR;
     document.getElementById('ytdToggleWrap').style.display = isCurrentCalendarYear ? 'none' : 'flex';
     const effectiveYtd = isCurrentCalendarYear ? true : ytdMode;
-    updateToggleLabels();
+    updateToggleLabels('ytdToggleWrap', ytdMode);
 
-    const isFuture = t => {
-      const ord = parseTripMonthDay(t.from);
-      return ord !== null && ord > TODAY_ORDINAL;
-    };
-    const statsTrips = effectiveYtd ? allTrips.filter(t => !isFuture(t)) : allTrips;
+    const statsTrips = effectiveYtd ? allTrips.filter(t => !isFutureTrip(t)) : allTrips;
 
     const totalDaysOnTrips = statsTrips.reduce((s, t) => s + t.daysOnTrip, 0);
 
@@ -1096,42 +1136,23 @@
 
     // ledger always lists the full year; in YTD mode, trips beyond
     // today's cutoff are dimmed rather than removed
-    const spine = document.getElementById('tripSpine');
-    spine.innerHTML = '';
-    allTrips.forEach(t => {
-      const dotColor = STAY_COLORS[(t.legs[0] && t.legs[0].stayType) || 'none'];
-      const entry = document.createElement('div');
-      entry.className = 'entry';
-      entry.style.setProperty('--entry-color', dotColor);
-      if (effectiveYtd && isFuture(t)) entry.style.opacity = '0.4';
-      const legTags = t.legs.map(leg => {
-        const c = STAY_COLORS[leg.stayType || 'none'];
-        const nightsText = leg.daysOfStay ? ` · ${leg.daysOfStay} night${leg.daysOfStay === 1 ? '' : 's'}` : '';
-        return `<span class="tag" style="background:${c};color:var(--paper)">${leg.stayType || 'Day trip'}${nightsText}</span>`;
-      }).join('');
-      entry.innerHTML = `
-        <div class="entry-dates">${t.from} → ${t.to} · ${t.daysOnTrip} day${t.daysOnTrip === 1 ? '' : 's'}</div>
-        <div class="entry-desc">${t.desc}</div>
-        <div class="entry-meta">
-          ${legTags}
-          ${t.mode ? `<span class="meta-sep">·</span><span class="mono-meta">${t.mode}</span>` : ''}
-        </div>`;
-      spine.appendChild(entry);
-    });
+    renderTripLedger(allTrips, effectiveYtd);
   }
 
   /* ---------------- Travel: "All years" aggregate view ---------------- */
   function renderTravelAll() {
+    updateToggleLabels('ytdToggleAllWrap', ytdModeAll);
     const years = Object.keys(TRAVEL_DATA).map(Number).sort((a, b) => a - b);
 
     const yearStats = years.map(year => {
       const trips = TRAVEL_DATA[year] || [];
-      const totalDays = trips.reduce((s, t) => s + t.daysOnTrip, 0);
+      const statsTrips = ytdModeAll ? trips.filter(t => !isFutureTrip(t)) : trips;
+      const totalDays = statsTrips.reduce((s, t) => s + t.daysOnTrip, 0);
       const nights = { Home: 0, Hotel: 0, BnB: 0 };
-      trips.forEach(t => t.legs.forEach(leg => {
+      statsTrips.forEach(t => t.legs.forEach(leg => {
         if (nights[leg.stayType] !== undefined) nights[leg.stayType] += leg.daysOfStay;
       }));
-      return { year, totalDays, nights, isCurrent: year === CURRENT_CALENDAR_YEAR };
+      return { year, totalDays, nights };
     });
 
     const avg = yearStats.length ? yearStats.reduce((s, y) => s + y.totalDays, 0) / yearStats.length : 0;
@@ -1150,6 +1171,18 @@
       <span><span class="swatch" style="background:${STAY_COLORS.BnB}"></span>BnB</span>
       <span><span class="line-swatch"></span>Total days on trip</span>
     `;
+
+    // combined ledger across every year, most recent trip first
+    const combined = [];
+    years.forEach(year => {
+      (TRAVEL_DATA[year] || []).forEach(t => combined.push({ ...t, year }));
+    });
+    combined.sort((a, b) => {
+      const aKey = a.year * 10000 + (parseTripMonthDay(a.from) ?? 0);
+      const bKey = b.year * 10000 + (parseTripMonthDay(b.from) ?? 0);
+      return bKey - aKey;
+    });
+    renderTripLedger(combined, ytdModeAll);
   }
 
   function renderYearChart(yearStats) {
@@ -1188,17 +1221,12 @@
         cumulative += val;
       });
 
-      if (y.isCurrent) {
-        const yTop = scaleY(cumulative);
-        bars += `<rect x="${barX}" y="${yTop}" width="${barW}" height="${baseline - yTop}" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="4 3" rx="2" />`;
-      }
-
       const lineY = scaleY(y.totalDays);
       linePoints.push(`${cx},${lineY}`);
       pointLabels += `<circle cx="${cx}" cy="${lineY}" r="3.5" fill="var(--brass)" />`;
       pointLabels += `<text x="${cx}" y="${lineY - 10}" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">${y.totalDays}</text>`;
 
-      yearLabels += `<text x="${cx}" y="${chartH - bottomPad + 20}" text-anchor="middle" font-family="var(--font-mono)" font-size="12" fill="var(--ink-soft)">${y.year}${y.isCurrent ? ' *' : ''}</text>`;
+      yearLabels += `<text x="${cx}" y="${chartH - bottomPad + 20}" text-anchor="middle" font-family="var(--font-mono)" font-size="12" fill="var(--ink-soft)">${y.year}</text>`;
     });
 
     const linePath = `<polyline points="${linePoints.join(' ')}" fill="none" stroke="var(--brass)" stroke-width="2" />`;
@@ -1212,7 +1240,6 @@
         ${pointLabels}
         ${yearLabels}
       </svg>
-      ${yearStats.some(y => y.isCurrent) ? '<p class="hero-sub" style="margin-top:2px;">* year in progress — not a complete total yet</p>' : ''}
     `;
   }
 
