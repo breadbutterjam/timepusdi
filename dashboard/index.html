@@ -241,7 +241,7 @@
   .stay-bar-seg {
     height: 100%;
     width: 0%;
-    /* transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1); */
+    transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .stay-legend {
@@ -332,6 +332,39 @@
     padding-right: 6px;
     max-height: calc(100vh - 360px);
     max-height: calc(100dvh - 360px);
+  }
+
+  /* ============================================================
+     ALL-YEARS CHART (Travel "All" view)
+     ============================================================ */
+  .chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-soft);
+  }
+
+  .chart-legend .swatch {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 2px;
+    margin-right: 6px;
+    position: relative;
+    top: -1px;
+  }
+
+  .chart-legend .line-swatch {
+    display: inline-block;
+    width: 14px;
+    height: 2px;
+    background: var(--brass);
+    margin-right: 6px;
+    position: relative;
+    top: -3px;
   }
 
   /* ============================================================
@@ -577,21 +610,30 @@
     </div>
 
     <div class="hero">
-      <div class="ytd-toggle" id="ytdToggleWrap">
-        <span class="toggle-label" data-mode="full">Full year</span>
-        <label class="switch">
-          <input type="checkbox" id="ytdToggle" checked>
-          <span class="slider"></span>
-        </label>
-        <span class="toggle-label" data-mode="ytd">YTD</span>
+      <div id="yearView">
+        <div class="ytd-toggle" id="ytdToggleWrap">
+          <span class="toggle-label" data-mode="full">Full year</span>
+          <label class="switch">
+            <input type="checkbox" id="ytdToggle" checked>
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-label" data-mode="ytd">YTD</span>
+        </div>
+        <p class="hero-number" id="heroDaysOnTrips">—<span id="heroYtdTag"></span></p>
+        <p class="hero-sub" id="heroStayDaysLine"></p>
+        <div class="stay-bar" id="stayBar"></div>
+        <div class="stay-legend" id="stayLegend"></div>
       </div>
-      <p class="hero-number" id="heroDaysOnTrips">—<span id="heroYtdTag"></span></p>
-      <p class="hero-sub" id="heroStayDaysLine"></p>
-      <div class="stay-bar" id="stayBar"></div>
-      <div class="stay-legend" id="stayLegend"></div>
+
+      <div id="allView" style="display:none">
+        <p class="hero-number" id="heroDaysOnTripsAll">—</p>
+        <p class="hero-sub" id="heroStayDaysLineAll"></p>
+        <div id="yearChart"></div>
+        <div class="chart-legend" id="chartLegend"></div>
+      </div>
     </div>
 
-    <div class="ledger">
+    <div class="ledger" id="travelLedgerWrap">
       <div class="spine" id="tripSpine"></div>
     </div>
   </section>
@@ -692,13 +734,13 @@
      ============================================================ */
   let TRAVEL_DATA = {
     2026: [
-      { daysOnTrip: 4, from: 'Tue, 27-Jan', to: 'Fri, 30-Jan', desc: 'Poona — Anniversary Trip - BnB Anuradha', stayType: 'BnB', daysOfStay: 3, mode: 'Gaadi - Bobcat' },
-      { daysOnTrip: 7, from: 'Sun, 15-Feb', to: 'Sat, 21-Feb', desc: 'Goa — Villa Rah', stayType: 'Home', daysOfStay: 6, mode: 'Train' },
-      { daysOnTrip: 6, from: 'Tue, 24-Feb', to: 'Sun, 1-Mar', desc: 'Chittorgarh - Udaipur', stayType: 'Home', daysOfStay: 5, mode: 'Train' },
-      { daysOnTrip: 2, from: 'Sun, 1-Mar', to: 'Mon, 2-Mar', desc: 'Gandevi — getting Merly back', stayType: 'Home', daysOfStay: 1, mode: 'Train + CRV' },
-      { daysOnTrip: 2, from: 'Wed, 15-Apr', to: 'Thu, 16-Apr', desc: 'April Bday — Alibaug / Nagaon', stayType: 'Hotel', daysOfStay: 1, mode: 'Gaadi - Bobcat' },
-      { daysOnTrip: 1, from: 'Sat, 16-May', to: 'Sat, 16-May', desc: 'Lavasu day trip — Boyzes', stayType: null, daysOfStay: 0, mode: 'Gaadi - Mercedes' },
-      { daysOnTrip: 6, from: 'Fri, 19-Jun', to: 'Wed, 24-Jun', desc: 'Rajkot — Vaat thai gai che - Tu bahut change ho gayi hai re chinki', stayType: 'Home', daysOfStay: 5, mode: 'Train' },
+      { daysOnTrip: 4, from: 'Tue, 27-Jan', to: 'Fri, 30-Jan', desc: 'Poona — Anniversary Trip - BnB Anuradha', mode: 'Gaadi - Bobcat', legs: [{ stayType: 'BnB', daysOfStay: 3 }] },
+      { daysOnTrip: 7, from: 'Sun, 15-Feb', to: 'Sat, 21-Feb', desc: 'Goa — Villa Rah', mode: 'Train', legs: [{ stayType: 'Home', daysOfStay: 6 }] },
+      { daysOnTrip: 6, from: 'Tue, 24-Feb', to: 'Sun, 1-Mar', desc: 'Chittorgarh - Udaipur', mode: 'Train', legs: [{ stayType: 'Home', daysOfStay: 5 }] },
+      { daysOnTrip: 2, from: 'Sun, 1-Mar', to: 'Mon, 2-Mar', desc: 'Gandevi — getting Merly back', mode: 'Train + CRV', legs: [{ stayType: 'Home', daysOfStay: 1 }] },
+      { daysOnTrip: 2, from: 'Wed, 15-Apr', to: 'Thu, 16-Apr', desc: 'April Bday — Alibaug / Nagaon', mode: 'Gaadi - Bobcat', legs: [{ stayType: 'Hotel', daysOfStay: 1 }] },
+      { daysOnTrip: 1, from: 'Sat, 16-May', to: 'Sat, 16-May', desc: 'Lavasu day trip — Boyzes', mode: 'Gaadi - Mercedes', legs: [{ stayType: null, daysOfStay: 0 }] },
+      { daysOnTrip: 6, from: 'Fri, 19-Jun', to: 'Wed, 24-Jun', desc: 'Rajkot — Vaat thai gai che - Tu bahut change ho gayi hai re chinki', mode: 'Train', legs: [{ stayType: 'Home', daysOfStay: 5 }] },
     ]
   };
 
@@ -826,16 +868,37 @@
       if (!isConfigured(url)) continue;
       try {
         const rows = await fetchCsv(url);
-        TRAVEL_DATA[year] = tableRows(rows, 'Days on trips', maxRows)
-          .map(r => ({
+        const raw = tableRows(rows, 'Days on trips', maxRows);
+
+        // Group rows sharing a "Trip ID" into one trip with multiple
+        // stay "legs" (for trips split across e.g. Hotel + BnB).
+        // First row for a given ID supplies days/from/to/desc/mode;
+        // every row with that ID contributes its own stay-type + nights.
+        const trips = [];
+        const indexByTripId = {};
+        raw.forEach(r => {
+          const tripId = (r['Trip ID'] || '').toString().trim();
+          const leg = {
+            stayType: (r['Stay type'] || '').trim() || null,
+            daysOfStay: parseInt(r['Days of Stay']) || 0,
+          };
+          if (tripId && indexByTripId[tripId] !== undefined) {
+            trips[indexByTripId[tripId]].legs.push(leg);
+            return;
+          }
+          const trip = {
             daysOnTrip: parseInt(r['Days on trips']) || 0,
             from: r['From'] || '',
             to: r['To'] || '',
             desc: r['Description'] || '',
-            stayType: (r['Stay type'] || '').trim() || null,
-            daysOfStay: parseInt(r['Days of Stay']) || 0,
             mode: r['Mode'] || '', // optional — add a Mode column to the summary sheet to populate this
-          }));
+            legs: [leg],
+          };
+          if (tripId) indexByTripId[tripId] = trips.length;
+          trips.push(trip);
+        });
+
+        TRAVEL_DATA[year] = trips;
       } catch (e) { console.warn('Travel sheet fetch failed for', year, e); }
     }
   }
@@ -938,8 +1001,7 @@
       seg.className = 'stay-bar-seg';
       seg.style.background = s.color;
       container.appendChild(seg);
-      // requestAnimationFrame(() => requestAnimationFrame(() => { seg.style.width = s.pct + '%'; }));
-      seg.style.width = s.pct + '%';
+      requestAnimationFrame(() => requestAnimationFrame(() => { seg.style.width = s.pct + '%'; }));
     });
   }
 
@@ -962,8 +1024,38 @@
     renderTravel();
   });
 
+  let travelView = 'year'; // 'year' | 'all'
+
+  function renderTravelYearTabs() {
+    const el = document.getElementById('travelYearTabs');
+    el.innerHTML = '';
+    Object.keys(TRAVEL_DATA).map(Number).sort((a, b) => a - b).forEach(year => {
+      const btn = document.createElement('button');
+      btn.textContent = year;
+      if (travelView === 'year' && year === currentYear) btn.classList.add('active');
+      btn.onclick = () => { travelView = 'year'; currentYear = year; renderTravel(); };
+      el.appendChild(btn);
+    });
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All';
+    if (travelView === 'all') allBtn.classList.add('active');
+    allBtn.onclick = () => { travelView = 'all'; renderTravel(); };
+    el.appendChild(allBtn);
+  }
+
   function renderTravel() {
-    buildYearTabs('travelYearTabs', TRAVEL_DATA, () => currentYear, y => currentYear = y, renderTravel);
+    renderTravelYearTabs();
+
+    if (travelView === 'all') {
+      document.getElementById('yearView').style.display = 'none';
+      document.getElementById('allView').style.display = 'block';
+      document.getElementById('travelLedgerWrap').style.display = 'none';
+      renderTravelAll();
+      return;
+    }
+    document.getElementById('yearView').style.display = 'block';
+    document.getElementById('allView').style.display = 'none';
+    document.getElementById('travelLedgerWrap').style.display = 'block';
     const allTrips = TRAVEL_DATA[currentYear] || [];
 
     // the current calendar year is always YTD (there's no "future" to
@@ -986,7 +1078,7 @@
       `across ${statsTrips.length} trip${statsTrips.length === 1 ? '' : 's'}`;
 
     const byType = { Home: 0, Hotel: 0, BnB: 0, none: 0 };
-    statsTrips.forEach(t => { byType[t.stayType || 'none'] += t.daysOfStay; });
+    statsTrips.forEach(t => { t.legs.forEach(leg => { byType[leg.stayType || 'none'] += leg.daysOfStay; }); });
     const stayTotal = Object.values(byType).reduce((a, b) => a + b, 0) || 1;
 
     const segments = [];
@@ -1007,21 +1099,121 @@
     const spine = document.getElementById('tripSpine');
     spine.innerHTML = '';
     allTrips.forEach(t => {
-      const color = STAY_COLORS[t.stayType || 'none'];
+      const dotColor = STAY_COLORS[(t.legs[0] && t.legs[0].stayType) || 'none'];
       const entry = document.createElement('div');
       entry.className = 'entry';
-      entry.style.setProperty('--entry-color', color);
+      entry.style.setProperty('--entry-color', dotColor);
       if (effectiveYtd && isFuture(t)) entry.style.opacity = '0.4';
+      const legTags = t.legs.map(leg => {
+        const c = STAY_COLORS[leg.stayType || 'none'];
+        const nightsText = leg.daysOfStay ? ` · ${leg.daysOfStay} night${leg.daysOfStay === 1 ? '' : 's'}` : '';
+        return `<span class="tag" style="background:${c};color:var(--paper)">${leg.stayType || 'Day trip'}${nightsText}</span>`;
+      }).join('');
       entry.innerHTML = `
         <div class="entry-dates">${t.from} → ${t.to} · ${t.daysOnTrip} day${t.daysOnTrip === 1 ? '' : 's'}</div>
         <div class="entry-desc">${t.desc}</div>
         <div class="entry-meta">
-          <span class="tag accent">${t.stayType || 'Day trip'}</span>
-          ${t.daysOfStay ? `<span class="meta-sep">·</span><span class="mono-meta">${t.daysOfStay} night${t.daysOfStay === 1 ? '' : 's'}</span>` : ''}
+          ${legTags}
           ${t.mode ? `<span class="meta-sep">·</span><span class="mono-meta">${t.mode}</span>` : ''}
         </div>`;
       spine.appendChild(entry);
     });
+  }
+
+  /* ---------------- Travel: "All years" aggregate view ---------------- */
+  function renderTravelAll() {
+    const years = Object.keys(TRAVEL_DATA).map(Number).sort((a, b) => a - b);
+
+    const yearStats = years.map(year => {
+      const trips = TRAVEL_DATA[year] || [];
+      const totalDays = trips.reduce((s, t) => s + t.daysOnTrip, 0);
+      const nights = { Home: 0, Hotel: 0, BnB: 0 };
+      trips.forEach(t => t.legs.forEach(leg => {
+        if (nights[leg.stayType] !== undefined) nights[leg.stayType] += leg.daysOfStay;
+      }));
+      return { year, totalDays, nights, isCurrent: year === CURRENT_CALENDAR_YEAR };
+    });
+
+    const avg = yearStats.length ? yearStats.reduce((s, y) => s + y.totalDays, 0) / yearStats.length : 0;
+
+    document.getElementById('heroDaysOnTripsAll').innerHTML =
+      avg.toFixed(1) + '<span> days on a trip, per year</span>';
+    document.getElementById('heroStayDaysLineAll').textContent =
+      years.length ? `averaged across ${years.length} year${years.length === 1 ? '' : 's'} (${years[0]}–${years[years.length - 1]})` : '';
+
+    renderYearChart(yearStats);
+
+    const legend = document.getElementById('chartLegend');
+    legend.innerHTML = `
+      <span><span class="swatch" style="background:${STAY_COLORS.Home}"></span>Home</span>
+      <span><span class="swatch" style="background:${STAY_COLORS.Hotel}"></span>Hotel</span>
+      <span><span class="swatch" style="background:${STAY_COLORS.BnB}"></span>BnB</span>
+      <span><span class="line-swatch"></span>Total days on trip</span>
+    `;
+  }
+
+  function renderYearChart(yearStats) {
+    const container = document.getElementById('yearChart');
+    if (!yearStats.length) { container.innerHTML = ''; return; }
+
+    const slotW = 100, barW = 44;
+    const chartH = 210, topPad = 30, bottomPad = 34;
+    const plotH = chartH - topPad - bottomPad;
+    const width = slotW * yearStats.length;
+
+    const maxVal = Math.max(1, ...yearStats.map(y =>
+      Math.max(y.totalDays, y.nights.Home + y.nights.Hotel + y.nights.BnB)
+    )) * 1.2;
+
+    const scaleY = v => topPad + plotH * (1 - v / maxVal);
+    const baseline = topPad + plotH;
+
+    const STACK_ORDER = ['Home', 'Hotel', 'BnB'];
+    let bars = '';
+    let linePoints = [];
+    let pointLabels = '';
+    let yearLabels = '';
+
+    yearStats.forEach((y, i) => {
+      const cx = slotW * i + slotW / 2;
+      const barX = cx - barW / 2;
+
+      let cumulative = 0;
+      STACK_ORDER.forEach(type => {
+        const val = y.nights[type];
+        if (!val) return;
+        const yTop = scaleY(cumulative + val);
+        const yBottom = scaleY(cumulative);
+        bars += `<rect x="${barX}" y="${yTop}" width="${barW}" height="${yBottom - yTop}" fill="${STAY_COLORS[type]}" />`;
+        cumulative += val;
+      });
+
+      if (y.isCurrent) {
+        const yTop = scaleY(cumulative);
+        bars += `<rect x="${barX}" y="${yTop}" width="${barW}" height="${baseline - yTop}" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="4 3" rx="2" />`;
+      }
+
+      const lineY = scaleY(y.totalDays);
+      linePoints.push(`${cx},${lineY}`);
+      pointLabels += `<circle cx="${cx}" cy="${lineY}" r="3.5" fill="var(--brass)" />`;
+      pointLabels += `<text x="${cx}" y="${lineY - 10}" text-anchor="middle" font-family="var(--font-mono)" font-size="11" fill="var(--ink)">${y.totalDays}</text>`;
+
+      yearLabels += `<text x="${cx}" y="${chartH - bottomPad + 20}" text-anchor="middle" font-family="var(--font-mono)" font-size="12" fill="var(--ink-soft)">${y.year}${y.isCurrent ? ' *' : ''}</text>`;
+    });
+
+    const linePath = `<polyline points="${linePoints.join(' ')}" fill="none" stroke="var(--brass)" stroke-width="2" />`;
+    const baseLine = `<line x1="0" y1="${baseline}" x2="${width}" y2="${baseline}" stroke="var(--hairline)" stroke-width="1" />`;
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${width} ${chartH}" width="100%" height="${chartH}" style="overflow:visible">
+        ${baseLine}
+        ${bars}
+        ${linePath}
+        ${pointLabels}
+        ${yearLabels}
+      </svg>
+      ${yearStats.some(y => y.isCurrent) ? '<p class="hero-sub" style="margin-top:2px;">* year in progress — not a complete total yet</p>' : ''}
+    `;
   }
 
   /* ---------------- Cars Driven ---------------- */
