@@ -87,7 +87,7 @@
   .module-nav {
     display: flex;
     gap: 4px;
-    flex-wrap: wrap;
+    /* flex-wrap: wrap; */
     font-family: var(--font-mono);
     font-size: 12px;
   }
@@ -118,6 +118,7 @@
 
   .module-head {
     display: flex;
+    flex-direction: column;
     align-items: baseline;
     justify-content: space-between;
     margin-bottom: 14px;
@@ -332,6 +333,38 @@
     padding-right: 6px;
     max-height: calc(100vh - 360px);
     max-height: calc(100dvh - 360px);
+  }
+
+  /* ============================================================
+     MONTH SUMMARY — which months had trips, at a glance
+     ============================================================ */
+  .month-summary { margin-top: 20px; }
+
+  .month-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  .month-table th, .month-table td {
+    text-align: center;
+    padding: 6px 2px;
+    font-family: var(--font-mono);
+    border-bottom: 1px solid var(--hairline-navy);
+  }
+
+  .month-table th {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--cream-soft);
+    border-bottom: 1px solid rgba(237, 230, 211, 0.28);
+  }
+
+  .month-table td {
+    font-size: 13px;
+    color: var(--brass);
+    letter-spacing: 1px;
+    height: 22px;
   }
 
   /* ============================================================
@@ -639,6 +672,13 @@
         <div id="yearChart"></div>
         <div class="chart-legend" id="chartLegend"></div>
       </div>
+    </div>
+
+    <div class="month-summary" id="monthSummary">
+      <table class="month-table">
+        <thead><tr id="monthHeaderRow"></tr></thead>
+        <tbody><tr id="monthTickRow"></tr></tbody>
+      </table>
     </div>
 
     <div class="ledger">
@@ -990,12 +1030,24 @@
   function monthDayOrdinal(month, day) { return month * 100 + day; }
 
   function parseTripMonthDay(dateStr) {
-    const m = (dateStr || '').match(/(\d{1,2})-([A-Za-z]{3})/);
-    if (!m) return null;
+    if (!dateStr) return null;
     const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-    const month = months.indexOf(m[2].toLowerCase());
-    if (month === -1) return null;
-    return monthDayOrdinal(month, parseInt(m[1], 10));
+
+    // "27-Jan" / "27 Jan" style (day first)
+    let m = dateStr.match(/(\d{1,2})[-\s]+([A-Za-z]{3})/);
+    if (m) {
+      const month = months.indexOf(m[2].toLowerCase());
+      if (month !== -1) return monthDayOrdinal(month, parseInt(m[1], 10));
+    }
+
+    // "Jan 27" / "Jan-27" style (month first) — e.g. the 2023 sheet
+    m = dateStr.match(/([A-Za-z]{3})[-\s]+(\d{1,2})/);
+    if (m) {
+      const month = months.indexOf(m[1].toLowerCase());
+      if (month !== -1) return monthDayOrdinal(month, parseInt(m[2], 10));
+    }
+
+    return null;
   }
 
   const TODAY = new Date();
@@ -1075,6 +1127,12 @@
   function renderTravelYearTabs() {
     const el = document.getElementById('travelYearTabs');
     el.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All';
+    if (travelView === 'all') allBtn.classList.add('active');
+    allBtn.onclick = () => { travelView = 'all'; renderTravel(); };
+    el.appendChild(allBtn);
+
     Object.keys(TRAVEL_DATA).map(Number).sort((a, b) => a - b).forEach(year => {
       const btn = document.createElement('button');
       btn.textContent = year;
@@ -1082,11 +1140,24 @@
       btn.onclick = () => { travelView = 'year'; currentYear = year; renderTravel(); };
       el.appendChild(btn);
     });
-    const allBtn = document.createElement('button');
-    allBtn.textContent = 'All';
-    if (travelView === 'all') allBtn.classList.add('active');
-    allBtn.onclick = () => { travelView = 'all'; renderTravel(); };
-    el.appendChild(allBtn);
+  }
+
+  const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+  function renderMonthSummary(trips) {
+    document.getElementById('monthHeaderRow').innerHTML =
+      MONTH_LABELS.map(m => `<th>${m}</th>`).join('');
+
+    const counts = new Array(12).fill(0);
+    trips.forEach(t => {
+      const md = parseTripMonthDay(t.from);
+      if (md === null) return;
+      const month = Math.floor(md / 100);
+      if (month >= 0 && month < 12) counts[month]++;
+    });
+
+    document.getElementById('monthTickRow').innerHTML =
+      counts.map(c => `<td>${c > 0 ? '•'.repeat(c) : ''}</td>`).join('');
   }
 
   function renderTravel() {
@@ -1095,12 +1166,15 @@
     if (travelView === 'all') {
       document.getElementById('yearView').style.display = 'none';
       document.getElementById('allView').style.display = 'block';
+      document.getElementById('monthSummary').style.display = 'none';
       renderTravelAll();
       return;
     }
     document.getElementById('yearView').style.display = 'block';
     document.getElementById('allView').style.display = 'none';
+    document.getElementById('monthSummary').style.display = 'block';
     const allTrips = TRAVEL_DATA[currentYear] || [];
+    renderMonthSummary(allTrips);
 
     // the current calendar year is always YTD (there's no "future" to
     // toggle off) — hide the switch and force the mode in that case
