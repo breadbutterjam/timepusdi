@@ -118,11 +118,16 @@
 
   .module-head {
     display: flex;
-    flex-direction: column;
+    /* flex-direction: column; */
     align-items: baseline;
     justify-content: space-between;
     margin-bottom: 14px;
   }
+
+  @media (max-width: 480px) {
+    .module-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+
 
   .module-head h2 {
     font-size: 15px;
