@@ -41,6 +41,7 @@
 
     /* --- type --- */
     --font-display: 'Fraunces', Georgia, serif;
+    --font-display2: 'Arial', sans-serif;
     --font-mono: 'Space Mono', 'Courier New', monospace;
 
     /* --- layout --- */
@@ -189,7 +190,14 @@
     gap: 4px;
     font-family: var(--font-mono);
     font-size: 13px;
+    overflow-x: auto;
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    padding-bottom: 2px;
   }
+
+  .year-tabs::-webkit-scrollbar { display: none; } /* Chrome/Safari */
 
   .year-tabs button {
     background: none;
@@ -198,12 +206,23 @@
     padding: 5px 12px;
     border-radius: var(--radius);
     cursor: pointer;
+    flex-shrink: 0;
   }
 
   .year-tabs button.active {
     color: var(--navy);
     background: var(--brass);
     border-color: var(--brass);
+  }
+
+  /* "All" chip stays put at the left while the year chips scroll
+     past underneath it — needs its own opaque background so it
+     actually masks whatever scrolls behind it. */
+  .year-tabs .sticky-all {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--navy);
   }
 
   /* ============================================================
@@ -283,7 +302,7 @@
   .stay-bar-seg {
     height: 100%;
     width: 0%;
-    transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1);
+    /* transition: width 1.1s cubic-bezier(0.22, 1, 0.36, 1); */
   }
 
   .stay-legend {
@@ -360,7 +379,9 @@
   .switch input:checked + .slider::before { transform: translateX(15px); background-color: var(--paper); }
 
   @media (max-width: 480px) {
-    .ytd-toggle { position: static; margin-bottom: 12px; }
+    /* .ytd-toggle { position: static; margin-bottom: 12px; } */
+    .ytd-toggle { top: 7px; right: 8px; }
+    
   }
 
   /* ============================================================
@@ -374,6 +395,7 @@
     padding-right: 6px;
     max-height: calc(100vh - 360px);
     max-height: calc(100dvh - 360px);
+    scrollbar-width: none;
   }
 
   /* ============================================================
@@ -489,6 +511,7 @@
 
   .entry-desc {
     font-size: 17px;
+    font-family: var(--font-display2);
     color: var(--cream);
     margin-bottom: 8px;
     font-weight: 400;
@@ -674,19 +697,6 @@
       align-items: flex-start;
       gap: 8px;
     }
-
-    .year-tabs {
-      max-width: 100%;
-      overflow-x: auto;
-      flex-wrap: nowrap;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 4px;
-      scrollbar-width: none; /* Firefox */
-    }
-
-    .year-tabs::-webkit-scrollbar { display: none; } /* Chrome/Safari */
-
-    .year-tabs button { flex-shrink: 0; }
   }
 </style>
 </head>
@@ -1153,7 +1163,8 @@
       seg.className = 'stay-bar-seg';
       seg.style.background = s.color;
       container.appendChild(seg);
-      requestAnimationFrame(() => requestAnimationFrame(() => { seg.style.width = s.pct + '%'; }));
+      /// requestAnimationFrame(() => requestAnimationFrame(() => { seg.style.width = s.pct + '%'; }));
+      seg.style.width = s.pct + '%';
     });
   }
 
@@ -1221,11 +1232,12 @@
     el.innerHTML = '';
     const allBtn = document.createElement('button');
     allBtn.textContent = 'All';
+    allBtn.classList.add('sticky-all');
     if (travelView === 'all') allBtn.classList.add('active');
     allBtn.onclick = () => { travelView = 'all'; renderTravel(); };
     el.appendChild(allBtn);
 
-    Object.keys(TRAVEL_DATA).map(Number).sort((a, b) => a - b).forEach(year => {
+    Object.keys(TRAVEL_DATA).map(Number).sort((a, b) => b - a).forEach(year => {
       const btn = document.createElement('button');
       btn.textContent = year;
       if (travelView === 'year' && year === currentYear) btn.classList.add('active');
