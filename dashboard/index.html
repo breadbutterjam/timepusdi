@@ -87,9 +87,10 @@
   .module-nav {
     display: flex;
     gap: 4px;
-    /* flex-wrap: wrap; */
+    flex-wrap: wrap;
     font-family: var(--font-mono);
     font-size: 12px;
+    margin-bottom: 12px;
   }
 
   .module-nav button {
@@ -111,6 +112,47 @@
   }
 
   /* ============================================================
+     MOBILE SECTION PICKER — a custom-styled row for display, with
+     the real <select> invisibly overlaid on top so tapping it opens
+     the native OS picker. Only the closed/current-selection view is
+     styled; the open dropdown list itself is left to the OS.
+     ============================================================ */
+  .module-select-wrap {
+    position: relative;
+    display: none;
+    /* width: 100%; */
+  }
+
+  .module-select-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    /* border: 1px solid rgba(237, 230, 211, 0.25); */
+    border-radius: var(--radius);
+    padding: 9px 12px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--cream);
+    pointer-events: none; /* let taps fall through to the real select */
+  }
+
+  .module-select-icon { display: flex; flex-shrink: 0; }
+  .module-select-icon svg { display: block; width: 16px; height: 16px; stroke: var(--brass); }
+
+  .module-select-caret { margin-left: auto; color: var(--cream-soft); font-size: 11px; }
+
+  #moduleSelect {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    border: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* ============================================================
      MODULE SHELL — shared by every section, one visible at a time
      ============================================================ */
   .module { margin-top: 0; display: none; }
@@ -118,16 +160,10 @@
 
   .module-head {
     display: flex;
-    /* flex-direction: column; */
     align-items: baseline;
     justify-content: space-between;
     margin-bottom: 14px;
   }
-
-  @media (max-width: 480px) {
-    .module-head { flex-direction: column; align-items: flex-start; gap: 8px; }
-  }
-
 
   .module-head h2 {
     font-size: 15px;
@@ -617,9 +653,40 @@
     padding-top: 16px;
   }
 
+  .mobileviewH1SelectHolder{
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    width: 100%;
+  }
+
   @media (max-width: 480px) {
     .hero-number { font-size: 44px; }
     .masthead { flex-direction: column; align-items: flex-start; gap: 14px; }
+
+    .module-nav { display: none; }
+    .module-select-wrap { display: block; }
+
+    .page { padding-left: 12px; padding-right: 12px; }
+
+    .module-head {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .year-tabs {
+      max-width: 100%;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 4px;
+      scrollbar-width: none; /* Firefox */
+    }
+
+    .year-tabs::-webkit-scrollbar { display: none; } /* Chrome/Safari */
+
+    .year-tabs button { flex-shrink: 0; }
   }
 </style>
 </head>
@@ -628,22 +695,42 @@
 <div class="page">
 
   <div class="masthead">
-    <h1>Field Notes</h1>
-    <nav class="module-nav" id="moduleNav">
+    <div class="mobileviewH1SelectHolder">
+      <h1>Field Notes</h1>
+      <div class="module-select-wrap" id="moduleSelectWrap">
+        <div class="module-select-display" id="moduleSelectDisplay">
+          <span class="module-select-icon" id="moduleSelectIcon"></span>
+          <span id="moduleSelectLabel">Travel</span>
+          <span class="module-select-caret">▾</span>
+        </div>
+        <select id="moduleSelect" aria-label="Choose section">
+          <option value="travel">Travel</option>
+          <option value="cars">Cars</option>
+          <option value="books">Books</option>
+          <option value="cities">Cities</option>
+          <option value="movies">Movies</option>
+        </select>
+      </div>  
+    </div>
+    <!-- <h1>Field Notes</h1> -->
+    
+
+    
+  </div>
+  <nav class="module-nav" id="moduleNav">
       <button data-section="travel">Travel</button>
       <button data-section="cars">Cars</button>
       <button data-section="books">Books</button>
       <button data-section="cities">Cities</button>
       <button data-section="movies">Movies</button>
-    </nav>
-  </div>
+  </nav>
 
   <!-- ============================================================
        TRAVEL & STAYS
        ============================================================ -->
   <section id="travel" class="module">
     <div class="module-head">
-      <h2>Travel &amp; Stays</h2>
+      <!-- <h2>Travel &amp; Stays</h2> -->
       <div class="year-tabs" id="travelYearTabs"></div>
     </div>
 
@@ -1467,14 +1554,34 @@
   }
 
   /* ---------------- Tab switching ---------------- */
+  const SECTION_META = {
+    travel: { label: 'Travel', icon: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="12" height="8" rx="1"/><path d="M6 6V4a1 1 0 011-1h2a1 1 0 011 1v2"/></svg>' },
+    cars: { label: 'Cars', icon: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l1-4a2 2 0 012-1h4a2 2 0 012 1l1 4"/><rect x="2" y="11" width="12" height="3" rx="1"/><circle cx="5" cy="14" r="1"/><circle cx="11" cy="14" r="1"/></svg>' },
+    books: { label: 'Books', icon: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4c2-1 4-1 6 0v9c-2-1-4-1-6 0V4z"/><path d="M14 4c-2-1-4-1-6 0v9c2-1 4-1 6 0V4z"/></svg>' },
+    cities: { label: 'Cities', icon: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14s5-4.5 5-8a5 5 0 00-10 0c0 3.5 5 8 5 8z"/><circle cx="8" cy="6" r="1.5"/></svg>' },
+    movies: { label: 'Movies', icon: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="12" height="8" rx="1"/><path d="M2 6l2-3h3l-2 3M7 6l2-3h3l-2 3"/></svg>' },
+  };
+
   function showSection(name) {
     document.querySelectorAll('.module').forEach(m => m.classList.toggle('active', m.id === name));
     document.querySelectorAll('#moduleNav button').forEach(b => b.classList.toggle('active', b.dataset.section === name));
+
+    const meta = SECTION_META[name];
+    if (meta) {
+      document.getElementById('moduleSelectIcon').innerHTML = meta.icon;
+      document.getElementById('moduleSelectLabel').textContent = meta.label;
+    }
+    const select = document.getElementById('moduleSelect');
+    if (select && select.value !== name) select.value = name;
   }
 
   document.getElementById('moduleNav').addEventListener('click', e => {
     const btn = e.target.closest('button[data-section]');
     if (btn) showSection(btn.dataset.section);
+  });
+
+  document.getElementById('moduleSelect').addEventListener('change', e => {
+    showSection(e.target.value);
   });
 
   async function init() {

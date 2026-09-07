@@ -23,6 +23,11 @@ const SHEET_CONFIG = {
     2025: 'data/2025_trips.csv',
     2024: 'data/2024_trips.csv',
     2023: 'data/2023_trips.csv',
+    2022: 'data/2022_trips.csv',
+    2021: 'data/2021_trips.csv',
+    2020: 'data/2020_trips.csv',
+    2019: 'data/2019_trips.csv',
+    2018: 'data/2018_trips.csv',
   },
 
   cars: {
