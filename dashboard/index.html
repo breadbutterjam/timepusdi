@@ -426,6 +426,92 @@
   }
 
   /* ============================================================
+     MOVIE ENTRY — poster-free spine: title + theatre icon, a date/
+     gap line, then theatre + companions, dashed rule between entries
+     ============================================================ */
+  .movie-entry {
+    padding: 18px 0;
+    border-bottom: 1px dashed rgba(237, 230, 211, 0.28);
+  }
+
+  .movie-entry:first-child { padding-top: 0; }
+  .movie-entry:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .movie-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .movie-title {
+    font-family: var(--font-display2);
+    font-size: 24px;
+    font-weight: 500;
+    color: var(--cream);
+    line-height: 1.2;
+  }
+
+  .theatre-icon {
+    width: 40px;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+
+  .movie-date-line {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--ev);
+    margin: 0 0 12px;
+  }
+
+  .movie-info-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    font-family: var(--font-display2);
+    font-size: 15px;
+    color: var(--cream);
+  }
+
+  /* ============================================================
+     MOVIE ENTRY (poster version) — same content as .movie-entry,
+     laid out beside a fixed-size poster thumbnail. The poster sits
+     in a background-colored box so a missing/broken image still
+     leaves a consistent placeholder shape rather than collapsing
+     the layout.
+     ============================================================ */
+  .movie-entry-poster {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px 0;
+    border-bottom: 1px dashed rgba(237, 230, 211, 0.28);
+  }
+
+  .movie-entry-poster:first-child { padding-top: 0; }
+  .movie-entry-poster:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .movie-poster-box {
+    width: 100px;
+    height: 125px;
+    flex-shrink: 0;
+    background: rgba(237, 230, 211, 0.08);
+    overflow: hidden;
+  }
+
+  .movie-poster-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .movie-entry-poster .movie-content { flex: 1; min-width: 0; }
+
+  /* ============================================================
      TRIP ENTRY — new spine design: title, dates, then a pill +
      mode row, separated by a dashed rule between entries.
      ============================================================ */
@@ -438,7 +524,7 @@
   .trip-entry:last-child { border-bottom: none; padding-bottom: 0; }
 
   .trip-title {
-    font-family: var(--font-display);
+    font-family: var(--font-display2);
     font-size: 24px;
     font-weight: 500;
     color: var(--cream);
@@ -557,7 +643,10 @@
   /* ============================================================
      LEDGER — spine + entries (Travel, Movies)
      ============================================================ */
-  .ledger { margin-top: 24px; }
+  .ledger { 
+    /* margin-top: 24px;  */
+    margin-top: 8px;
+  }
 
   .ledger-heading {
     font-family: var(--font-mono);
@@ -966,6 +1055,7 @@
       </div>
       <p class="hero-number" id="moviesTotal">—</p>
       <p class="hero-sub" id="moviesGapLine"></p>
+      <button type="button" class="stay-breakdown-toggle" id="moviesLayoutToggle">hide posters</button>
     </div>
 
     <div class="month-summary" id="moviesMonthSummary">
@@ -976,8 +1066,8 @@
     </div>
 
     <div class="ledger">
-      <p class="ledger-heading">Screenings this year</p>
-      <div class="spine" id="movieSpine"></div>
+      <!-- <p class="ledger-heading">Screenings this year</p> -->
+      <div id="movieSpine"></div>
     </div>
   </section>
 
@@ -1082,6 +1172,34 @@
     const match = MODE_ICON_MAP.find(entry => entry.keywords.some(k => lower.includes(k)));
     return match ? match.icon : null;
   }
+
+  /* ============================================================
+     THEATRE ICONS — same idea as the mode icons above: edit this
+     list to add or change which keywords in a movie's "Where"
+     match which icon. Case-insensitive substring match, first hit
+     wins. Icons live in /icons next to index.html.
+     ============================================================ */
+  const THEATRE_ICON_MAP = [
+    { keywords: ['pvr'], icon: 'icons/pvr.png' },
+    { keywords: ['ajanta'], icon: 'icons/ajanta.png' },
+  ];
+
+  function getTheatreIcon(where) {
+    const lower = (where || '').toLowerCase();
+    const match = THEATRE_ICON_MAP.find(entry => entry.keywords.some(k => lower.includes(k)));
+    return match ? match.icon : null;
+  }
+
+  // Switch between the two movie-spine designs. 'poster' shows a
+  // thumbnail per entry (needs matching files in /images); 'no-poster'
+  // is the plain text version. Toggled via the "show/hide posters"
+  // link in the Movies hero — this is just the starting default.
+  let MOVIE_LAYOUT = 'poster'; // 'poster' | 'no-poster'
+
+  document.getElementById('moviesLayoutToggle').addEventListener('click', () => {
+    MOVIE_LAYOUT = MOVIE_LAYOUT === 'poster' ? 'no-poster' : 'poster';
+    renderMovies();
+  });
 
   function ordinalSuffix(n) {
     const j = n % 10, k = n % 100;
@@ -1733,6 +1851,9 @@
     buildYearTabs('moviesYearTabs', MOVIES_DATA, () => currentMoviesYear, y => currentMoviesYear = y, renderMovies, true);
     const allMovies = MOVIES_DATA[currentMoviesYear] || [];
 
+    document.getElementById('moviesLayoutToggle').textContent =
+      MOVIE_LAYOUT === 'poster' ? 'hide posters' : 'show posters';
+
     // current calendar year is always YTD — hide the switch and force it
     const isCurrentCalendarYear = currentMoviesYear === CURRENT_CALENDAR_YEAR;
     document.getElementById('ytdToggleMoviesWrap').style.display = isCurrentCalendarYear ? 'none' : 'flex';
@@ -1753,20 +1874,58 @@
     const spine = document.getElementById('movieSpine');
     spine.innerHTML = '';
     allMovies.forEach(m => {
-      const entry = document.createElement('div');
-      entry.className = 'entry';
-      entry.style.setProperty('--entry-color', 'var(--brass)');
+      const entry = MOVIE_LAYOUT === 'poster' ? buildMovieEntryPoster(m) : buildMovieEntryNoPoster(m);
       if (effectiveYtd && isFutureMovie(m)) entry.style.opacity = '0.4';
-      entry.innerHTML = `
-        <div class="entry-dates">${m.date}</div>
-        <div class="entry-desc">${m.movie}</div>
-        <div class="entry-meta">
-          <span class="tag accent">${m.where}</span>
-          <span class="meta-sep">·</span><span class="mono-meta">with ${m.withWhom}</span>
-          <span class="meta-sep">·</span><span class="mono-meta">${m.daysSince}d since last</span>
-        </div>`;
       spine.appendChild(entry);
     });
+  }
+
+  // Movie poster filenames: title with every non-alphanumeric character
+  // (spaces, colons, punctuation) stripped, original casing kept as-is —
+  // e.g. "Happy Patel" -> "HappyPatel.jpg". Posters live in /images.
+  // NOTE: unconfirmed whether the real files use this exact casing —
+  // GitHub Pages is case-sensitive, so a mismatch here 404s silently.
+  function posterFilename(title) {
+    return (title || '').replace(/[^a-zA-Z0-9]/g, '') + '.jpg';
+  }
+
+  function buildMovieEntryNoPoster(m) {
+    const entry = document.createElement('div');
+    entry.className = 'movie-entry';
+    const icon = getTheatreIcon(m.where);
+    entry.innerHTML = `
+      <div class="movie-title-row">
+        <span class="movie-title">${m.movie}</span>
+        ${icon ? `<img src="${icon}" alt="${m.where}" class="theatre-icon" onerror="this.style.display='none'">` : ''}
+      </div>
+      <div class="movie-date-line">${formatTripDate(m.date)}  [${m.daysSince} days since]</div>
+      <div class="movie-info-line">
+        <span>${m.where}</span>
+        ${m.withWhom ? `<span>${m.withWhom}</span>` : ''}
+      </div>`;
+    return entry;
+  }
+
+  function buildMovieEntryPoster(m) {
+    const entry = document.createElement('div');
+    entry.className = 'movie-entry-poster';
+    const icon = getTheatreIcon(m.where);
+    entry.innerHTML = `
+      <div class="movie-poster-box">
+        <img src="images/${posterFilename(m.movie)}" alt="${m.movie}" onerror="this.style.display='none'">
+      </div>
+      <div class="movie-content">
+        <div class="movie-title-row">
+          <span class="movie-title">${m.movie}</span>
+          ${icon ? `<img src="${icon}" alt="${m.where}" class="theatre-icon" onerror="this.style.display='none'">` : ''}
+        </div>
+        <div class="movie-date-line">${formatTripDate(m.date)}  [${m.daysSince} days since]</div>
+        <div class="movie-info-line">
+          <span>${m.where}</span>
+          ${m.withWhom ? `<span>${m.withWhom}</span>` : ''}
+        </div>
+      </div>`;
+    return entry;
   }
 
   /* ---------------- Tab switching ---------------- */
