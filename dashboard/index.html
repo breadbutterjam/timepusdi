@@ -1912,7 +1912,7 @@
     const icon = getTheatreIcon(m.where);
     entry.innerHTML = `
       <div class="movie-poster-box">
-        <img src="images/${posterFilename(m.movie)}" alt="${m.movie}" onerror="this.style.display='none'">
+        <img src="images/${posterFilename(m.movie)}" alt="${m.movie}" onerror="this.onerror=null;this.src='images/defaultmovie.png';">
       </div>
       <div class="movie-content">
         <div class="movie-title-row">

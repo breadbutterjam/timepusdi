@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Movie Poster Finder</title>
+<style>
+  :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#202020;background:#f4f1ec}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;padding:36px 18px}
+  .app{max-width:920px;margin:auto;background:#fff;border-radius:18px;padding:28px;box-shadow:0 12px 40px #00000012}
+  h1{margin:0 0 6px;font-size:28px}
+  .sub{margin:0 0 24px;color:#6d6862}
+  .row{display:flex;gap:10px}
+  input{flex:1;padding:13px 14px;border:1px solid #d6d1ca;border-radius:10px;font-size:16px;outline:none}
+  input:focus{border-color:#777}
+  button{border:0;border-radius:10px;padding:12px 18px;font-weight:650;font-size:15px;cursor:pointer;background:#222;color:#fff}
+  button.secondary{background:#eee;color:#222}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  #status{min-height:24px;margin:16px 0;color:#6d6862}
+  .results{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:18px}
+  .card{border:1px solid #e2ddd7;border-radius:14px;overflow:hidden;background:#faf9f7}
+  .poster{width:100%;aspect-ratio:2/3;object-fit:cover;display:block;background:#e9e5df}
+  .info{padding:12px}
+  .title{font-weight:700;line-height:1.25}
+  .meta{font-size:13px;color:#777;margin:5px 0 11px}
+  .actions{display:flex;gap:7px}
+  .actions button{padding:9px 10px;font-size:13px;flex:1}
+  .empty{padding:28px;text-align:center;color:#777;border:1px dashed #d8d2cb;border-radius:12px}
+  .settings{margin-top:24px;border-top:1px solid #eee;padding-top:18px}
+  .settings summary{cursor:pointer;font-weight:650}
+  .setting-row{margin-top:12px;display:flex;gap:8px;align-items:center}
+  .setting-row input{font-family:ui-monospace,monospace;font-size:13px}
+  small{color:#888;display:block;margin-top:8px;line-height:1.4}
+  @media(max-width:600px){.row{flex-direction:column}.results{grid-template-columns:repeat(2,1fr)}.app{padding:20px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Movie Poster Finder</h1>
+  <p class="sub">Search TMDB, pick a poster, and save it locally.</p>
+
+  <div class="row">
+    <input id="movieInput" placeholder="e.g. Dil Chahta Hai" autocomplete="off">
+    <button id="searchBtn">Find Posters</button>
+  </div>
+
+  <div id="status"></div>
+  <div id="results" class="results">
+    <div class="empty">Enter a movie name to get started.</div>
+  </div>
+
+  <details class="settings">
+    <summary>TMDB API key</summary>
+    <div class="setting-row">
+      <input id="apiKey" type="password" placeholder="Paste your TMDB API Read Access Token here">
+      <button id="saveKey">Save</button>
+    </div>
+    <small>
+      The tool uses TMDB's v3 API. Your key is stored only in this browser's localStorage.
+      For a personal local tool, a TMDB API Read Access Token is the easiest option.
+    </small>
+  </details>
+</div>
+
+<script>
+const API_BASE = "https://api.themoviedb.org/3";
+const IMG_BASE = "https://image.tmdb.org/t/p/w500";
+
+const $ = id => document.getElementById(id);
+$("apiKey").value = localStorage.getItem("tmdb_token") || "";
+
+function getToken(){
+  return $("apiKey").value.trim();
+}
+
+function setStatus(msg, error=false){
+  $("status").textContent = msg;
+  $("status").style.color = error ? "#b42318" : "#6d6862";
+}
+
+function cleanFilename(name){
+  return name
+    .replace(/[<>:"/\\|?*]+/g, "")
+    .replace(/\s+/g, "")
+    .trim();
+}
+
+function year(date){
+  return date ? date.slice(0,4) : "Unknown year";
+}
+
+async function searchMovies(){
+  const q = $("movieInput").value.trim();
+  const token = getToken();
+
+  if(!token){
+    setStatus("Add your TMDB API Read Access Token in the settings below.", true);
+    $("apiKey").focus();
+    return;
+  }
+  if(!q){
+    setStatus("Enter a movie name.", true);
+    return;
+  }
+
+  $("searchBtn").disabled = true;
+  $("results").innerHTML = "";
+  setStatus("Searching TMDB…");
+
+  try{
+    const url = API_BASE + "/search/movie?query=" + encodeURIComponent(q) +
+                "&include_adult=false&language=en-US&page=1";
+    const res = await fetch(url, {
+      headers: { Authorization: "Bearer " + token, "Content-Type":"application/json" }
+    });
+    const data = await res.json();
+
+    if(!res.ok) throw new Error(data.status_message || "TMDB request failed.");
+    const movies = (data.results || []).filter(m => m.poster_path).slice(0,6);
+
+    if(!movies.length){
+      $("results").innerHTML = '<div class="empty">No results with posters found.</div>';
+      setStatus("No poster results found.");
+      return;
+    }
+
+    setStatus(`Found ${movies.length} poster${movies.length === 1 ? "" : "s"}. Pick one.`);
+    render(movies);
+  }catch(err){
+    console.error(err);
+    setStatus(err.message || "Something went wrong.", true);
+  }finally{
+    $("searchBtn").disabled = false;
+  }
+}
+
+function render(movies){
+  $("results").innerHTML = movies.map((m,i) => {
+    const title = m.title || m.original_title || "Untitled";
+    const poster = IMG_BASE + m.poster_path;
+    const safeTitle = title.replace(/'/g,"&#39;");
+    return `
+      <article class="card">
+        <img class="poster" src="${poster}" alt="${safeTitle}">
+        <div class="info">
+          <div class="title">${safeTitle}</div>
+          <div class="meta">${year(m.release_date)}${m.original_title && m.original_title !== title ? " · " + m.original_title : ""}</div>
+          <div class="actions">
+            <button onclick="openPoster('${poster}')">Open</button>
+            <button onclick="downloadPoster('${poster}','${safeTitle}')">Save</button>
+          </div>
+        </div>
+      </article>`;
+  }).join("");
+}
+
+function openPoster(url){
+  window.open(url, "_blank", "noopener");
+}
+
+async function downloadPoster(url){
+  setStatus("Converting poster to JPG…");
+
+  try{
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = () => reject(new Error("Could not load the poster."));
+      img.src = url;
+    });
+
+    // Draw the TMDB image onto a canvas, converting it to actual JPEG data.
+    const canvas = document.createElement("canvas");
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+
+    const blob = await new Promise(resolve =>
+      canvas.toBlob(resolve, "image/jpeg", 0.95)
+    );
+
+    if(!blob) throw new Error("Could not create JPEG.");
+
+    // Use the movie name searched for, with spaces removed.
+    const filename = cleanFilename($("movieInput").value) + ".jpg";
+
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+    setStatus("Saved as " + filename);
+
+  }catch(err){
+    console.error(err);
+    setStatus("Could not convert the poster to JPG.", true);
+  }
+}
+
+$("saveKey").addEventListener("click", () => {
+  const key = getToken();
+  if(!key){ localStorage.removeItem("tmdb_token"); setStatus("API key cleared."); return; }
+  localStorage.setItem("tmdb_token", key);
+  setStatus("API key saved in this browser.");
+});
+
+$("searchBtn").addEventListener("click", searchMovies);
+$("movieInput").addEventListener("keydown", e => {
+  if(e.key === "Enter") searchMovies();
+});
+</script>
+</body>
+</html>
