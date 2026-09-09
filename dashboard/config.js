@@ -39,7 +39,10 @@ const SHEET_CONFIG = {
   },
 
   movies: {
-    2026: 'data/2026_Movies.csv',
+    2026: 'data/2026_movies.csv',
+    2025: 'data/2025_movies.csv',
+    2024: 'data/2024_movies.csv',
+    2023: 'data/2023_movies.csv',
   },
 
   // Cities — hold off on this one for now, see chat notes on
