@@ -968,6 +968,11 @@
       <p class="hero-sub" id="moviesGapLine"></p>
     </div>
 
+      <table class="month-table">
+        <thead><tr id="moviesMonthHeaderRow"></tr></thead>
+        <tbody><tr id="moviesMonthTickRow"></tr></tbody>
+    </div>
+
     <div class="ledger">
       <p class="ledger-heading">Screenings this year</p>
       <div class="spine" id="movieSpine"></div>
@@ -1421,19 +1426,19 @@
 
   const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  function renderMonthSummary(trips) {
-    document.getElementById('monthHeaderRow').innerHTML =
+  function renderMonthSummary(items, getDateStr, headerRowId, tickRowId) {
+    document.getElementById(headerRowId).innerHTML =
       MONTH_LABELS.map(m => `<th>${m}</th>`).join('');
 
     const counts = new Array(12).fill(0);
-    trips.forEach(t => {
-      const md = parseTripMonthDay(t.from);
+    items.forEach(item => {
+      const md = parseTripMonthDay(getDateStr(item));
       if (md === null) return;
       const month = Math.floor(md / 100);
       if (month >= 0 && month < 12) counts[month]++;
     });
 
-    document.getElementById('monthTickRow').innerHTML =
+    document.getElementById(tickRowId).innerHTML =
       counts.map(c => `<td>${c > 0 ? '•'.repeat(c) : ''}</td>`).join('');
   }
 
@@ -1451,7 +1456,7 @@
     document.getElementById('allView').style.display = 'none';
     document.getElementById('monthSummary').style.display = 'block';
     const allTrips = TRAVEL_DATA[currentYear] || [];
-    renderMonthSummary(allTrips);
+    renderMonthSummary(allTrips, t => t.from, 'monthHeaderRow', 'monthTickRow');
 
     // the current calendar year is always YTD (there's no "future" to
     // toggle off) — hide the switch and force the mode in that case
@@ -1734,13 +1739,14 @@
 
     const movies = effectiveYtd ? allMovies.filter(m => !isFutureMovie(m)) : allMovies;
 
-    // document.getElementById('moviesTotal').innerHTML = movies.length + '<span> movies seen</span>';
-    document.getElementById('moviesTotal').innerHTML = movies.length;
+    document.getElementById('moviesTotal').innerHTML = movies.length + '<span> movies seen</span>';
 
     const uniqueTheatres = new Set(movies.map(m => (m.where || '').trim()).filter(Boolean)).size;
     const avgGap = movies.length ? Math.round(movies.reduce((s, m) => s + m.daysSince, 0) / movies.length) : 0;
     document.getElementById('moviesGapLine').textContent =
-      `Movies seen across ${uniqueTheatres} theatre${uniqueTheatres === 1 ? '' : 's'}. Average ${avgGap} days between visits.`;
+      `across ${uniqueTheatres} theatre${uniqueTheatres === 1 ? '' : 's'}. Average ${avgGap} days between visits.`;
+
+    renderMonthSummary(allMovies, m => m.date, 'moviesMonthHeaderRow', 'moviesMonthTickRow');
 
     const spine = document.getElementById('movieSpine');
     spine.innerHTML = '';
