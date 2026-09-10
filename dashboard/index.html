@@ -544,6 +544,24 @@
     gap: 8px;
     padding: 8px;
     text-align: center;
+    position: relative;
+  }
+
+  .theatre-card-count {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--brass);
+    color: var(--navy);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .theatre-card-icon {
@@ -1897,6 +1915,7 @@
   /* ---------------- Movies ---------------- */
   let currentMoviesYear = Math.max(...Object.keys(MOVIES_DATA).map(Number));
   let ytdModeMovies = false;
+  let moviesView = 'year'; // 'year' | 'all'
 
   const isFutureMovie = m => {
     const ord = parseTripMonthDay(m.date);
@@ -1908,12 +1927,76 @@
     renderMovies();
   });
 
+  function renderMoviesYearTabs() {
+    const el = document.getElementById('moviesYearTabs');
+    el.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All';
+    allBtn.classList.add('sticky-all');
+    if (moviesView === 'all') allBtn.classList.add('active');
+    allBtn.onclick = () => { moviesView = 'all'; renderMovies(); };
+    el.appendChild(allBtn);
+
+    Object.keys(MOVIES_DATA).map(Number).sort((a, b) => b - a).forEach(year => {
+      const btn = document.createElement('button');
+      btn.textContent = year;
+      if (moviesView === 'year' && year === currentMoviesYear) btn.classList.add('active');
+      btn.onclick = () => { moviesView = 'year'; currentMoviesYear = year; renderMovies(); };
+      el.appendChild(btn);
+    });
+  }
+
+  // Builds the theatre card grid (icon or name, visit count badge,
+  // sorted most-visited first) and returns how many unique theatres
+  // there were — shared by both the single-year and "All" views.
+  function renderTheatreGrid(movies) {
+    const counts = {};
+    movies.forEach(m => {
+      const name = (m.where || '').trim();
+      if (!name) return;
+      counts[name] = (counts[name] || 0) + 1;
+    });
+    const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+    document.getElementById('theatreGrid').innerHTML = sorted.map(([name, count]) => {
+      const icon = getTheatreIcon(name);
+      return `<div class="theatre-card">
+        <span class="theatre-card-count">${count}</span>
+        ${icon ? `<img src="${icon}" alt="${name}" class="theatre-card-icon" onerror="this.style.display='none'">` : ''}
+        <span class="theatre-card-name">${name}</span>
+      </div>`;
+    }).join('');
+
+    return sorted.length;
+  }
+
+  // Shared ledger renderer for the movie spine — used by both the
+  // single-year list and the combined "All" list.
+  function renderMovieLedger(movies, effectiveYtd) {
+    const spine = document.getElementById('movieSpine');
+    spine.innerHTML = '';
+    movies.forEach(m => {
+      const entry = MOVIE_LAYOUT === 'poster' ? buildMovieEntryPoster(m) : buildMovieEntryNoPoster(m);
+      if (effectiveYtd && isFutureMovie(m)) entry.style.opacity = '0.4';
+      spine.appendChild(entry);
+    });
+  }
+
   function renderMovies() {
-    buildYearTabs('moviesYearTabs', MOVIES_DATA, () => currentMoviesYear, y => currentMoviesYear = y, renderMovies, true);
-    const allMovies = MOVIES_DATA[currentMoviesYear] || [];
+    renderMoviesYearTabs();
 
     document.getElementById('moviesLayoutToggle').textContent =
       MOVIE_LAYOUT === 'poster' ? 'hide posters' : 'show posters';
+
+    if (moviesView === 'all') {
+      document.getElementById('ytdToggleMoviesWrap').style.display = 'none';
+      document.getElementById('moviesMonthSummary').style.display = 'none';
+      renderMoviesAll();
+      return;
+    }
+    document.getElementById('moviesMonthSummary').style.display = 'block';
+
+    const allMovies = MOVIES_DATA[currentMoviesYear] || [];
 
     // current calendar year is always YTD — hide the switch and force it
     const isCurrentCalendarYear = currentMoviesYear === CURRENT_CALENDAR_YEAR;
@@ -1925,29 +2008,35 @@
 
     document.getElementById('moviesTotal').innerHTML = movies.length + '<span> movies seen</span>';
 
-    const theatreNames = [...new Set(movies.map(m => (m.where || '').trim()).filter(Boolean))];
     const avgGap = movies.length ? Math.round(movies.reduce((s, m) => s + m.daysSince, 0) / movies.length) : 0;
+    const theatreCount = renderTheatreGrid(movies);
     document.getElementById('moviesGapLine').innerHTML =
-      `across <span id="moviesTheatreLink" class="theatre-toggle-link">${theatreNames.length} theatre${theatreNames.length === 1 ? '' : 's'}</span>. Average ${avgGap} days between visits.`;
-
-    const theatreGrid = document.getElementById('theatreGrid');
-    theatreGrid.innerHTML = theatreNames.map(name => {
-      const icon = getTheatreIcon(name);
-      return `<div class="theatre-card">
-        ${icon ? `<img src="${icon}" alt="${name}" class="theatre-card-icon" onerror="this.style.display='none'">` : ''}
-        <span class="theatre-card-name">${name}</span>
-      </div>`;
-    }).join('');
+      `across <span id="moviesTheatreLink" class="theatre-toggle-link">${theatreCount} theatre${theatreCount === 1 ? '' : 's'}</span>. Average ${avgGap} days between visits.`;
 
     renderMonthSummary(allMovies, m => m.date, 'moviesMonthHeaderRow', 'moviesMonthTickRow');
+    renderMovieLedger(allMovies, effectiveYtd);
+  }
 
-    const spine = document.getElementById('movieSpine');
-    spine.innerHTML = '';
-    allMovies.forEach(m => {
-      const entry = MOVIE_LAYOUT === 'poster' ? buildMovieEntryPoster(m) : buildMovieEntryNoPoster(m);
-      if (effectiveYtd && isFutureMovie(m)) entry.style.opacity = '0.4';
-      spine.appendChild(entry);
+  function renderMoviesAll() {
+    const years = Object.keys(MOVIES_DATA).map(Number).sort((a, b) => a - b);
+    const combined = [];
+    years.forEach(year => {
+      (MOVIES_DATA[year] || []).forEach(m => combined.push({ ...m, year }));
     });
+
+    document.getElementById('moviesTotal').innerHTML = combined.length + '<span> movies seen</span>';
+
+    const theatreCount = renderTheatreGrid(combined);
+    const minYear = years.length ? years[0] : '';
+    document.getElementById('moviesGapLine').innerHTML =
+      `across <span id="moviesTheatreLink" class="theatre-toggle-link">${theatreCount} theatre${theatreCount === 1 ? '' : 's'}</span> — since ${minYear} till date.`;
+
+    combined.sort((a, b) => {
+      const aKey = a.year * 10000 + (parseTripMonthDay(a.date) ?? 0);
+      const bKey = b.year * 10000 + (parseTripMonthDay(b.date) ?? 0);
+      return bKey - aKey;
+    });
+    renderMovieLedger(combined, false);
   }
 
   // Movie poster filenames: title with every non-alphanumeric character
@@ -1968,7 +2057,7 @@
         <span class="movie-title">${m.movie}</span>
         ${icon ? `<img src="${icon}" alt="${m.where}" class="theatre-icon" onerror="this.style.display='none'">` : ''}
       </div>
-      <div class="movie-date-line">${formatTripDate(m.date)}  [${m.daysSince} days since]</div>
+      <div class="movie-date-line">${m.year ? m.year + ' · ' : ''}${formatTripDate(m.date)}  [${m.daysSince} days since]</div>
       <div class="movie-info-line">
         <span>${m.where}</span>
         ${m.withWhom ? `<span>${m.withWhom}</span>` : ''}
@@ -1989,7 +2078,7 @@
           <span class="movie-title">${m.movie}</span>
           ${icon ? `<img src="${icon}" alt="${m.where}" class="theatre-icon" onerror="this.style.display='none'">` : ''}
         </div>
-        <div class="movie-date-line">${formatTripDate(m.date)}  [${m.daysSince} days since]</div>
+        <div class="movie-date-line">${m.year ? m.year + ' · ' : ''}${formatTripDate(m.date)}  [${m.daysSince} days since]</div>
         <div class="movie-info-line">
           <span>${m.where}</span>
           ${m.withWhom ? `<span>${m.withWhom}</span>` : ''}
