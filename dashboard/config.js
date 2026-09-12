@@ -31,7 +31,8 @@ const SHEET_CONFIG = {
   },
 
   cars: {
-    2026: 'data/2026_Cars.csv',
+    2026: 'data/2026_cars.csv',
+    2025: 'data/2025_cars.csv',
   },
 
   books: {

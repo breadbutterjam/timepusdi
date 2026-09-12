@@ -6,9 +6,7 @@
 <title>Field Notes — Life Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-<script src="config.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
 
   /* ============================================================
@@ -298,6 +296,8 @@
 
   #stayBreakdownWrap { margin-top: 14px; }
 
+  #carsBreakdownToggle { top: 50px; }
+
   /* trio of stats side by side (Cities module) */
   .stat-trio {
     display: flex;
@@ -425,6 +425,14 @@
     scrollbar-width: none;
   }
 
+  #carsGrid {
+    overflow-y: auto;
+    padding-right: 6px;
+    max-height: calc(100vh - 260px);
+    max-height: calc(100dvh - 260px);
+    scrollbar-width: none;
+  }
+
   /* ============================================================
      MOVIE ENTRY — poster-free spine: title + theatre icon, a date/
      gap line, then theatre + companions, dashed rule between entries
@@ -541,7 +549,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
     padding: 8px;
     text-align: center;
     position: relative;
@@ -556,9 +564,7 @@
   .theatre-card-count {
     font-family: var(--font-display2);
     font-size: 12px;
-    color: var(--ink-soft);
-    border: 1px solid var(--ink-soft);
-    border-radius: 10px;
+    color: var(--cream-soft);
     padding: 1px 8px;
     line-height: 1.4;
   }
@@ -571,7 +577,7 @@
 
   .theatre-card-name {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--cream-soft);
     line-height: 1.3;
   }
@@ -663,6 +669,14 @@
     font-weight: 400;
     color: var(--cream-soft);
     border-bottom: 1px solid rgba(237, 230, 211, 0.28);
+  }
+
+  .month-table th.month-clickable {
+    cursor: pointer;
+  }
+
+  .month-table th.month-clickable:hover {
+    color: var(--brass);
   }
 
   .month-table td {
@@ -804,6 +818,10 @@
   }
 
   .car-name {
+    font-family: var(--font-display2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 15px;
     color: var(--cream);
     line-height: 1.3;
@@ -811,14 +829,34 @@
 
   .car-nick { color: var(--cream-soft); font-size: 13px; }
 
+  .transmission-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--cream-soft);
+    border: 1px solid var(--hairline-navy);
+    border-radius: 3px;
+    padding: 1px 5px;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+
   .car-meta {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
     color: var(--cream-soft);
     line-height: 1.6;
   }
 
   .car-meta strong { color: var(--cream); font-weight: 400; }
+
+  .car-note {
+    font-family: var(--font-display2);
+    font-style: italic;
+    font-size: 12px;
+    color: var(--cream-soft);
+    margin-top: 6px;
+  }
 
   @media (max-width: 560px) {
     .grid { grid-template-columns: 1fr; }
@@ -1041,16 +1079,17 @@
        ============================================================ -->
   <section id="cars" class="module">
     <div class="module-head">
-      <h2>Cars Driven</h2>
+      <!-- <h2>Cars Driven</h2> -->
       <div class="year-tabs" id="carsYearTabs"></div>
     </div>
 
     <div class="hero">
-      <p class="hero-label">Total cars driven — <span id="carsYearLabel"></span></p>
       <p class="hero-number" id="carsTotal">—</p>
-      <p class="hero-sub">by engine type</p>
-      <div class="stay-bar" id="carsBar"></div>
-      <div class="stay-legend" id="carsLegend"></div>
+      <button type="button" class="stay-breakdown-toggle" id="carsBreakdownToggle">show breakdown</button>
+      <div id="carsBreakdownWrap" style="display:none">
+        <div class="stay-bar" id="carsBar"></div>
+        <div class="stay-legend" id="carsLegend"></div>
+      </div>
     </div>
 
     <div class="grid" id="carsGrid"></div>
@@ -1144,6 +1183,8 @@
 
 </div>
 
+<script src="papaparse.min.js"></script>
+<script src="config.js"></script>
 <script>
   /* ============================================================
      DATA — hardcoded from sheets for this visual pass.
@@ -1163,20 +1204,20 @@
 
   let CARS_DATA = {
     2026: [
-      { brand: 'Mahindra', make: 'XUV 300 (Bobcat)', engine: 'Petrol', type: 'Automatic', ownedBy: '-', where: 'Bombay', wheels: '' },
-      { brand: 'Honda', make: 'Activa', engine: 'Petrol', type: 'Automatic', ownedBy: 'Singh Parivaar', where: 'Chittorgarh', wheels: '2 wheeler' },
-      { brand: 'Mahindra', make: 'Scorpio', engine: 'Diesel', type: 'Manual', ownedBy: 'SK Rental', where: 'Chittorgarh', wheels: '' },
-      { brand: 'Honda', make: 'CRV', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Gandevi', wheels: '' },
-      { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Manual', ownedBy: 'Vashi brother', where: 'Gandevi - parking', wheels: '' },
-      { brand: 'Tata', make: 'Punch', engine: 'EV', type: 'Automatic', ownedBy: 'Tata Motors Trident', where: 'Bombay', wheels: 'Test Drive' },
-      { brand: 'Kia', make: 'Carens Clavis', engine: 'EV', type: 'Automatic', ownedBy: 'Desai', where: 'Mumbai Pune expressway', wheels: '' },
-      { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Bhatts', where: 'Bombay - Kurla', wheels: '' },
-      { brand: 'Mercedes', make: 'R350', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Pawna lake - Vashi [Lavasu day trip]', wheels: '' },
-      { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Rushi', where: 'Rajkot', wheels: '' },
-      { brand: 'Honda', make: 'Access', engine: 'Petrol', type: 'Automatic', ownedBy: 'Vora Parivar', where: 'Rajkot', wheels: '2 wheeler' },
-      { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'HareRamaHareKrishna', where: 'Bombay - Kiran Darshan parking', wheels: 'Parking' },
-      { brand: 'Toyota', make: 'Innova', engine: 'Diesel', type: 'Automatic', ownedBy: 'Sumit Kalbaug', where: 'Bombay - Kiran Darshan parking', wheels: 'Parking' },
-      { brand: 'Volkswagen', make: 'Polo', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Bombay - Impromptu Dinner plans at MiniPunjab -- Dhyaanu pickup cricket practice', wheels: '' },
+      { brand: 'Mahindra', make: 'XUV 300 (Bobcat)', engine: 'Petrol', type: 'Automatic', ownedBy: '-', where: 'Bombay', wheels: '', notes: '' },
+      { brand: 'Honda', make: 'Activa', engine: 'Petrol', type: 'Automatic', ownedBy: 'Singh Parivaar', where: 'Chittorgarh', wheels: '2 wheeler', notes: '' },
+      { brand: 'Mahindra', make: 'Scorpio', engine: 'Diesel', type: 'Manual', ownedBy: 'SK Rental', where: 'Chittorgarh', wheels: '', notes: '' },
+      { brand: 'Honda', make: 'CRV', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Gandevi', wheels: '', notes: '' },
+      { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Manual', ownedBy: 'Vashi brother', where: 'Gandevi', wheels: '', notes: 'Parking' },
+      { brand: 'Tata', make: 'Punch', engine: 'EV', type: 'Automatic', ownedBy: 'Tata Motors Trident', where: 'Bombay', wheels: 'Test Drive', notes: '' },
+      { brand: 'Kia', make: 'Carens Clavis', engine: 'EV', type: 'Automatic', ownedBy: 'Desai', where: 'Mumbai Pune expressway', wheels: '', notes: '' },
+      { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Bhatts', where: 'Bombay - Kurla', wheels: '', notes: '' },
+      { brand: 'Mercedes', make: 'R350', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Pawna lake - Vashi', wheels: '', notes: 'Lavasu day trip' },
+      { brand: 'Kia', make: 'Sonnet', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Rushi', where: 'Rajkot', wheels: '', notes: '' },
+      { brand: 'Honda', make: 'Access', engine: 'Petrol', type: 'Automatic', ownedBy: 'Vora Parivar', where: 'Rajkot', wheels: '2 wheeler', notes: '' },
+      { brand: 'Maruti', make: 'Baleno', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'HareRamaHareKrishna', where: 'Bombay', wheels: 'Parking', notes: 'Kiran Darshan parking' },
+      { brand: 'Toyota', make: 'Innova', engine: 'Diesel', type: 'Automatic', ownedBy: 'Sumit Kalbaug', where: 'Bombay', wheels: 'Parking', notes: 'Kiran Darshan parking' },
+      { brand: 'Volkswagen', make: 'Polo', engine: 'Petrol ICE', type: 'Automatic', ownedBy: 'Desai', where: 'Bombay', wheels: '', notes: 'Impromptu Dinner plans at MiniPunjab -- Dhyaanu pickup cricket practice' },
     ]
   };
 
@@ -1293,6 +1334,15 @@
     return 'Petrol';
   }
 
+  // AT/MT badge next to the car name — returns null (no badge) for
+  // anything that doesn't clearly say automatic or manual.
+  function transmissionAbbr(type) {
+    const t = (type || '').toLowerCase();
+    if (t.includes('auto')) return 'AT';
+    if (t.includes('manual')) return 'MT';
+    return null;
+  }
+
   /* ============================================================
      LIVE DATA — fetches each configured Google Sheet (published
      as CSV) and overwrites the fallback arrays above. Any sheet
@@ -1330,10 +1380,8 @@
   }
 
   function fetchCsv(url) {
-    // cache-bust so edits show up immediately instead of waiting out browser/CDN caching
-    const bustedUrl = url + (url.includes('?') ? '&' : '?') + '_=' + Date.now();
     return new Promise((resolve, reject) => {
-      Papa.parse(bustedUrl, {
+      Papa.parse(url, {
         download: true,
         header: true,
         skipEmptyLines: true,
@@ -1401,6 +1449,7 @@
             ownedBy: (r['Owned by'] || '').trim() || '-',
             where: r['Where'] || '',
             wheels: r['Wheels'] || '',
+            notes: r['Notes'] || '', // assumes header is exactly "Notes" — adjust if yours differs
           }));
       } catch (e) { console.warn('Cars sheet fetch failed for', year, e); }
     }
@@ -1577,6 +1626,8 @@
       const entry = document.createElement('div');
       entry.className = 'trip-entry';
       if (effectiveYtd && isFutureTrip(t)) entry.style.opacity = '0.4';
+      const tripMd = parseTripMonthDay(t.from);
+      if (tripMd !== null) entry.dataset.month = Math.floor(tripMd / 100);
 
       const totalNights = t.legs.reduce((s, leg) => s + leg.daysOfStay, 0);
 
@@ -1586,7 +1637,7 @@
 
       const modeSegments = (t.mode || '').split('+').map(s => s.trim()).filter(Boolean);
       const modeIconsHtml = modeSegments
-        .map(seg => { const icon = getModeIcon(seg); return icon ? `<img src="${icon}" alt="${seg}" class="mode-icon" onerror="this.style.display='none'">` : ''; })
+        .map(seg => { const icon = getModeIcon(seg); return icon ? `<img src="${icon}" alt="${seg}" class="mode-icon" loading="lazy" onerror="this.style.display='none'">` : ''; })
         .join('');
 
       entry.innerHTML = `
@@ -1624,10 +1675,7 @@
 
   const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  function renderMonthSummary(items, getDateStr, headerRowId, tickRowId) {
-    document.getElementById(headerRowId).innerHTML =
-      MONTH_LABELS.map(m => `<th>${m}</th>`).join('');
-
+  function renderMonthSummary(items, getDateStr, headerRowId, tickRowId, spineId) {
     const counts = new Array(12).fill(0);
     items.forEach(item => {
       const md = parseTripMonthDay(getDateStr(item));
@@ -1636,8 +1684,24 @@
       if (month >= 0 && month < 12) counts[month]++;
     });
 
+    document.getElementById(headerRowId).innerHTML =
+      MONTH_LABELS.map((m, i) => counts[i] > 0
+        ? `<th class="month-clickable" onclick="scrollToMonth(${i}, '${spineId}')">${m}</th>`
+        : `<th>${m}</th>`
+      ).join('');
+
     document.getElementById(tickRowId).innerHTML =
       counts.map(c => `<td>${c > 0 ? '•'.repeat(c) : ''}</td>`).join('');
+  }
+
+  // Scrolls a ledger container so the earliest entry from the clicked
+  // month comes into view. Entries carry data-month on themselves.
+  function scrollToMonth(monthIndex, spineId) {
+    const container = document.getElementById(spineId);
+    if (!container) return;
+    const target = container.querySelector(`[data-month="${monthIndex}"]`);
+    if (!target) return;
+    container.scrollTo({ top: target.offsetTop - 8, behavior: 'smooth' });
   }
 
   function renderTravel() {
@@ -1654,7 +1718,7 @@
     document.getElementById('allView').style.display = 'none';
     document.getElementById('monthSummary').style.display = 'block';
     const allTrips = TRAVEL_DATA[currentYear] || [];
-    renderMonthSummary(allTrips, t => t.from, 'monthHeaderRow', 'monthTickRow');
+    renderMonthSummary(allTrips, t => t.from, 'monthHeaderRow', 'monthTickRow', 'tripSpine');
 
     // the current calendar year is always YTD (there's no "future" to
     // toggle off) — hide the switch and force the mode in that case
@@ -1799,14 +1863,36 @@
 
   /* ---------------- Cars Driven ---------------- */
   let currentCarsYear = Math.max(...Object.keys(CARS_DATA).map(Number));
+  let carsView = 'year'; // 'year' | 'all'
 
-  function renderCars() {
-    buildYearTabs('carsYearTabs', CARS_DATA, () => currentCarsYear, y => currentCarsYear = y, renderCars);
-    const cars = CARS_DATA[currentCarsYear] || [];
+  document.getElementById('carsBreakdownToggle').addEventListener('click', () => {
+    const wrap = document.getElementById('carsBreakdownWrap');
+    const isHidden = wrap.style.display === 'none';
+    wrap.style.display = isHidden ? 'block' : 'none';
+    document.getElementById('carsBreakdownToggle').textContent =
+      isHidden ? 'hide breakdown' : 'show breakdown';
+  });
 
-    document.getElementById('carsYearLabel').textContent = currentCarsYear;
-    document.getElementById('carsTotal').textContent = cars.length;
+  function renderCarsYearTabs() {
+    const el = document.getElementById('carsYearTabs');
+    el.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All';
+    allBtn.classList.add('sticky-all');
+    if (carsView === 'all') allBtn.classList.add('active');
+    allBtn.onclick = () => { carsView = 'all'; renderCars(); };
+    el.appendChild(allBtn);
 
+    Object.keys(CARS_DATA).map(Number).sort((a, b) => b - a).forEach(year => {
+      const btn = document.createElement('button');
+      btn.textContent = year;
+      if (carsView === 'year' && year === currentCarsYear) btn.classList.add('active');
+      btn.onclick = () => { carsView = 'year'; currentCarsYear = year; renderCars(); };
+      el.appendChild(btn);
+    });
+  }
+
+  function renderCarsBreakdown(cars) {
     const byEngine = { Petrol: 0, Diesel: 0, EV: 0 };
     cars.forEach(c => { byEngine[normEngine(c.engine)]++; });
     const total = cars.length || 1;
@@ -1823,11 +1909,14 @@
       legend.appendChild(item);
     });
     animateBar(document.getElementById('carsBar'), segments);
+  }
 
+  function renderCarsGrid(cars) {
     const grid = document.getElementById('carsGrid');
     grid.innerHTML = '';
     cars.forEach(c => {
       const engineType = normEngine(c.engine);
+      const transmission = transmissionAbbr(c.type);
       const isMine = c.ownedBy.trim() === '-';
       const wheelsNote = c.wheels && !/2 wheeler/i.test(c.wheels) ? c.wheels : null;
       const card = document.createElement('div');
@@ -1836,17 +1925,51 @@
       const nameHtml = nickMatch
         ? `${c.brand} ${nickMatch[1]} <span class="car-nick">(${nickMatch[2]})</span>`
         : `${c.brand} ${c.make}`;
+
+      const metaBits = [];
+      if (/2 wheeler/i.test(c.wheels)) metaBits.push('2-wheeler');
+      if (wheelsNote) metaBits.push(wheelsNote);
+      const metaLine1 = metaBits.join(' · ');
+
       card.innerHTML = `
         <div class="car-top">
-          <span class="car-name">${nameHtml}</span>
+          <span class="car-name">${nameHtml}${transmission ? ` <span class="transmission-badge">${transmission}</span>` : ''}</span>
           <span class="tag" style="background:${ENGINE_COLORS[engineType]};color:var(--paper)">${engineType}</span>
         </div>
         <div class="car-meta">
-          ${c.type}${/2 wheeler/i.test(c.wheels) ? ' · 2-wheeler' : ''}${wheelsNote ? ' · ' + wheelsNote : ''}<br>
-          <strong>${isMine ? 'Yours' : c.ownedBy}</strong> · ${c.where}
-        </div>`;
+          ${metaLine1 ? `${metaLine1}<br>` : ''}
+          ${c.year ? c.year + ' · ' : ''}<strong>${isMine ? 'Yours' : c.ownedBy}</strong> · ${c.where}
+        </div>
+        ${c.notes ? `<div class="car-note">${c.notes}</div>` : ''}`;
       grid.appendChild(card);
     });
+  }
+
+  function renderCars() {
+    renderCarsYearTabs();
+
+    if (carsView === 'all') {
+      renderCarsAll();
+      return;
+    }
+
+    const cars = CARS_DATA[currentCarsYear] || [];
+    document.getElementById('carsTotal').innerHTML = cars.length + '<span> vehicles driven</span>';
+    renderCarsBreakdown(cars);
+    renderCarsGrid(cars);
+  }
+
+  function renderCarsAll() {
+    const years = Object.keys(CARS_DATA).map(Number).sort((a, b) => a - b);
+    const combined = [];
+    years.forEach(year => {
+      (CARS_DATA[year] || []).forEach(c => combined.push({ ...c, year }));
+    });
+    combined.sort((a, b) => b.year - a.year);
+
+    document.getElementById('carsTotal').innerHTML = combined.length + '<span> vehicles driven</span>';
+    renderCarsBreakdown(combined);
+    renderCarsGrid(combined);
   }
 
   /* ---------------- Books ---------------- */
@@ -1980,7 +2103,7 @@
       const icon = getTheatreIcon(name);
       const isActive = selectedTheatres.has(name);
       return `<div class="theatre-card${isActive ? ' active' : ''}" data-theatre="${name}">
-        ${icon ? `<img src="${icon}" alt="${name}" class="theatre-card-icon" onerror="this.style.display='none'">` : ''}
+        ${icon ? `<img src="${icon}" alt="${name}" class="theatre-card-icon" loading="lazy" onerror="this.style.display='none'">` : ''}
         <span class="theatre-card-name">${name}</span>
         <span class="theatre-card-count">${count}</span>
       </div>`;
@@ -2033,7 +2156,7 @@
     document.getElementById('moviesGapLine').innerHTML =
       `across <span id="moviesTheatreLink" class="theatre-toggle-link">${theatreCount} theatre${theatreCount === 1 ? '' : 's'}</span>. Average ${avgGap} days between visits.`;
 
-    renderMonthSummary(allMovies, m => m.date, 'moviesMonthHeaderRow', 'moviesMonthTickRow');
+    renderMonthSummary(allMovies, m => m.date, 'moviesMonthHeaderRow', 'moviesMonthTickRow', 'movieSpine');
     renderMovieLedger(applyTheatreFilter(allMovies), effectiveYtd);
   }
 
@@ -2072,11 +2195,13 @@
   function buildMovieEntryNoPoster(m) {
     const entry = document.createElement('div');
     entry.className = 'movie-entry';
+    const md = parseTripMonthDay(m.date);
+    if (md !== null) entry.dataset.month = Math.floor(md / 100);
     const icon = getTheatreIcon(m.where);
     entry.innerHTML = `
       <div class="movie-title-row">
         <span class="movie-title">${m.movie}</span>
-        ${icon ? `<img src="${icon}" alt="${m.where}" class="theatre-icon" onerror="this.style.display='none'">` : ''}
+        ${icon ? `<img src="${icon}" alt="${m.where}" class="theatre-icon" loading="lazy" onerror="this.style.display='none'">` : ''}
       </div>
       <div class="movie-date-line">${m.year ? m.year + ' · ' : ''}${formatTripDate(m.date)}  [${m.daysSince} days since]</div>
       <div class="movie-info-line">
@@ -2089,15 +2214,17 @@
   function buildMovieEntryPoster(m) {
     const entry = document.createElement('div');
     entry.className = 'movie-entry-poster';
+    const md = parseTripMonthDay(m.date);
+    if (md !== null) entry.dataset.month = Math.floor(md / 100);
     const icon = getTheatreIcon(m.where);
     entry.innerHTML = `
       <div class="movie-poster-box">
-        <img src="images/${posterFilename(m.movie)}" alt="${m.movie}" onerror="this.onerror=null;this.src='images/defaultmovie.png';">
+        <img src="images/${posterFilename(m.movie)}" alt="${m.movie}" loading="lazy" onerror="this.onerror=null;this.src='images/defaultmovie.png';">
       </div>
       <div class="movie-content">
         <div class="movie-title-row">
           <span class="movie-title">${m.movie}</span>
-          ${icon ? `<img src="${icon}" alt="${m.where}" class="theatre-icon" onerror="this.style.display='none'">` : ''}
+          ${icon ? `<img src="${icon}" alt="${m.where}" class="theatre-icon" loading="lazy" onerror="this.style.display='none'">` : ''}
         </div>
         <div class="movie-date-line">${m.year ? m.year + ' · ' : ''}${formatTripDate(m.date)}  [${m.daysSince} days since]</div>
         <div class="movie-info-line">
