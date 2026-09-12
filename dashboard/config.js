@@ -36,7 +36,7 @@ const SHEET_CONFIG = {
   },
 
   books: {
-    2026: 'data/2026_Books.csv',
+    2026: 'data/2026_books.csv',
   },
 
   movies: {
@@ -46,8 +46,13 @@ const SHEET_CONFIG = {
     2023: 'data/2023_movies.csv',
   },
 
-  // Cities — hold off on this one for now, see chat notes on
-  // tidying the sheet's header row first. Not year-keyed yet.
-  cities: 'data/Cities.csv',
+  // Cities — cumulative (all-time), not year-keyed, so this stays a
+  // plain path rather than a {year: url} object like the others above.
+  // cities: 'data/2026_cities.csv',
+   cities: {
+  2026: 'data/2026_cities.csv',
+  2025: 'data/2025_cities.csv',
+},
+
 
 };

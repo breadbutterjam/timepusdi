@@ -785,11 +785,6 @@
     border-radius: 10px;
     background: var(--paper-dim);
     color: var(--ink);
-
-    position: absolute;
-    top: 0px;
-    right: 0;
-    border-radius: 0px 3px 0px 3px;
   }
 
   .tag.accent { background: var(--entry-color, var(--none)); color: var(--paper); }
@@ -815,6 +810,15 @@
     position: relative;
   }
 
+  /* engine tag now sits as a corner ribbon on the card — scoped to
+     .car-card .tag specifically since .tag is shared with Books */
+  .car-card .tag {
+    position: absolute;
+    top: 0px;
+    right: 0;
+    border-radius: 0px 3px 0px 3px;
+  }
+
   .car-top {
     display: flex;
     justify-content: space-between;
@@ -833,11 +837,7 @@
     line-height: 1.3;
   }
 
-  .car-nick { 
-    color: var(--cream-soft); 
-    font-size: 13px; 
-    margin-left: 8px;
-  }
+  .car-nick { color: var(--cream-soft); font-size: 13px; }
 
   .transmission-badge {
     display: inline-block;
@@ -1008,10 +1008,10 @@
         </div>
         <select id="moduleSelect" aria-label="Choose section">
           <option value="travel">Travel</option>
+          <option value="movies">Movies</option>
+          <option value="cities">Cities</option>
           <option value="cars">Cars</option>
           <option value="books">Books</option>
-          <option value="cities">Cities</option>
-          <option value="movies">Movies</option>
         </select>
       </div>  
     </div>
@@ -1023,9 +1023,10 @@
   <nav class="module-nav" id="moduleNav">
       <button data-section="travel">Travel</button>
       <button data-section="movies">Movies</button>
+      <button data-section="cities">Cities</button>
       <button data-section="cars">Cars</button>
       <button data-section="books">Books</button>
-      <button data-section="cities">Cities</button>
+      
   </nav>
 
   <!-- ============================================================
@@ -1127,21 +1128,24 @@
        CITIES
        ============================================================ -->
   <section id="cities" class="module">
-    <div class="module-head"><h2>Cities</h2></div>
+    <div class="module-head">
+      <!-- <h2>Cities</h2> -->
+      <div class="year-tabs" id="citiesYearTabs"></div>
+    </div>
 
     <div class="hero">
       <div class="stat-trio">
         <div class="stat-block">
-          <p class="hero-label">Cities</p>
           <p class="hero-number" id="citiesCount">—</p>
+          <p class="hero-label">Cities</p>
         </div>
         <div class="stat-block">
-          <p class="hero-label">States</p>
           <p class="hero-number" id="statesCount">—</p>
+          <p class="hero-label">States</p>
         </div>
         <div class="stat-block">
-          <p class="hero-label">Visited, not stayed</p>
           <p class="hero-number" id="passedCount">—</p>
+          <p class="hero-label">Visited, not stayed</p>
         </div>
       </div>
     </div>
@@ -1241,20 +1245,21 @@
     ]
   };
 
-  const CITIES_DATA = {
-    citiesCount: 7,
-    statesCount: 4,
-    passedCount: 2,
-    visited: [
-      { city: 'Bombay', state: 'Maharashtra', visit: 'n+' },
-      { city: 'Pune', state: 'Maharashtra', visit: 'n+' },
-      { city: 'Nagaon', state: 'Maharashtra', visit: '1st' },
-      { city: 'Anjuna', state: 'Goa', visit: 'n+' },
-      { city: 'Chittorgarh', state: 'Rajasthan', visit: '2nd' },
-      { city: 'Gandevi', state: 'Gujarat', visit: 'n+' },
-      { city: 'Rajkot', state: 'Gujarat', visit: 'n+' },
+  // One row per city per year now (matches the CSV shape: visit count,
+  // city, state, stayed). citiesCount/statesCount/passedThrough are
+  // computed at render time from whichever year (or "All", deduped) is active.
+  let CITIES_DATA = {
+    2026: [
+      { city: 'Bombay', state: 'Maharashtra', visit: 'n+', stayed: true },
+      { city: 'Pune', state: 'Maharashtra', visit: 'n+', stayed: true },
+      { city: 'Nagaon', state: 'Maharashtra', visit: '1st', stayed: true },
+      { city: 'Anjuna', state: 'Goa', visit: 'n+', stayed: true },
+      { city: 'Chittorgarh', state: 'Rajasthan', visit: '2nd', stayed: true },
+      { city: 'Gandevi', state: 'Gujarat', visit: 'n+', stayed: true },
+      { city: 'Rajkot', state: 'Gujarat', visit: 'n+', stayed: true },
+      { city: 'Udaipur', state: 'Rajasthan', visit: '2nd', stayed: false },
+      { city: 'Lavasa', state: 'Maharashtra', visit: 'n+', stayed: false },
     ],
-    passedThrough: ['Udaipur', 'Lavasa'],
   };
 
   let MOVIES_DATA = {
@@ -1504,8 +1509,25 @@
     }
   }
 
-  // Cities is intentionally not wired yet — see chat notes on
-  // tidying that sheet's header row before we hook it up.
+  // Cities is now year-keyed like the other modules — one CSV per
+  // year, each listing that year's visits. An "All" view (built in
+  // renderCities) merges every year and dedupes by city.
+  async function loadCities() {
+    const cfg = (typeof SHEET_CONFIG !== 'undefined' && SHEET_CONFIG.cities) || {};
+    for (const [year, entry] of Object.entries(cfg)) {
+      const { url, maxRows } = resolveSheetEntry(entry);
+      if (!isConfigured(url)) continue;
+      try {
+        const rows = await fetchCsv(url);
+        CITIES_DATA[year] = tableRows(rows, 'Cities', maxRows).map(r => ({
+          city: r['Cities'] || '',
+          state: r['States'] || '',
+          visit: r['Visit Count'] || '',
+          stayed: (r['Stayed'] || '').trim().toLowerCase() === 'yes',
+        }));
+      } catch (e) { console.warn('Cities sheet fetch failed for', year, e); }
+    }
+  }
 
   /* ---------------- Shared: year tabs + month-day cutoff for YTD ---------------- */
   function buildYearTabs(containerId, dataObj, getYear, setYear, onChange, sortDesc) {
@@ -2015,13 +2037,54 @@
   }
 
   /* ---------------- Cities ---------------- */
+  let currentCitiesYear = Math.max(...Object.keys(CITIES_DATA).map(Number));
+  let citiesView = 'year'; // 'year' | 'all'
+
+  function renderCitiesYearTabs() {
+    const el = document.getElementById('citiesYearTabs');
+    el.innerHTML = '';
+    const allBtn = document.createElement('button');
+    allBtn.textContent = 'All';
+    allBtn.classList.add('sticky-all');
+    if (citiesView === 'all') allBtn.classList.add('active');
+    allBtn.onclick = () => { citiesView = 'all'; renderCities(); };
+    el.appendChild(allBtn);
+
+    Object.keys(CITIES_DATA).map(Number).sort((a, b) => b - a).forEach(year => {
+      const btn = document.createElement('button');
+      btn.textContent = year;
+      if (citiesView === 'year' && year === currentCitiesYear) btn.classList.add('active');
+      btn.onclick = () => { citiesView = 'year'; currentCitiesYear = year; renderCities(); };
+      el.appendChild(btn);
+    });
+  }
+
   function renderCities() {
-    document.getElementById('citiesCount').textContent = CITIES_DATA.citiesCount;
-    document.getElementById('statesCount').textContent = CITIES_DATA.statesCount;
-    document.getElementById('passedCount').textContent = CITIES_DATA.passedCount;
+    renderCitiesYearTabs();
+
+    let rows;
+    if (citiesView === 'all') {
+      // merge every year, keeping the highest-year row per city so a
+      // revisited city counts once rather than once per year it appears
+      const years = Object.keys(CITIES_DATA).map(Number).sort((a, b) => a - b);
+      const byCity = {};
+      years.forEach(year => {
+        (CITIES_DATA[year] || []).forEach(row => { byCity[row.city] = row; });
+      });
+      rows = Object.values(byCity);
+    } else {
+      rows = CITIES_DATA[currentCitiesYear] || [];
+    }
+
+    const visited = rows.filter(r => r.stayed);
+    const passedThrough = rows.filter(r => !r.stayed).map(r => r.city);
+
+    document.getElementById('citiesCount').textContent = visited.length;
+    document.getElementById('statesCount').textContent = new Set(visited.map(v => v.state).filter(Boolean)).size;
+    document.getElementById('passedCount').textContent = passedThrough.length;
 
     const byState = {};
-    CITIES_DATA.visited.forEach(v => {
+    visited.forEach(v => {
       (byState[v.state] = byState[v.state] || []).push(v);
     });
 
@@ -2039,8 +2102,8 @@
 
     const passed = document.createElement('div');
     passed.className = 'passed-through';
-    passed.innerHTML = `<p class="state-name">Seen from the road, not stayed</p>
-      <div class="city-chips">${CITIES_DATA.passedThrough.map(c => `<span class="city-chip">${c}</span>`).join('')}</div>`;
+    passed.innerHTML = `<p class="state-name">Visited, not stayed</p>
+      <div class="city-chips">${passedThrough.map(c => `<span class="city-chip">${c}</span>`).join('')}</div>`;
     el.appendChild(passed);
   }
 
@@ -2277,11 +2340,12 @@
   });
 
   async function init() {
-    await Promise.all([loadTravel(), loadCars(), loadBooks(), loadMovies()]);
+    await Promise.all([loadTravel(), loadCars(), loadBooks(), loadMovies(), loadCities()]);
     currentYear = Math.max(...Object.keys(TRAVEL_DATA).map(Number));
     currentCarsYear = Math.max(...Object.keys(CARS_DATA).map(Number));
     currentBooksYear = Math.max(...Object.keys(BOOKS_DATA).map(Number));
     currentMoviesYear = Math.max(...Object.keys(MOVIES_DATA).map(Number));
+    currentCitiesYear = Math.max(...Object.keys(CITIES_DATA).map(Number));
     renderTravel();
     renderCars();
     renderBooks();
