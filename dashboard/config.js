@@ -52,6 +52,9 @@ const SHEET_CONFIG = {
    cities: {
   2026: 'data/2026_cities.csv',
   2025: 'data/2025_cities.csv',
+  2024: 'data/2024_cities.csv',
+  2023: 'data/2023_cities.csv',
+  2022: 'data/2022_cities.csv',
 },
 
 

@@ -916,46 +916,62 @@
      ============================================================ */
   .state-groups { margin-top: 24px; }
 
-  .state-group { margin-bottom: 18px; }
+  .state-group {
+    border-bottom: 1px dashed rgba(237, 230, 211, 0.28);
+    padding-bottom: 14px; /* added — gives the card row room before the divider */
+  }
+
+  .state-group:last-child { border-bottom: none; padding-bottom: 0; }
 
   .state-name {
-    font-family: var(--font-mono);
-    font-size: 12px;
+    font-family: var(--font-display2);
+    font-size: 14px;
     color: var(--brass);
-    margin-bottom: 8px;
+    margin-bottom: 3px;
   }
 
-  .city-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .state-count {
+    color: var(--cream-soft);
+    font-weight: 400;
+  }
 
-  .city-chip {
+  .city-cards {
     display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .city-card {
+    display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 8px;
     background: rgba(237, 230, 211, 0.06);
     border: 1px solid var(--hairline-navy);
-    border-radius: 20px;
-    padding: 5px 12px 5px 6px;
-    font-size: 14px;
-    color: var(--cream);
+    border-radius: 5px;
+    padding: 8px 12px;
   }
 
-  .visit-badge {
+  .city-card-icon {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    flex-shrink: 0;
+  }
+
+  .city-card-name {
+    font-family: var(--font-display2);
+    font-size: 16px;
+    color: var(--cream);
+    white-space: nowrap;
+  }
+
+  .city-card-visit {
     font-family: var(--font-mono);
-    font-size: 10px;
-    background: var(--brass);
-    color: var(--navy-deep);
-    border-radius: 50%;
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 11px;
+    color: var(--cream-soft);
   }
 
   .passed-through {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid var(--hairline-navy);
   }
 
   .passed-through .state-name { color: var(--cream-soft); }
@@ -1008,10 +1024,10 @@
         </div>
         <select id="moduleSelect" aria-label="Choose section">
           <option value="travel">Travel</option>
-          <option value="movies">Movies</option>
-          <option value="cities">Cities</option>
           <option value="cars">Cars</option>
           <option value="books">Books</option>
+          <option value="cities">Cities</option>
+          <option value="movies">Movies</option>
         </select>
       </div>  
     </div>
@@ -1023,10 +1039,9 @@
   <nav class="module-nav" id="moduleNav">
       <button data-section="travel">Travel</button>
       <button data-section="movies">Movies</button>
-      <button data-section="cities">Cities</button>
       <button data-section="cars">Cars</button>
       <button data-section="books">Books</button>
-      
+      <button data-section="cities">Cities</button>
   </nav>
 
   <!-- ============================================================
@@ -1143,7 +1158,7 @@
           <p class="hero-number" id="statesCount">—</p>
           <p class="hero-label">States</p>
         </div>
-        <div class="stat-block">
+        <div class="stat-block" id="passedStatBlock">
           <p class="hero-number" id="passedCount">—</p>
           <p class="hero-label">Visited, not stayed</p>
         </div>
@@ -1315,6 +1330,20 @@
     return match ? match.icon : null;
   }
 
+  /* ============================================================
+     CITY ICONS — same pattern as theatre/mode icons. Empty for now;
+     add a line per city once you have images, e.g.:
+     { keywords: ['bombay', 'mumbai'], icon: 'icons/mumbai.png' },
+     ============================================================ */
+  const CITY_ICON_MAP = [
+  ];
+
+  function getCityIcon(city) {
+    const lower = (city || '').toLowerCase();
+    const match = CITY_ICON_MAP.find(entry => entry.keywords.some(k => lower.includes(k)));
+    return match ? match.icon : null;
+  }
+
   // Switch between the two movie-spine designs. 'poster' shows a
   // thumbnail per entry (needs matching files in /images); 'no-poster'
   // is the plain text version. Toggled via the "show/hide posters"
@@ -1341,6 +1370,18 @@
     if (j === 2 && k !== 12) return 'nd';
     if (j === 3 && k !== 13) return 'rd';
     return 'th';
+  }
+
+  // Visit Count cells can already be a formatted string ("1st", "n+")
+  // or a plain number — only plain numbers get auto-suffixed, so
+  // typing "4" correctly becomes "4th", "11" becomes "11th", etc.
+  function formatVisitCount(visit) {
+    const trimmed = (visit || '').toString().trim();
+    const num = parseInt(trimmed, 10);
+    if (!isNaN(num) && String(num) === trimmed) {
+      return `${num}${ordinalSuffix(num)}`;
+    }
+    return trimmed;
   }
 
   function normEngine(e) {
@@ -2064,12 +2105,17 @@
 
     let rows;
     if (citiesView === 'all') {
-      // merge every year, keeping the highest-year row per city so a
-      // revisited city counts once rather than once per year it appears
+      // merge every year; once a city has been stayed=true in any
+      // year, it stays counted as visited even if a different year
+      // (before or after) only passed through it
       const years = Object.keys(CITIES_DATA).map(Number).sort((a, b) => a - b);
       const byCity = {};
       years.forEach(year => {
-        (CITIES_DATA[year] || []).forEach(row => { byCity[row.city] = row; });
+        (CITIES_DATA[year] || []).forEach(row => {
+          const existing = byCity[row.city];
+          if (!existing || !existing.stayed) byCity[row.city] = row;
+          // else: already confirmed stayed elsewhere — never downgrade it
+        });
       });
       rows = Object.values(byCity);
     } else {
@@ -2077,35 +2123,48 @@
     }
 
     const visited = rows.filter(r => r.stayed);
-    const passedThrough = rows.filter(r => !r.stayed).map(r => r.city);
+    const passedThrough = rows.filter(r => !r.stayed);
 
     document.getElementById('citiesCount').textContent = visited.length;
     document.getElementById('statesCount').textContent = new Set(visited.map(v => v.state).filter(Boolean)).size;
     document.getElementById('passedCount').textContent = passedThrough.length;
+    document.getElementById('passedStatBlock').style.display = passedThrough.length ? 'block' : 'none';
 
     const byState = {};
     visited.forEach(v => {
       (byState[v.state] = byState[v.state] || []).push(v);
     });
 
+    // shared card builder — used for both state groups and the
+    // "visited, not stayed" list
+    function cityCardHtml(v) {
+      const icon = getCityIcon(v.city);
+      return `<div class="city-card">
+        ${icon ? `<img src="${icon}" alt="${v.city}" class="city-card-icon" loading="lazy" onerror="this.style.display='none'">` : ''}
+        <span class="city-card-name">${v.city}</span>
+        <span class="city-card-visit">[${formatVisitCount(v.visit)}]</span>
+      </div>`;
+    }
+
     const el = document.getElementById('stateGroups');
     el.innerHTML = '';
     Object.keys(byState).forEach(state => {
       const group = document.createElement('div');
       group.className = 'state-group';
-      const chips = byState[state].map(v =>
-        `<span class="city-chip"><span class="visit-badge">${v.visit}</span>${v.city}</span>`
-      ).join('');
-      group.innerHTML = `<p class="state-name">${state}</p><div class="city-chips">${chips}</div>`;
+      const cards = byState[state].map(cityCardHtml).join('');
+      group.innerHTML = `<p class="state-name">${state} <span class="state-count">(${byState[state].length})</span></p><div class="city-cards">${cards}</div>`;
       el.appendChild(group);
     });
 
-    const passed = document.createElement('div');
-    passed.className = 'passed-through';
-    passed.innerHTML = `<p class="state-name">Visited, not stayed</p>
-      <div class="city-chips">${passedThrough.map(c => `<span class="city-chip">${c}</span>`).join('')}</div>`;
-    el.appendChild(passed);
+    if (passedThrough.length) {
+      const passed = document.createElement('div');
+      passed.className = 'passed-through';
+      const passedCards = passedThrough.map(cityCardHtml).join('');
+      passed.innerHTML = `<p class="state-name">Visited, not stayed <span class="state-count">(${passedThrough.length})</span></p><div class="city-cards">${passedCards}</div>`;
+      el.appendChild(passed);
+    }
   }
+
 
   /* ---------------- Movies ---------------- */
   let currentMoviesYear = Math.max(...Object.keys(MOVIES_DATA).map(Number));
