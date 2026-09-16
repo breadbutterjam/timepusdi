@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trump Card Viewer</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Alan+Sans:wght@700&family=Inter:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+
+  <body>
+    <div class="shell">
+      <header class="masthead">
+        <h1>Trump Card Viewer</h1>
+        <!-- <p>Cards render from the same JSON the studio exports.</p> -->
+      </header>
+
+      <div class="leftRightHolder">
+        <div class="leftPane">
+          <section class="picker" aria-label="Pick a deck and a player">
+          <div class="picker-row">
+            <div class="categories" id="categories" role="group" aria-label="Deck"></div>
+          </div>
+
+          <div class="picker-row">
+            <input
+              class="search"
+              id="search"
+              type="search"
+              placeholder="Filter by name or nickname"
+              autocomplete="off"
+              aria-label="Filter by name or nickname"
+            />
+            <span class="count" id="count" aria-live="polite"></span>
+          </div>
+        </section>
+        
+        <div class="chips" id="chips" role="group" aria-label="Players"></div>
+      </div>
+
+      <div class="rightPane">
+        <p class="status" id="status" role="status" hidden></p>
+
+        <main class="stage" id="stage" aria-label="Card"></main>
+    
+      </div>
+      </div>
+
+      
+
+      
+    </div>
+
+    <script type="module" src="js/app.js"></script>
+  </body>
+</html>

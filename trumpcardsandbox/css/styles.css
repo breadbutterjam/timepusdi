@@ -1,0 +1,329 @@
+/* =================================================================
+   DESIGN TOKENS
+   =================================================================*/
+
+:root {
+  /* Surfaces: a dark, even stage so the card's own black edge still
+     reads as an edge rather than dissolving into the page. */
+  --surface-page: #14161a;
+  --surface-panel: #1c1f25;
+  --surface-raised: #252932;
+  --hairline: #31363f;
+  --hairline-strong: #454b57;
+
+  /* Ink */
+  --ink: #edeef1;
+  --ink-muted: #9298a4;
+  --ink-faint: #6b7280;
+
+  /* Accent: worn cricket leather, picked to sit beside the card
+     photography without competing with it. */
+  --accent: #b8432f;
+  --accent-soft: #e0705c;
+  --accent-wash: rgba(184, 67, 47, 0.14);
+
+  /* Feedback */
+  --danger: #e0705c;
+
+  /* Type */
+  --font-display: "Alan Sans", system-ui, sans-serif;
+  --font-ui: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --size-title: 1.375rem;
+  --size-body: 0.9375rem;
+  --size-small: 0.8125rem;
+
+  /* Space */
+  --space-1: 0.375rem;
+  --space-2: 0.625rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2.25rem;
+  --space-6: 3.5rem;
+
+  /* Shape */
+  --radius-chip: 999px;
+  --radius-panel: 10px;
+  --card-width: 380px;
+}
+
+/* =================================================================
+   BASE
+   =================================================================*/
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--surface-page);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: var(--size-body);
+  line-height: 1.5;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent-soft);
+  outline-offset: 2px;
+}
+
+/* =================================================================
+   LAYOUT
+   =================================================================*/
+
+.shell {
+  max-width: 76rem;
+  margin: 0 auto;
+  /* padding: var(--space-5) var(--space-4) var(--space-6); */
+  padding: var(--space-1) var(--space-4) var(--space-6);
+}
+
+/* =================================================================
+   HEADER
+   =================================================================*/
+
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.masthead h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--size-title);
+  letter-spacing: -0.01em;
+}
+
+.masthead p {
+  margin: 0;
+  color: var(--ink-faint);
+  font-size: var(--size-small);
+}
+
+/* =================================================================
+   PICKER
+   =================================================================*/
+
+.picker {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.category {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  color: var(--ink-muted);
+  font-size: var(--size-small);
+  transition: color 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.category:hover {
+  color: var(--ink);
+  border-color: var(--hairline-strong);
+}
+
+.category[aria-pressed="true"] {
+  background: var(--accent-wash);
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+.search {
+  flex: 1 1 14rem;
+  min-width: 10rem;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--size-small);
+}
+
+.search::placeholder {
+  color: var(--ink-faint);
+}
+
+.search:focus {
+  border-color: var(--hairline-strong);
+  outline: none;
+}
+
+.count {
+  color: var(--ink-faint);
+  font-size: var(--size-small);
+  font-variant-numeric: tabular-nums;
+  margin-right: var(--space-2);
+}
+
+/* =================================================================
+   CHIPS
+   =================================================================*/
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-3) 0 var(--space-4);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.chip {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-chip);
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: var(--size-small);
+  white-space: nowrap;
+  transition: color 0.12s ease, border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.chip:hover {
+  color: var(--ink);
+  border-color: var(--hairline-strong);
+  background: var(--surface-panel);
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.empty {
+  margin: 0;
+  color: var(--ink-faint);
+  font-size: var(--size-small);
+}
+
+/* =================================================================
+   CARD STAGE
+   =================================================================*/
+
+.stage {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--space-5);
+  min-height: 12rem;
+}
+
+.stage:empty::after {
+  content: "Pick a name to see the card.";
+  color: var(--ink-faint);
+  font-size: var(--size-small);
+  align-self: center;
+}
+
+.stage[aria-busy="true"] {
+  opacity: 0.55;
+}
+
+.card {
+  width: min(var(--card-width), 100%);
+  border-radius: 4px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.55);
+}
+
+.card svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* =================================================================
+   STATUS
+   =================================================================*/
+
+.status {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--hairline-strong);
+  color: var(--ink-muted);
+  font-size: var(--size-small);
+}
+
+.status[data-tone="error"] {
+  border-left-color: var(--danger);
+  color: var(--danger);
+}
+
+.leftRightHolder{
+  display: flex;
+}
+
+
+
+.leftPane{
+  flex-shrink: 2;
+  /* padding-right: 10px */
+}
+
+.rightPane{
+  flex-grow: 1;
+  /* padding-left: 10px */
+}
+
+/* =================================================================
+   RESPONSIVE / MOTION
+   =================================================================*/
+
+@media (max-width: 600px) {
+  :root {
+    --card-width: 100%;
+  }
+
+  .leftRightHolder{
+  flex-direction: column;
+  }
+
+  .shell {
+    padding: var(--space-4) var(--space-3) var(--space-5);
+    /* padding: var(--space-1) var(--space-3) var(--space-5); */
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,0 +1,421 @@
+{
+  "categoryId": "iplcricketers",
+  "categoryName": "IPL Cricketers",
+  "cards": [
+    {
+      "id": "abhisheksharma",
+      "region": "Abhishek Sharma",
+      "nickname": "Abhi",
+      "images": [
+        "assets/cards/ipl/AbhishekSharma.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "92",
+          "value": 92
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "2,379",
+          "value": 2379
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "11",
+          "value": 11
+        },
+        "average": {
+          "label": "Average",
+          "display": "9.04",
+          "value": 9.04
+        },
+        "best": {
+          "label": "best",
+          "display": "13/2",
+          "value": 13
+        },
+        "fifties_hundreds": {
+          "label": "fifties_hundreds",
+          "display": "13/2",
+          "value": 13
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "141",
+          "value": 141
+        },
+        "catches": {
+          "label": "Catches",
+          "display": "35",
+          "value": 35
+        },
+        "five_wickets": {
+          "label": "five_wickets",
+          "display": "0",
+          "value": 0
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.7753131313131313,
+        "x": 0,
+        "y": -112.34343434343434
+      }
+    },
+    {
+      "id": "arshdeepsingh",
+      "region": "Arshdeep Singh",
+      "nickname": "Arshdi",
+      "images": [
+        "assets/cards/ipl/ArshdeepSingh.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "96",
+          "value": 96
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "32",
+          "value": 32
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "111",
+          "value": 111
+        },
+        "average": {
+          "label": "Average",
+          "display": "9.18",
+          "value": 9.18
+        },
+        "best": {
+          "label": "best",
+          "display": "5/32",
+          "value": 5
+        },
+        "fifties_hundreds": {
+          "label": "fifties_hundreds",
+          "display": "0/0",
+          "value": 0
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "10*",
+          "value": 10
+        },
+        "catches": {
+          "label": "Catches",
+          "display": "20",
+          "value": 20
+        },
+        "five_wickets": {
+          "label": "five_wickets",
+          "display": "1",
+          "value": 1
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.62,
+        "x": 0,
+        "y": -189.99999999999997
+      }
+    },
+    {
+      "id": "axarpatel",
+      "region": "Axar Patel",
+      "nickname": "Bapu",
+      "images": [
+        "assets/cards/ipl/AxarPatel.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "176",
+          "value": 176
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "2,089",
+          "value": 2089
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "139",
+          "value": 139
+        },
+        "average": {
+          "label": "Average",
+          "display": "7.41",
+          "value": 7.41
+        },
+        "best": {
+          "label": "best",
+          "display": "4/21",
+          "value": 4
+        },
+        "fifties_hundreds": {
+          "label": "fifties_hundreds",
+          "display": "4/0",
+          "value": 4
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "66",
+          "value": 66
+        },
+        "catches": {
+          "label": "Catches",
+          "display": "83",
+          "value": 83
+        },
+        "five_wickets": {
+          "label": "five_wickets",
+          "display": "0",
+          "value": 0
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.73,
+        "x": -7.279287200742982,
+        "y": -170.89172027583112
+      }
+    },
+    {
+      "id": "hardikpandya",
+      "region": "Hardik Pandya",
+      "nickname": "GOAT",
+      "images": [
+        "assets/cards/ipl/HardikPandya.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "162",
+          "value": 162
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "2,955",
+          "value": 2955
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "82",
+          "value": 82
+        },
+        "average": {
+          "label": "Average",
+          "display": "9.35",
+          "value": 9.35
+        },
+        "best": {
+          "label": "best",
+          "display": "5/36",
+          "value": 5
+        },
+        "fifties_hundreds": {
+          "label": "fifties_hundreds",
+          "display": "10/0",
+          "value": 10
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "91",
+          "value": 91
+        },
+        "catches": {
+          "label": "Catches",
+          "display": "74",
+          "value": 74
+        },
+        "five_wickets": {
+          "label": "five_wickets",
+          "display": "1",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "sanjusamson",
+      "region": "Sanju Samson",
+      "nickname": "chetta thala",
+      "images": [
+        "assets/cards/ipl/SanjuSamson.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "191",
+          "value": 191
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "5,181",
+          "value": 5181
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "-",
+          "value": "-"
+        },
+        "average": {
+          "label": "Average",
+          "display": "-",
+          "value": "-"
+        },
+        "best": {
+          "label": "best",
+          "display": "-",
+          "value": "-"
+        },
+        "fifties_hundreds": {
+          "label": "fifties_hundreds",
+          "display": "27/5",
+          "value": 27
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "119",
+          "value": 119
+        },
+        "catches": {
+          "label": "Catches",
+          "display": "90",
+          "value": 90
+        },
+        "five_wickets": {
+          "label": "five_wickets",
+          "display": "0",
+          "value": 0
+        }
+      },
+      "imageAdjustment": {
+        "scale": 1,
+        "x": 42.7665204062328,
+        "y": -8.189262738929513
+      }
+    },
+    {
+      "id": "msdhoni",
+      "region": "MS Dhoni",
+      "nickname": "Thala",
+      "images": [
+        "assets/cards/ipl/MSDhoni.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "278",
+          "value": 278
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "5,439",
+          "value": 5439
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "-",
+          "value": "-"
+        },
+        "average": {
+          "label": "Average",
+          "display": "-",
+          "value": "-"
+        },
+        "best": {
+          "label": "best",
+          "display": "-",
+          "value": "-"
+        },
+        "fifties_hundreds": {
+          "label": "fifties_hundreds",
+          "display": "24/0",
+          "value": 24
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "84*",
+          "value": 84
+        },
+        "catches": {
+          "label": "Catches",
+          "display": "158",
+          "value": 158
+        },
+        "five_wickets": {
+          "label": "five_wickets",
+          "display": "0",
+          "value": 0
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.9294833333333332,
+        "x": 0,
+        "y": -35.25833333333339
+      }
+    },
+    {
+      "id": "shubmangill",
+      "region": "Shubman Gill",
+      "nickname": "The Prince",
+      "images": [
+        "assets/cards/ipl/ShubmanGill.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "128",
+          "value": 128
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "4,598",
+          "value": 4598
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "0",
+          "value": 0
+        },
+        "average": {
+          "label": "Average",
+          "display": "33.21",
+          "value": 33.21
+        },
+        "best": {
+          "label": "best",
+          "display": "-",
+          "value": "-"
+        },
+        "fifties_hundreds": {
+          "label": "fifties_hundreds",
+          "display": "0/0",
+          "value": 0
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "129",
+          "value": 129
+        },
+        "catches": {
+          "label": "Catches",
+          "display": "57",
+          "value": 57
+        },
+        "five_wickets": {
+          "label": "five_wickets",
+          "display": "0",
+          "value": 0
+        }
+      },
+      "imageAdjustment": {
+        "scale": 1,
+        "x": 11.828966660360484,
+        "y": -49.13557643357708
+      }
+    }
+  ]
+}
