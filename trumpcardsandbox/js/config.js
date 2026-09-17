@@ -63,7 +63,7 @@ const CATEGORIES = [
    render cards that don't match your exports.
 ------------------------------------------------------------------*/
 const CARD_LAYOUT = {
-  statsColumns: 2, // 2 or 3
+  statsColumns: 3, // 2 or 3
   statsRowHeight: 100, // pixels between stat rows
   roundedCorners: false // true clips the card to a 30px radius
 };

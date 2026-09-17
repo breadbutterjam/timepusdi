@@ -12,8 +12,14 @@
        stats: {
          matches: { label: "Matches", display: "191", value: 191 },
          ...                               ^ order here is render order
-       }
+       },
+       imageAdjustment: { scale: 1.12, x: -18, y: 40 }  -> optional
      }
+
+   `imageAdjustment` is optional. When present it's used as-is (it's
+   what Trump Card Studio exports when you've nudged/zoomed a photo).
+   Cards without it fall back to js/config.js's IMAGE_ADJUSTMENTS map,
+   then to a plain cover crop if neither is set.
    =================================================================*/
 
 import { CARD_GEOMETRY, CARD_LAYOUT, IMAGE_ADJUSTMENTS, IMAGE_BASE } from "./config.js";
@@ -176,7 +182,10 @@ async function buildCardSVG(card, category) {
   const { gutter, gridGap, blockGap, valueRowOffset, titleHeight, shortNameHeight } = CARD_GEOMETRY;
 
   const href = imagePath(card, category);
-  const adjustment = IMAGE_ADJUSTMENTS[card?.id];
+  // A card's own "imageAdjustment" (as exported by the studio) wins;
+  // js/config.js's IMAGE_ADJUSTMENTS is only a fallback for decks
+  // exported before that field existed.
+  const adjustment = card?.imageAdjustment || IMAGE_ADJUSTMENTS[card?.id];
   const isAdjusted =
     adjustment && !(Number(adjustment.scale ?? 1) === 1 && !adjustment.x && !adjustment.y);
 

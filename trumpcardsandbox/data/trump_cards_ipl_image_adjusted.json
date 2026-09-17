@@ -31,12 +31,12 @@
           "value": 9.04
         },
         "best": {
-          "label": "best",
+          "label": "Best",
           "display": "13/2",
           "value": 13
         },
         "fifties_hundreds": {
-          "label": "fifties_hundreds",
+          "label": "50s/100s",
           "display": "13/2",
           "value": 13
         },
@@ -51,7 +51,7 @@
           "value": 35
         },
         "five_wickets": {
-          "label": "five_wickets",
+          "label": "5Wickets",
           "display": "0",
           "value": 0
         }
@@ -91,12 +91,12 @@
           "value": 9.18
         },
         "best": {
-          "label": "best",
+          "label": "Best",
           "display": "5/32",
           "value": 5
         },
         "fifties_hundreds": {
-          "label": "fifties_hundreds",
+          "label": "50s/100s",
           "display": "0/0",
           "value": 0
         },
@@ -111,7 +111,7 @@
           "value": 20
         },
         "five_wickets": {
-          "label": "five_wickets",
+          "label": "5Wickets",
           "display": "1",
           "value": 1
         }
@@ -151,12 +151,12 @@
           "value": 7.41
         },
         "best": {
-          "label": "best",
+          "label": "Best",
           "display": "4/21",
           "value": 4
         },
         "fifties_hundreds": {
-          "label": "fifties_hundreds",
+          "label": "50s/100s",
           "display": "4/0",
           "value": 4
         },
@@ -171,15 +171,15 @@
           "value": 83
         },
         "five_wickets": {
-          "label": "five_wickets",
+          "label": "5Wickets",
           "display": "0",
           "value": 0
         }
       },
       "imageAdjustment": {
-        "scale": 0.73,
-        "x": -7.279287200742982,
-        "y": -170.89172027583112
+        "scale": 0.72,
+        "x": 33.6671614869978,
+        "y": -185.45043735797972
       }
     },
     {
@@ -211,12 +211,12 @@
           "value": 9.35
         },
         "best": {
-          "label": "best",
+          "label": "Best",
           "display": "5/36",
           "value": 5
         },
         "fifties_hundreds": {
-          "label": "fifties_hundreds",
+          "label": "50s/100s",
           "display": "10/0",
           "value": 10
         },
@@ -231,7 +231,7 @@
           "value": 74
         },
         "five_wickets": {
-          "label": "five_wickets",
+          "label": "5Wickets",
           "display": "1",
           "value": 1
         }
@@ -266,12 +266,12 @@
           "value": "-"
         },
         "best": {
-          "label": "best",
+          "label": "Best",
           "display": "-",
           "value": "-"
         },
         "fifties_hundreds": {
-          "label": "fifties_hundreds",
+          "label": "50s/100s",
           "display": "27/5",
           "value": 27
         },
@@ -286,15 +286,15 @@
           "value": 90
         },
         "five_wickets": {
-          "label": "five_wickets",
+          "label": "5Wickets",
           "display": "0",
           "value": 0
         }
       },
       "imageAdjustment": {
         "scale": 1,
-        "x": 42.7665204062328,
-        "y": -8.189262738929513
+        "x": 48.22606911289213,
+        "y": -33.666955153573255
       }
     },
     {
@@ -326,12 +326,12 @@
           "value": "-"
         },
         "best": {
-          "label": "best",
+          "label": "Best",
           "display": "-",
           "value": "-"
         },
         "fifties_hundreds": {
-          "label": "fifties_hundreds",
+          "label": "50s/100s",
           "display": "24/0",
           "value": 24
         },
@@ -346,15 +346,15 @@
           "value": 158
         },
         "five_wickets": {
-          "label": "five_wickets",
+          "label": "5Wickets",
           "display": "0",
           "value": 0
         }
       },
       "imageAdjustment": {
-        "scale": 0.9294833333333332,
-        "x": 0,
-        "y": -35.25833333333339
+        "scale": 1,
+        "x": 4.549512847413318,
+        "y": -111.91992409870335
       }
     },
     {
@@ -386,12 +386,12 @@
           "value": 33.21
         },
         "best": {
-          "label": "best",
+          "label": "Best",
           "display": "-",
           "value": "-"
         },
         "fifties_hundreds": {
-          "label": "fifties_hundreds",
+          "label": "50s/100s",
           "display": "0/0",
           "value": 0
         },
@@ -406,15 +406,15 @@
           "value": 57
         },
         "five_wickets": {
-          "label": "five_wickets",
+          "label": "5Wickets",
           "display": "0",
           "value": 0
         }
       },
       "imageAdjustment": {
         "scale": 1,
-        "x": 11.828966660360484,
-        "y": -49.13557643357708
+        "x": 18.19855122626582,
+        "y": -35.48680520202789
       }
     }
   ]
