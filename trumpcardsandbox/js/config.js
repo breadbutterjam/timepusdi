@@ -49,6 +49,10 @@ const CATEGORIES = [
     file: "data/testcricketers.json",
     label: "Test Cricketers",
     // imageBase: "assets/cards/ipl/"
+  }, 
+  {
+    file: "data/womencricket.json",
+    label: "Women Cricketers",
   }
   // Add more decks here:
   // { file: "data/footballers.json", label: "Footballers" },
