@@ -46,8 +46,8 @@ const CATEGORIES = [
     // imageBase: "assets/cards/tennis/"
   }, 
   {
-    file: "data/trump_cards_ipl_image_adjusted.json",
-    label: "IPL Cricketers (Adjusted)",
+    file: "data/testcricketers.json",
+    label: "Test Cricketers",
     // imageBase: "assets/cards/ipl/"
   }
   // Add more decks here:
