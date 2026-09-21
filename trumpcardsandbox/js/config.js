@@ -53,6 +53,10 @@ const CATEGORIES = [
   {
     file: "data/womencricket.json",
     label: "Women Cricketers",
+  }, 
+  {
+    file: "data/wpl.json",
+    label: "Women Premier League",
   }
   // Add more decks here:
   // { file: "data/footballers.json", label: "Footballers" },

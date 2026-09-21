@@ -1,0 +1,756 @@
+{
+  "categoryId": "wplcricketers",
+  "categoryName": "WPL Cricketers",
+  "cards": [
+    {
+      "id": "smritimandhana",
+      "region": "Smriti Mandhana",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/SmritiMandhana.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "35",
+          "value": 35
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "1,023",
+          "value": 1023
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "96",
+          "value": 96
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "7/0",
+          "value": 7
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "0",
+          "value": 0
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "18",
+          "value": 18
+        },
+        "best": {
+          "label": "Best",
+          "display": "-",
+          "value": "-"
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "0",
+          "value": 0
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "31",
+          "value": 31
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "136.76",
+          "value": 136.76
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "-",
+          "value": "-"
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "-",
+          "value": "-"
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.7784962406015038,
+        "x": 0,
+        "y": -110.7518796992481
+      }
+    },
+    {
+      "id": "shafaliverma",
+      "region": "Shafali Verma",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/ShafaliVerma.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "37",
+          "value": 37
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "1,124",
+          "value": 1124
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "84",
+          "value": 84
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "7/0",
+          "value": 7
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "3",
+          "value": 3
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "8.22",
+          "value": 8.22
+        },
+        "best": {
+          "label": "Best",
+          "display": "2/16",
+          "value": 2
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "0",
+          "value": 0
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "33.05",
+          "value": 33.05
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "152.09",
+          "value": 152.09
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "24.66",
+          "value": 24.66
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "18",
+          "value": 18
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.93,
+        "x": 0,
+        "y": -34.99999999999995
+      }
+    },
+    {
+      "id": "gunalankamalini",
+      "region": "Gunalan Kamalini",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/GunalanKamalini.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "14",
+          "value": 14
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "107",
+          "value": 107
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "32",
+          "value": 32
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "0/0",
+          "value": 0
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "-",
+          "value": "-"
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "-",
+          "value": "-"
+        },
+        "best": {
+          "label": "Best",
+          "display": "-",
+          "value": "-"
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "-",
+          "value": "-"
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "15.28",
+          "value": 15.28
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "104.9",
+          "value": 104.9
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "-",
+          "value": "-"
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "-",
+          "value": "-"
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.8553703703703703,
+        "x": 0,
+        "y": -72.31481481481481
+      }
+    },
+    {
+      "id": "harmanpreetkaur",
+      "region": "Harmanpreet Kaur",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/HarmanpreetKaur.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "35",
+          "value": 35
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "1,193",
+          "value": 1193
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "95*",
+          "value": 95
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "11/0",
+          "value": 11
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "-",
+          "value": "-"
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "-",
+          "value": "-"
+        },
+        "best": {
+          "label": "Best",
+          "display": "-",
+          "value": "-"
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "-",
+          "value": "-"
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "45.88",
+          "value": 45.88
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "145.48",
+          "value": 145.48
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "-",
+          "value": "-"
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "-",
+          "value": "-"
+        }
+      },
+      "imageAdjustment": {
+        "scale": 1,
+        "x": -206.11003264335665,
+        "y": -96.3740138753057
+      }
+    },
+    {
+      "id": "richaghosh",
+      "region": "Richa Ghosh",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/RichaGhosh.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "35",
+          "value": 35
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "814",
+          "value": 814
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "90",
+          "value": 90
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "5/0",
+          "value": 5
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "-",
+          "value": "-"
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "-",
+          "value": "-"
+        },
+        "best": {
+          "label": "Best",
+          "display": "-",
+          "value": "-"
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "-",
+          "value": "-"
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "33.91",
+          "value": 33.91
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "151.02",
+          "value": 151.02
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "-",
+          "value": "-"
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "-",
+          "value": "-"
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.78,
+        "x": 3.816968937451485,
+        "y": -136.69370779172272
+      }
+    },
+    {
+      "id": "deeptisharma",
+      "region": "Deepti Sharma",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/DeeptiSharma.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "33",
+          "value": 33
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "638",
+          "value": 638
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "88*",
+          "value": 88
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "4/0",
+          "value": 4
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "34",
+          "value": 34
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "8.4",
+          "value": 8.4
+        },
+        "best": {
+          "label": "Best",
+          "display": "4/19",
+          "value": 4
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "0",
+          "value": 0
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "26.58",
+          "value": 26.58
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "117.92",
+          "value": 117.92
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "29.73",
+          "value": 29.73
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "21.2",
+          "value": 21.2
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.85,
+        "x": -0.9543295951826426,
+        "y": -88.02954339167053
+      }
+    },
+    {
+      "id": "krantigaud",
+      "region": "Kranti Gaud",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/KrantiGaud.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "16",
+          "value": 16
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "9",
+          "value": 9
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "5*",
+          "value": 5
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "0/0",
+          "value": 0
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "9",
+          "value": 9
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "8.77",
+          "value": 8.77
+        },
+        "best": {
+          "label": "Best",
+          "display": "4/25",
+          "value": 4
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "0",
+          "value": 0
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "9",
+          "value": 9
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "100",
+          "value": 100
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "43.88",
+          "value": 43.88
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "30",
+          "value": 30
+        }
+      },
+      "imageAdjustment": {
+        "scale": 1,
+        "x": 3.816968937451485,
+        "y": -27.133146859676778
+      }
+    },
+    {
+      "id": "shreecharani",
+      "region": "Shree Charani",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/ShreeCharani.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "12",
+          "value": 12
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "24",
+          "value": 24
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "11*",
+          "value": 11
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "0/0",
+          "value": 0
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "18",
+          "value": 18
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "8.4",
+          "value": 8.4
+        },
+        "best": {
+          "label": "Best",
+          "display": "4/31",
+          "value": 4
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "0",
+          "value": 0
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "-",
+          "value": "-"
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "114.28",
+          "value": 114.28
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "21.33",
+          "value": 21.33
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "15.2",
+          "value": 15.2
+        }
+      },
+      "imageAdjustment": {
+        "scale": 1.17,
+        "x": -2.8624646206293,
+        "y": 34.91092463745456
+      }
+    },
+    {
+      "id": "jemimahrodrigues",
+      "region": "Jemimah Rodrigues",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/JemimahRodrigues.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "37",
+          "value": 37
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "771",
+          "value": 771
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "69*",
+          "value": 69
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "5/0",
+          "value": 5
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "-",
+          "value": "-"
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "-",
+          "value": "-"
+        },
+        "best": {
+          "label": "Best",
+          "display": "-",
+          "value": "-"
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "-",
+          "value": "-"
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "29.65",
+          "value": 29.65
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "140.43",
+          "value": 140.43
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "-",
+          "value": "-"
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "-",
+          "value": "-"
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.66,
+        "x": -90.6501293574203,
+        "y": -234.1850364583169
+      }
+    },
+    {
+      "id": "shreyankapatil",
+      "region": "Shreyanka Patil",
+      "nickname": "",
+      "images": [
+        "assets/cards/wpl/ShreyankaPatil.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "24",
+          "value": 24
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "109",
+          "value": 109
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "23",
+          "value": 23
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "0/0",
+          "value": 0
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "30",
+          "value": 30
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "8.72",
+          "value": 8.72
+        },
+        "best": {
+          "label": "Best",
+          "display": "5/23",
+          "value": 5
+        },
+        "5wicket": {
+          "label": "5wicket",
+          "display": "1",
+          "value": 1
+        },
+        "bat_avg": {
+          "label": "Bat Avg",
+          "display": "21.8",
+          "value": 21.8
+        },
+        "bat_sr": {
+          "label": "Bat SR",
+          "display": "151.38",
+          "value": 151.38
+        },
+        "bowl_avg": {
+          "label": "Bowl Avg",
+          "display": "20.8",
+          "value": 20.8
+        },
+        "bowl_sr": {
+          "label": "Bowl SR",
+          "display": "14.3",
+          "value": 14.3
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.86,
+        "x": 71.56598355672105,
+        "y": -200.6249890800654
+      }
+    }
+  ]
+}
