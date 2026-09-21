@@ -378,6 +378,81 @@
       }
     },
     {
+      "id": "brettlee",
+      "region": "Brett Lee",
+      "nickname": "",
+      "images": [
+        "assets/cards/test/BrettLee.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "76",
+          "value": 76
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "1,451",
+          "value": 1451
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "64",
+          "value": 64
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "5/0",
+          "value": 5
+        },
+        "batting_average": {
+          "label": "Bat Avg",
+          "display": "20.15",
+          "value": 20.15
+        },
+        "batting_strike_rate": {
+          "label": "Bat SR",
+          "display": "52.97",
+          "value": 52.97
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "310",
+          "value": 310
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "3.46",
+          "value": 3.46
+        },
+        "best": {
+          "label": "Best",
+          "display": "9/171",
+          "value": 9
+        },
+        "bowling_average": {
+          "label": "Bowl Avg",
+          "display": "30.81",
+          "value": 30.81
+        },
+        "5wicket10wicket": {
+          "label": "5wkt/10wkt",
+          "display": "10/0",
+          "value": 10
+        },
+        "bowling_strike_rate": {
+          "label": "Bowl SR",
+          "display": "53.3",
+          "value": 53.3
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.68,
+        "x": -24.80959920687648,
+        "y": -171.1352258917286
+      }
+    },
+    {
       "id": "davidwarner",
       "region": "David Warner",
       "nickname": "",
@@ -1650,6 +1725,81 @@
         "scale": 0.9119166666666666,
         "x": 0,
         "y": -44.04166666666672
+      }
+    },
+    {
+      "id": "shanewarne",
+      "region": "Shane Warne",
+      "nickname": "",
+      "images": [
+        "assets/cards/test/ShaneWarne.webp"
+      ],
+      "stats": {
+        "matches": {
+          "label": "Matches",
+          "display": "145",
+          "value": 145
+        },
+        "runs": {
+          "label": "Runs",
+          "display": "3,154",
+          "value": 3154
+        },
+        "highest": {
+          "label": "Highest",
+          "display": "99",
+          "value": 99
+        },
+        "50s100s": {
+          "label": "50s/100s",
+          "display": "12/0",
+          "value": 12
+        },
+        "batting_average": {
+          "label": "Bat Avg",
+          "display": "17.32",
+          "value": 17.32
+        },
+        "batting_strike_rate": {
+          "label": "Bat SR",
+          "display": "57.65",
+          "value": 57.65
+        },
+        "wickets": {
+          "label": "Wickets",
+          "display": "708",
+          "value": 708
+        },
+        "economy": {
+          "label": "Economy",
+          "display": "2.65",
+          "value": 2.65
+        },
+        "best": {
+          "label": "Best",
+          "display": "12/128",
+          "value": 12
+        },
+        "bowling_average": {
+          "label": "Bowl Avg",
+          "display": "25.41",
+          "value": 25.41
+        },
+        "5wicket10wicket": {
+          "label": "5wkt/10wkt",
+          "display": "37/10",
+          "value": 37
+        },
+        "bowling_strike_rate": {
+          "label": "Bowl SR",
+          "display": "57.4",
+          "value": 57.4
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.8395833333333333,
+        "x": 0,
+        "y": -80.20833333333333
       }
     },
     {
