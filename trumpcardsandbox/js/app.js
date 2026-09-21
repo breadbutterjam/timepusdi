@@ -5,7 +5,7 @@
    =================================================================*/
 
 import { CATEGORIES } from "./config.js";
-import { buildCardSVG } from "./card.js";
+import { buildCardSVG, resolveCardConfig } from "./card.js";
 
 const els = {
   categories: document.getElementById("categories"),
@@ -20,6 +20,7 @@ const state = {
   categoryIndex: -1,
   category: null, // the config entry
   deck: null, // the parsed JSON
+  cardConfig: null, // { layout, geometry } resolved for this deck
   cards: [],
   filtered: [],
   selectedId: null
@@ -84,6 +85,7 @@ async function selectCategory(index) {
     const deck = await loadDeck(entry);
     state.deck = deck;
     state.cards = deck.cards;
+    state.cardConfig = resolveCardConfig(deck);
 
     // Use the JSON's own name if the config didn't give one.
     if (!entry.label && deck.categoryName) {
@@ -154,7 +156,7 @@ async function selectCard(card) {
   els.stage.setAttribute("aria-busy", "true");
 
   try {
-    const svg = await buildCardSVG(card, state.category);
+    const svg = await buildCardSVG(card, state.category, state.cardConfig);
     els.stage.innerHTML = `<div class="card">${svg}</div>`;
     els.stage.scrollIntoView({ behavior: "smooth", block: "nearest" });
   } catch (err) {
@@ -167,8 +169,6 @@ async function selectCard(card) {
 /* --- boot --------------------------------------------------------- */
 
 function init() {
-  console.log("Card Viewer Utility starting…");
-  console.log("CATEGORIES:", CATEGORIES);
   if (!CATEGORIES.length) {
     setStatus("No categories configured. Add one to CATEGORIES in js/config.js.", "error");
     return;

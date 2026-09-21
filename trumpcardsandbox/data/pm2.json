@@ -1,0 +1,533 @@
+{
+  "categoryId": "pm",
+  "categoryName": "Prime Ministers",
+  "cardLayout": { "statsColumns": 2 },
+  "cardGeometry": { "gutter": 12, "gridGap": 40 },
+  "cards": [
+    {
+      "id": "jawaharlalnehru",
+      "region": "Jawaharlal Nehru",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/JawaharlalNehru.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "57 years, 274 days",
+          "value": 57
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "12 years, 18 days",
+          "value": 12
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "16 years, 286 days",
+          "value": 16
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.8746536585365854,
+        "x": 0,
+        "y": -62.67317073170732
+      }
+    },
+    {
+      "id": "gulzarilalnandaacting",
+      "region": "Gulzarilal Nanda (acting)",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/GulzarilalNanda.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "65 years, 328 days",
+          "value": 65
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "2",
+          "value": 2
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "26 days",
+          "value": 26
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "13 days",
+          "value": 13
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.9242133333333333,
+        "x": 5.725278684537685,
+        "y": -171.48108658299668
+      }
+    },
+    {
+      "id": "lalbahadurshastri",
+      "region": "Lal Bahadur Shastri",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/LalBahadurShastri.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "59 years, 251 days",
+          "value": 59
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "1 year, 215 days",
+          "value": 1
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "1 year, 215 days",
+          "value": 1
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.8116833333333333,
+        "x": 0,
+        "y": -94.15833333333333
+      }
+    },
+    {
+      "id": "indiragandhi",
+      "region": "Indira Gandhi",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/IndiraGandhi.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "48 years, 66 days",
+          "value": 48
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "2",
+          "value": 2
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "15 years, 350 days",
+          "value": 15
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "11 years, 59 days",
+          "value": 11
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.775,
+        "x": 0,
+        "y": -112.49999999999999
+      }
+    },
+    {
+      "id": "morarjidesai",
+      "region": "Morarji Desai",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/MorarjiDesai.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "81 years, 24 days",
+          "value": 81
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "2 years, 125 days",
+          "value": 2
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "2 years, 125 days",
+          "value": 2
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.8388235294117646,
+        "x": 3.816968937451485,
+        "y": -138.79436958922065
+      }
+    },
+    {
+      "id": "charansingh",
+      "region": "Charan Singh",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/CharanSingh.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "76 years, 217 days",
+          "value": 76
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "170 days",
+          "value": 170
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "170 days",
+          "value": 170
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.7757701863354037,
+        "x": -26.71790895396268,
+        "y": -196.08431179632572
+      }
+    },
+    {
+      "id": "rajivgandhi",
+      "region": "Rajiv Gandhi",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/RajivGandhi.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "40 years, 72 days",
+          "value": 40
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "5 years, 31 days",
+          "value": 5
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "5 years, 31 days",
+          "value": 5
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.8261192052980133,
+        "x": 21.94695986460764,
+        "y": -118.42903341184974
+      }
+    },
+    {
+      "id": "vpsingh",
+      "region": "V. P. Singh",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/VPSingh.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "58 years, 160 days",
+          "value": 58
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "343 days",
+          "value": 343
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "343 days",
+          "value": 343
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.8308789808917197,
+        "x": -1.9084844687257425,
+        "y": -189.52235311865144
+      }
+    },
+    {
+      "id": "chandrashekhar",
+      "region": "Chandra Shekhar",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/ChandraShekhar.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "63 years, 207 days",
+          "value": 63
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "223 days",
+          "value": 223
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "223 days",
+          "value": 223
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.7942278481012658,
+        "x": 0,
+        "y": -102.8860759493671
+      }
+    },
+    {
+      "id": "pvnarasimharao",
+      "region": "P. V. Narasimha Rao",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/NarasimhaRao.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "69 years, 358 days",
+          "value": 69
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "4 years, 330 days",
+          "value": 4
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "4 years, 330 days",
+          "value": 4
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.91,
+        "x": -187.02571212101785,
+        "y": -92.11212012550497
+      }
+    },
+    {
+      "id": "atalbiharivajpayee",
+      "region": "Atal Bihari Vajpayee",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/AtalBihariVajpayee.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "71 years, 143 days",
+          "value": 71
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "3",
+          "value": 3
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "6 years, 80 days",
+          "value": 6
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "6 years, 64 days",
+          "value": 6
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.62,
+        "x": 0,
+        "y": -189.99999999999997
+      }
+    },
+    {
+      "id": "hddevegowda",
+      "region": "H. D. Deve Gowda",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/DeveGowda.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "63 years, 14 days",
+          "value": 63
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "324 days",
+          "value": 324
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "324 days",
+          "value": 324
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.775,
+        "x": 0,
+        "y": -112.49999999999997
+      }
+    },
+    {
+      "id": "inderkumargujral",
+      "region": "Inder Kumar Gujral",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/InderKumarGujral.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "77 years, 138 days",
+          "value": 77
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "332 days",
+          "value": 332
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "332 days",
+          "value": 332
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.9345208333333334,
+        "x": 0,
+        "y": -32.73958333333329
+      }
+    },
+    {
+      "id": "manmohansingh",
+      "region": "Manmohan Singh",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/ManmohanSingh.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "71 years, 239 days",
+          "value": 71
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "1",
+          "value": 1
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "10 years, 3 days",
+          "value": 10
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "10 years, 3 days",
+          "value": 10
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.822781954887218,
+        "x": 2.8626393422688423,
+        "y": -119.1434310519254
+      }
+    },
+    {
+      "id": "narendramodi",
+      "region": "Narendra Modi",
+      "nickname": "",
+      "images": [
+        "assets/cards/pm/NarendraModi.webp"
+      ],
+      "stats": {
+        "age_when_assumed_office": {
+          "label": "Age on assuming office",
+          "display": "63 years, 251 days",
+          "value": 63
+        },
+        "total_number_of_terms": {
+          "label": "Total terms",
+          "display": "3",
+          "value": 3
+        },
+        "total_time_served_as_elected_pm": {
+          "label": "Elected PM (total)",
+          "display": "12 years, 118 days*",
+          "value": 12
+        },
+        "maximum_consecutive_time_as_pm": {
+          "label": "Longest streak",
+          "display": "12 years, 118 days*",
+          "value": 12
+        }
+      },
+      "imageAdjustment": {
+        "scale": 0.7,
+        "x": -10.496227773892727,
+        "y": -178.316104390498
+      }
+    }
+  ]
+}

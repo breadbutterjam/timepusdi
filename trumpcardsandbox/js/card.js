@@ -20,11 +20,43 @@
    what Trump Card Studio exports when you've nudged/zoomed a photo).
    Cards without it fall back to js/config.js's IMAGE_ADJUSTMENTS map,
    then to a plain cover crop if neither is set.
+
+   A deck's JSON can also carry its own "cardLayout" and/or
+   "cardGeometry" at the top level, alongside "cards" — see
+   resolveCardConfig() below. Any key it omits falls back to
+   js/config.js's DEFAULT_CARD_LAYOUT / DEFAULT_CARD_GEOMETRY, so a
+   deck only needs to state what's different about it.
    =================================================================*/
 
-import { CARD_GEOMETRY, CARD_LAYOUT, IMAGE_ADJUSTMENTS, IMAGE_BASE } from "./config.js";
+import {
+  DEFAULT_CARD_GEOMETRY,
+  DEFAULT_CARD_LAYOUT,
+  IMAGE_ADJUSTMENTS,
+  IMAGE_BASE
+} from "./config.js";
 
-const { width: CARD_W, height: CARD_H } = CARD_GEOMETRY;
+/* --- resolving layout/geometry for a deck ------------------------- */
+
+/**
+ * Merges a deck's own "cardLayout" / "cardGeometry" (if present) over
+ * the defaults from config.js, key by key — a deck only needs to
+ * specify what's different. Call this once per loaded deck and reuse
+ * the result for every card in it, rather than resolving per card.
+ */
+function resolveCardConfig(deck) {
+  const layout = { ...DEFAULT_CARD_LAYOUT, ...(deck?.cardLayout || {}) };
+  const geometry = { ...DEFAULT_CARD_GEOMETRY, ...(deck?.cardGeometry || {}) };
+
+  // Guard the couple of values that break rendering if left invalid
+  // rather than just looking a bit off.
+  layout.statsColumns = layout.statsColumns === 2 ? 2 : 3;
+  layout.statsRowHeight = Number(layout.statsRowHeight) || DEFAULT_CARD_LAYOUT.statsRowHeight;
+
+  geometry.width = Number(geometry.width) || DEFAULT_CARD_GEOMETRY.width;
+  geometry.height = Number(geometry.height) || DEFAULT_CARD_GEOMETRY.height;
+
+  return { layout, geometry };
+}
 
 /* --- path helpers ------------------------------------------------ */
 
@@ -93,22 +125,22 @@ function textEl(x, y, text, cls, size, fill, extra = "") {
   return `<text x="${x}" y="${y}" class="${cls}" font-size="${size}px" fill="${fill}" style="${extra}">${text}</text>`;
 }
 
-function colWidth(columns) {
-  const { gutter, gridGap } = CARD_GEOMETRY;
-  return (CARD_W - gutter * 2 - gridGap * (columns - 1)) / columns;
+function colWidth(columns, geometry) {
+  const { width, gutter, gridGap } = geometry;
+  return (width - gutter * 2 - gridGap * (columns - 1)) / columns;
 }
 
 /* --- intrinsic image size (only needed when framing is adjusted) -- */
 
 const sizeCache = new Map();
 
-function getIntrinsicSize(href) {
+function getIntrinsicSize(href, geometry) {
   if (sizeCache.has(href)) return sizeCache.get(href);
 
   const promise = new Promise((resolve) => {
     const img = new Image();
     img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-    img.onerror = () => resolve({ width: CARD_W, height: CARD_H });
+    img.onerror = () => resolve({ width: geometry.width, height: geometry.height });
     img.src = href;
   });
 
@@ -122,10 +154,11 @@ function getIntrinsicSize(href) {
  * No adjustment means a plain cover crop, which SVG gives us for free
  * with preserveAspectRatio="slice" — no need to measure the file.
  */
-function coverImageLayer(href) {
+function coverImageLayer(href, geometry) {
+  const { width, height } = geometry;
   return (
-    `<rect x="0" y="0" width="${CARD_W}" height="${CARD_H}" fill="#000"/>` +
-    `<image href="${escapeXML(href)}" x="0" y="0" width="${CARD_W}" height="${CARD_H}" preserveAspectRatio="xMidYMid slice"/>`
+    `<rect x="0" y="0" width="${width}" height="${height}" fill="#000"/>` +
+    `<image href="${escapeXML(href)}" x="0" y="0" width="${width}" height="${height}" preserveAspectRatio="xMidYMid slice"/>`
   );
 }
 
@@ -134,7 +167,9 @@ function coverImageLayer(href) {
  * already-cropped card image, so zooming out reveals pixels the cover
  * crop hid, and the viewport may run past the source to show black.
  */
-function adjustedImageLayer(href, adjustment, imageSize) {
+function adjustedImageLayer(href, adjustment, imageSize, geometry) {
+  const { width: CARD_W, height: CARD_H } = geometry;
+
   const scale = Number(adjustment.scale || 1);
   const ax = Number(adjustment.x || 0);
   const ay = Number(adjustment.y || 0);
@@ -176,10 +211,28 @@ function adjustedImageLayer(href, adjustment, imageSize) {
 
 /**
  * Returns an SVG string for one card.
+ *
+ * `cardConfig` is optional — the { layout, geometry } shape returned
+ * by resolveCardConfig(). Pass the deck's own resolved config so
+ * per-deck overrides apply; omit it and the raw config.js defaults
+ * are used as-is.
+ *
  * Async only because adjusted framing needs the photo's real size.
  */
-async function buildCardSVG(card, category) {
-  const { gutter, gridGap, blockGap, valueRowOffset, titleHeight, shortNameHeight } = CARD_GEOMETRY;
+async function buildCardSVG(card, category, cardConfig) {
+  const layout = cardConfig?.layout || DEFAULT_CARD_LAYOUT;
+  const geometry = cardConfig?.geometry || DEFAULT_CARD_GEOMETRY;
+
+  const {
+    width: CARD_W,
+    height: CARD_H,
+    gutter,
+    gridGap,
+    blockGap,
+    valueRowOffset,
+    titleHeight,
+    shortNameHeight
+  } = geometry;
 
   const href = imagePath(card, category);
   // A card's own "imageAdjustment" (as exported by the studio) wins;
@@ -202,9 +255,9 @@ async function buildCardSVG(card, category) {
     display: stat?.display ?? ""
   }));
 
-  const columns = CARD_LAYOUT.statsColumns === 2 ? 2 : 3;
-  const rowHeight = Number(CARD_LAYOUT.statsRowHeight) || 100;
-  const colW = colWidth(columns);
+  const columns = layout.statsColumns;
+  const rowHeight = layout.statsRowHeight;
+  const colW = colWidth(columns, geometry);
   const rows = Math.max(1, Math.ceil(statLayout.length / columns));
 
   // The stats block is bottom-anchored: it ends blockGap above the
@@ -229,7 +282,7 @@ async function buildCardSVG(card, category) {
     .value{font-family:Inter,Arial,sans-serif;font-weight:700}
   </style>`);
 
-  if (CARD_LAYOUT.roundedCorners) {
+  if (layout.roundedCorners) {
     out.push(
       `<defs><clipPath id="cardClip"><rect x="0" y="0" width="${CARD_W}" height="${CARD_H}" rx="30"/></clipPath></defs>`
     );
@@ -238,38 +291,41 @@ async function buildCardSVG(card, category) {
 
   if (href) {
     if (isAdjusted) {
-      const imageSize = await getIntrinsicSize(href);
-      out.push(adjustedImageLayer(href, adjustment, imageSize));
+      const imageSize = await getIntrinsicSize(href, geometry);
+      out.push(adjustedImageLayer(href, adjustment, imageSize, geometry));
     } else {
-      out.push(coverImageLayer(href));
+      out.push(coverImageLayer(href, geometry));
     }
   } else {
     out.push(`<rect x="0" y="0" width="${CARD_W}" height="${CARD_H}" fill="#111"/>`);
   }
 
-  // Two overlapping fades: a long one from ~46% down, plus a steeper
-  // one over the bottom ~15% for text contrast.
+  // Two overlapping fades. Positioned as fractions of card height
+  // (tuned against the 620x1000 reference) rather than fixed pixels,
+  // so a deck with a different "height" keeps the same visual
+  // balance instead of the gradient landing in the wrong place.
+  const g1y1 = CARD_H * 0.45986;
+  const g1y2 = CARD_H * 0.9722;
+  const g2y1 = CARD_H * 0.857915;
+  const g2y2 = CARD_H * 0.999567;
+
   out.push(`<defs>
-    <linearGradient id="bottomGradient1" x1="0" y1="459.86" x2="0" y2="972.2" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bottomGradient1" x1="0" y1="${g1y1}" x2="0" y2="${g1y2}" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#000000" stop-opacity="0"/>
       <stop offset="0.27409" stop-color="#000000" stop-opacity="0.75"/>
       <stop offset="0.644307" stop-color="#000000" stop-opacity="1"/>
       <stop offset="1" stop-color="#000000" stop-opacity="1"/>
     </linearGradient>
-    <linearGradient id="bottomGradient2" x1="0" y1="857.915" x2="0" y2="999.567" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bottomGradient2" x1="0" y1="${g2y1}" x2="0" y2="${g2y2}" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#000000" stop-opacity="0"/>
       <stop offset="0.237603" stop-color="#000000" stop-opacity="0.75"/>
       <stop offset="1" stop-color="#000000" stop-opacity="1"/>
     </linearGradient>
   </defs>`);
-  out.push(
-    `<rect x="0" y="459.86" width="${CARD_W}" height="${CARD_H - 459.86}" fill="url(#bottomGradient1)"/>`
-  );
-  out.push(
-    `<rect x="0" y="857.915" width="${CARD_W}" height="${CARD_H - 857.915}" fill="url(#bottomGradient2)"/>`
-  );
+  out.push(`<rect x="0" y="${g1y1}" width="${CARD_W}" height="${CARD_H - g1y1}" fill="url(#bottomGradient1)"/>`);
+  out.push(`<rect x="0" y="${g2y1}" width="${CARD_W}" height="${CARD_H - g2y1}" fill="url(#bottomGradient2)"/>`);
 
-  if (CARD_LAYOUT.roundedCorners) out.push(`</g>`);
+  if (layout.roundedCorners) out.push(`</g>`);
 
   out.push(
     textEl(
@@ -316,4 +372,4 @@ async function buildCardSVG(card, category) {
   return out.join("");
 }
 
-export { buildCardSVG, imagePath, CARD_W, CARD_H };
+export { buildCardSVG, imagePath, resolveCardConfig };
