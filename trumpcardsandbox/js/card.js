@@ -107,18 +107,53 @@ function valueMarkup(v) {
 }
 
 /**
- * Same approximation the studio uses to pick a title size. The width
- * factor is deliberately conservative.
+ * Canvas 2D context used only to measure text width — never drawn to.
+ * Reused across calls so we're not creating a canvas per card.
+ */
+let measureCtx = null;
+function getMeasureContext() {
+  if (typeof document === "undefined") return null; // non-browser context
+  if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+  return measureCtx;
+}
+
+// Extra width budget reserved for the 2px stroke outline drawn around
+// the title text (paint-order:stroke) — that outline extends the
+// visible glyph edges beyond what measureText reports for the fill
+// alone, roughly 2px on each side.
+const TITLE_STROKE_PAD = 6;
+
+// If even the caller's minSize overflows (an unusually long name),
+// keep shrinking in 1px steps rather than letting it run off the
+// card. Never goes smaller than the stat label text (24px) so the
+// title doesn't end up reading smaller than the stats below it.
+const TITLE_HARD_FLOOR = 24;
+
+/**
+ * Picks the largest font size (maxSize down to minSize, then further
+ * down to TITLE_HARD_FLOOR if needed) at which `name` fits within
+ * maxWidth, measured against the actual title font. Falls back to
+ * the old length-based approximation if canvas measurement isn't
+ * available (e.g. running outside a browser).
  */
 function fitTitleFont(name, maxSize, minSize, maxWidth) {
   const text = String(name || "").toUpperCase();
-  for (let size = maxSize; size >= minSize; size -= 2) {
-    const estimated = text.length * size * 0.54;
-    if (estimated <= maxWidth) {
-      return { size, lineOffset: size === 52 ? 39 : Math.round(size * 0.75) };
+  const budget = Math.max(0, maxWidth - TITLE_STROKE_PAD);
+  const ctx = getMeasureContext();
+
+  const fits = (size) => {
+    if (ctx) {
+      ctx.font = `700 ${size}px "Alan Sans", Arial, sans-serif`;
+      return ctx.measureText(text).width <= budget;
     }
+    // Fallback heuristic — same shape as the original approximation.
+    return text.length * size * 0.54 <= budget;
+  };
+
+  for (let size = maxSize; size >= TITLE_HARD_FLOOR; size -= size > minSize ? 2 : 1) {
+    if (fits(size)) return { size, lineOffset: Math.round(size * 0.75) };
   }
-  return { size: minSize, lineOffset: Math.round(minSize * 0.75) };
+  return { size: TITLE_HARD_FLOOR, lineOffset: Math.round(TITLE_HARD_FLOOR * 0.75) };
 }
 
 function textEl(x, y, text, cls, size, fill, extra = "") {
@@ -220,6 +255,14 @@ function adjustedImageLayer(href, adjustment, imageSize, geometry) {
  * Async only because adjusted framing needs the photo's real size.
  */
 async function buildCardSVG(card, category, cardConfig) {
+  // Canvas text measurement (used by fitTitleFont) only matches what
+  // actually renders once the web font has finished loading — wait
+  // for it so the very first card built right after page load isn't
+  // measured against a fallback font's metrics.
+  if (typeof document !== "undefined" && document.fonts?.ready) {
+    await document.fonts.ready.catch(() => {});
+  }
+
   const layout = cardConfig?.layout || DEFAULT_CARD_LAYOUT;
   const geometry = cardConfig?.geometry || DEFAULT_CARD_GEOMETRY;
 
