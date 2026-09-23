@@ -96,6 +96,7 @@
         height:100%;
         object-fit:cover;
         display:none;
+        transition:opacity 0.25s ease;
     }
     /* CSS fallback moon, used only if both image sources fail */
     .moon-css{
@@ -115,18 +116,6 @@
         background:#eae6da;
         border-radius:50%;
     }
-    .spinner{
-        position:absolute;
-        width:34px;
-        height:34px;
-        border-radius:50%;
-        border:2px solid rgba(255,255,255,0.15);
-        border-top-color:rgba(255,255,255,0.6);
-        animation:spin 0.9s linear infinite;
-        display:none;
-    }
-    .spinner.active{ display:block; }
-    @keyframes spin{ to{ transform:rotate(360deg); } }
 
     /* ----- bottom text block ----- */
     .bottom-text{
@@ -192,7 +181,6 @@
     </div>
 
     <div class="moon-wrap" id="moonWrap" onclick="openImageModal()">
-        <div class="spinner" id="spinner"></div>
         <img class="moon-img" id="moonImage" alt="Moon phase">
         <div class="moon-css" id="moonCss"><div class="moon-light" id="moonLight"></div></div>
     </div>
@@ -219,27 +207,30 @@
 <script>
 /* =========================================================
    GUJARATI TITHI DATA
-   — copied from the existing gujarati-calendar.html so the
-     tithi/paksha text matches that tool exactly.
+   Each month gives explicit sudPadvo (= Sud Ekam), fullMoon and
+   newMoon dates. Explicit dates always win over the calculated
+   count: the full-moon date is always Purnima, the new-moon date
+   is always Amas, regardless of how many days the count would
+   otherwise land on.
    NOTE: this table only covers Chaitra 2026 – Fagan 2027.
-   Extend LUNAR_DATA.months (and .festivals, if reused) each
-   year, or swap in an algorithmic panchang calc long-term.
+   Extend LUNAR_DATA.months each year, or swap in an algorithmic
+   panchang calc long-term.
 ========================================================= */
 const LUNAR_DATA = {
     months: [
-        { name: "Chaitra", year: 2026, newMoon: "2026-03-19", fullMoon: "2026-04-02" },
-        { name: "Vaishakh", year: 2026, newMoon: "2026-04-17", fullMoon: "2026-05-01" },
-        { name: "Adhik Jyeshtha", year: 2026, newMoon: "2026-05-16", fullMoon: "2026-05-31" },
-        { name: "Jyeshtha", year: 2026, newMoon: "2026-06-15", fullMoon: "2026-06-30" },
-        { name: "Ashadh", year: 2026, newMoon: "2026-07-14", fullMoon: "2026-07-29" },
-        { name: "Shravan", year: 2026, newMoon: "2026-08-12", fullMoon: "2026-08-28" },
-        { name: "Bhadrapad", year: 2026, newMoon: "2026-09-11", fullMoon: "2026-09-26" },
-        { name: "Ashwin", year: 2026, newMoon: "2026-10-10", fullMoon: "2026-10-26" },
-        { name: "Kartik", year: 2026, newMoon: "2026-11-09", fullMoon: "2026-11-24" },
-        { name: "Magshar", year: 2026, newMoon: "2026-12-09", fullMoon: "2026-12-24" },
-        { name: "Posh", year: 2027, newMoon: "2027-01-07", fullMoon: "2027-01-22" },
-        { name: "Maha", year: 2027, newMoon: "2027-02-06", fullMoon: "2027-02-20" },
-        { name: "Fagan", year: 2027, newMoon: "2027-03-08", fullMoon: "2027-03-22" }
+        { name: "Chaitra", year: 2026, sudPadvo: "2026-03-19", fullMoon: "2026-04-02", newMoon: "2026-04-17" },
+        { name: "Vaishakh", year: 2026, sudPadvo: "2026-04-18", fullMoon: "2026-05-01", newMoon: "2026-05-16" },
+        { name: "Adhik Jyeshta", year: 2026, sudPadvo: "2026-05-17", fullMoon: "2026-05-31", newMoon: "2026-06-15" },
+        { name: "Jyeshta", year: 2026, sudPadvo: "2026-06-15", fullMoon: "2026-06-29", newMoon: "2026-07-14" },
+        { name: "Ashadh", year: 2026, sudPadvo: "2026-07-15", fullMoon: "2026-07-29", newMoon: "2026-08-12" },
+        { name: "Shravan", year: 2026, sudPadvo: "2026-08-13", fullMoon: "2026-08-28", newMoon: "2026-09-11" },
+        { name: "Bhadarvo", year: 2026, sudPadvo: "2026-09-12", fullMoon: "2026-09-26", newMoon: "2026-10-10" },
+        { name: "Ashwin", year: 2026, sudPadvo: "2026-10-11", fullMoon: "2026-10-26", newMoon: "2026-11-09" },
+        { name: "Kartik", year: 2026, sudPadvo: "2026-11-10", fullMoon: "2026-11-22", newMoon: "2026-12-08" },
+        { name: "Magshar", year: 2026, sudPadvo: "2026-12-09", fullMoon: "2026-12-23", newMoon: "2027-01-07" },
+        { name: "Posh", year: 2027, sudPadvo: "2027-01-08", fullMoon: "2027-01-22", newMoon: "2027-02-06" },
+        { name: "Maha", year: 2027, sudPadvo: "2027-02-07", fullMoon: "2027-02-20", newMoon: "2027-03-08" },
+        { name: "Fagan", year: 2027, sudPadvo: "2027-03-09", fullMoon: "2027-03-22", newMoon: "2027-04-06" }
     ]
 };
 const TITHI_NAMES = [
@@ -250,44 +241,63 @@ const TITHI_NAMES = [
 const PURNIMA_AMAS = ["Purnima", "Amas"];
 
 let currentDate = new Date();
+let renderToken = 0;
+
+function dateOnly(date) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function daysBetween(from, to) {
+    return Math.round((dateOnly(to) - dateOnly(from)) / 86400000);
+}
 
 function calculateLunarInfo(date) {
-    let currentMonth = null, isShukla = true, dayInPaksha = 0;
+    const target = dateOnly(date);
 
-    for (let i = 0; i < LUNAR_DATA.months.length; i++) {
-        const month = LUNAR_DATA.months[i];
-        const newMoon = new Date(month.newMoon);
-        const fullMoon = new Date(month.fullMoon);
-
-        if (date >= newMoon && date <= fullMoon) {
-            currentMonth = month; isShukla = true;
-            // Count backwards from the full moon (mirrors the Vad/Amas fix) so
-            // the full moon day always lands on tithi 14 (Purnima), instead of
-            // counting forward from the new moon, which could overshoot and
-            // duplicate Purnima across two days when this paksha runs longer
-            // than 15 days.
-            const daysFromEnd = Math.floor((fullMoon - date) / 86400000);
-            dayInPaksha = Math.max(0, 14 - daysFromEnd);
-            break;
-        } else if (i < LUNAR_DATA.months.length - 1) {
-            const nextNewMoon = new Date(LUNAR_DATA.months[i + 1].newMoon);
-            if (date > fullMoon && date < nextNewMoon) {
-                currentMonth = month; isShukla = false;
-                // Count backwards from the upcoming new moon so the day right
-                // before it always lands on tithi 14 (Amas), instead of counting
-                // forward from the full moon, which could run out of days before
-                // reaching Amas and jump straight to next month's Sud Ekam.
-                const daysFromEnd = Math.floor((nextNewMoon - date) / 86400000) - 1;
-                dayInPaksha = Math.max(0, 14 - daysFromEnd);
-                break;
-            }
-        }
+    // Find the lunar month whose Sud Padvo starts on/before the date.
+    let currentMonth = null;
+    for (const month of LUNAR_DATA.months) {
+        const sudPadvo = new Date(month.sudPadvo);
+        if (target >= sudPadvo) currentMonth = month;
+        else break;
     }
-    if (!currentMonth) { currentMonth = LUNAR_DATA.months[0]; isShukla = true; dayInPaksha = 0; }
 
-    const tithiNumber = Math.min(dayInPaksha, 14);
+    if (!currentMonth) {
+        currentMonth = LUNAR_DATA.months[0];
+    }
+
+    const sudPadvo = dateOnly(new Date(currentMonth.sudPadvo));
+    const fullMoon = currentMonth.fullMoon ? dateOnly(new Date(currentMonth.fullMoon)) : null;
+    const newMoon = currentMonth.newMoon ? dateOnly(new Date(currentMonth.newMoon)) : null;
+
+    let isShukla = true;
+    let tithiNumber;
+
+    if (fullMoon && target >= fullMoon) {
+        if (target.getTime() === fullMoon.getTime()) {
+            // Explicit full-moon date always wins.
+            isShukla = true;
+            tithiNumber = 14;
+        } else if (newMoon && target >= newMoon) {
+            // Explicit new-moon date always wins.
+            isShukla = false;
+            tithiNumber = 14;
+        } else {
+            // Start Vad Ekam on the day after Purnima and count forward.
+            isShukla = false;
+            tithiNumber = Math.min(daysBetween(fullMoon, target) - 1, 14);
+        }
+    } else {
+        // Sud Padvo is explicitly Sud Ekam; each following date advances
+        // one tithi. The explicit full-moon date overrides this calculation.
+        isShukla = true;
+        tithiNumber = Math.min(daysBetween(sudPadvo, target), 14);
+    }
+
     let tithiName = TITHI_NAMES[tithiNumber];
-    if (tithiNumber === 14) tithiName = isShukla ? PURNIMA_AMAS[0] : PURNIMA_AMAS[1];
+    if (tithiNumber === 14) {
+        tithiName = isShukla ? PURNIMA_AMAS[0] : PURNIMA_AMAS[1];
+    }
 
     return { month: currentMonth, isShukla, tithiName };
 }
@@ -337,6 +347,46 @@ function getPhaseName(age) {
     if (age < m * 0.6875) return "Waning Gibbous";
     if (age < m * 0.8125) return "Last Quarter";
     return "Waning Crescent";
+}
+
+/* Local WebP placeholder, at finer resolution (28 slices) than the 8-name
+   text label above, so the placeholder more closely tracks the real
+   photo's terminator position while it loads.
+   The cycle is divided into 28 equal-width slices in a fixed order: the
+   four instantaneous phases (new, first quarter, full, last quarter) get
+   one slice each, and the four gradual phases (waxing/waning crescent,
+   waxing/waning gibbous) get six sub-steps each — 4 + 4×6 = 28. Given
+   the current moon age, we pick whichever of the 28 slices is closest.
+   Drop matching files in an /images folder next to this HTML file, named:
+     moon-new.webp
+     moon-waxing-crescent-1.webp ... moon-waxing-crescent-6.webp
+     moon-first-quarter.webp
+     moon-waxing-gibbous-1.webp ... moon-waxing-gibbous-6.webp
+     moon-full.webp
+     moon-waning-gibbous-1.webp ... moon-waning-gibbous-6.webp
+     moon-last-quarter.webp
+     moon-waning-crescent-1.webp ... moon-waning-crescent-6.webp
+   These are optional — if a file isn't there, it fails over to the
+   CSS-drawn moon below, same as before — nothing breaks if you haven't
+   added them yet. */
+const ORDERED_PHASE_SLUGS = [
+    'new',
+    'waxing-crescent-1', 'waxing-crescent-2', 'waxing-crescent-3',
+    'waxing-crescent-4', 'waxing-crescent-5', 'waxing-crescent-6',
+    'first-quarter',
+    'waxing-gibbous-1', 'waxing-gibbous-2', 'waxing-gibbous-3',
+    'waxing-gibbous-4', 'waxing-gibbous-5', 'waxing-gibbous-6',
+    'full',
+    'waning-gibbous-1', 'waning-gibbous-2', 'waning-gibbous-3',
+    'waning-gibbous-4', 'waning-gibbous-5', 'waning-gibbous-6',
+    'last-quarter',
+    'waning-crescent-1', 'waning-crescent-2', 'waning-crescent-3',
+    'waning-crescent-4', 'waning-crescent-5', 'waning-crescent-6'
+];
+function localPhaseImagePath(age) {
+    const fraction = age / SYNODIC_MONTH; // 0 (new) .. 1 (back to new)
+    const index = Math.round(fraction * ORDERED_PHASE_SLUGS.length) % ORDERED_PHASE_SLUGS.length;
+    return `images/moon-${ORDERED_PHASE_SLUGS[index]}.webp`;
 }
 
 /* =========================================================
@@ -406,8 +456,6 @@ function updateCssMoon(age) {
 /* ========================================================= */
 
 async function render(date) {
-    document.getElementById('errorNote').textContent = '';
-
     // Tithi + upcoming phases
     const lunarInfo = calculateLunarInfo(date);
     const isPurnimaOrAmas = lunarInfo.tithiName === 'Purnima' || lunarInfo.tithiName === 'Amas';
@@ -439,31 +487,42 @@ async function render(date) {
     if (compareDate.getTime() === today.getTime()) todayLabel.textContent = '';
     else todayLabel.textContent = date.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 
-    // Moon image
-    const spinner = document.getElementById('spinner');
+    // Moon image — show a local phase placeholder instantly (no network
+    // wait), then swap in the real photo for this exact date once it
+    // arrives. renderToken guards against a slow response from an older
+    // date landing after a newer one if the person taps ‹ › quickly.
+    const token = ++renderToken;
     const moonImage = document.getElementById('moonImage');
     const moonCss = document.getElementById('moonCss');
-
-    spinner.classList.add('active');
-    moonImage.style.display = 'none';
     moonCss.classList.remove('active');
+    document.getElementById('errorNote').textContent = '';
 
-    const url = await fetchMoonImageUrl(date);
-    spinner.classList.remove('active');
-
-    if (url) {
-        moonImage.onload = () => { moonImage.style.display = 'block'; };
-        moonImage.onerror = () => {
-            moonCss.classList.add('active');
-            updateCssMoon(age);
-            document.getElementById('errorNote').textContent = 'Showing an approximate moon — image failed to load';
-        };
-        moonImage.src = url;
-    } else {
+    moonImage.style.opacity = '1';
+    moonImage.onload = () => { moonImage.style.display = 'block'; };
+    moonImage.onerror = () => {
+        if (token !== renderToken) return;
+        moonImage.style.display = 'none';
         moonCss.classList.add('active');
         updateCssMoon(age);
-        document.getElementById('errorNote').textContent = 'Showing an approximate moon — image sources unavailable';
-    }
+    };
+    moonImage.src = localPhaseImagePath(age);
+
+    fetchMoonImageUrl(date).then(url => {
+        if (!url || token !== renderToken) return; // stale or unavailable — keep current placeholder
+        const preload = new Image();
+        preload.onload = () => {
+            if (token !== renderToken) return;
+            moonCss.classList.remove('active');
+            moonImage.style.opacity = '0.4';
+            moonImage.onerror = null; // this URL is already confirmed to load
+            moonImage.onload = () => {
+                moonImage.style.display = 'block';
+                moonImage.style.opacity = '1';
+            };
+            moonImage.src = url;
+        };
+        preload.src = url;
+    });
 }
 
 function shiftDate(days) {
