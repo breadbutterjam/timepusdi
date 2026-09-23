@@ -658,7 +658,13 @@
                     currentMonth = month;
                     isShukla = true;
                     anchorDate = newMoon;
-                    dayInPaksha = Math.floor((date - newMoon) / (1000 * 60 * 60 * 24));
+                    // Count backwards from the full moon (mirrors the Vad/Amas fix) so
+                    // the full moon day always lands on tithi 14 (Purnima), instead of
+                    // counting forward from the new moon, which could overshoot and
+                    // duplicate Purnima across two days when this paksha runs longer
+                    // than 15 days.
+                    const daysFromEnd = Math.floor((fullMoon - date) / (1000 * 60 * 60 * 24));
+                    dayInPaksha = Math.max(0, 14 - daysFromEnd);
                     break;
                 } else if (i < LUNAR_DATA.months.length - 1) {
                     const nextNewMoon = new Date(LUNAR_DATA.months[i + 1].newMoon);
