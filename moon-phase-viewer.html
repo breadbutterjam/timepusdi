@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Moon Phase Viewer</title>
+<link rel="preconnect" href="https://timepusdi.vercel.app">
 <style>
     :root{
         color-scheme: dark;
@@ -340,44 +341,50 @@ function getPhaseName(age) {
 
 /* =========================================================
    MOON IMAGE
-   Primary: NASA SVS "Dial-A-Moon" API (official NASA/GSFC
-   imagery, rendered for the exact date/time requested).
-   Fallback: the existing Vercel proxy in front of the same
-   NASA source (kept as a safety net — direct browser fetches
-   to nasa.gov can hit CORS in some environments).
-   Last resort: CSS-drawn crescent/gibbous shape.
+   Source: your Vercel proxy in front of NASA SVS "Dial-A-Moon"
+   imagery. A direct browser call to svs.gsfc.nasa.gov was tried
+   first originally, but NASA's API sends a fixed
+   Access-Control-Allow-Origin (locked to their own demo site),
+   so a direct cross-origin fetch is rejected by every browser
+   from any other origin — it's not an intermittent issue, it
+   can never succeed from GitHub Pages, so calling it first only
+   cost a failed round trip (and a console error) on every load.
+   Going straight to the proxy is both faster and quieter.
+   Last resort if the proxy is unreachable: CSS-drawn crescent/
+   gibbous shape.
 ========================================================= */
 const imageCache = {};
+const CACHE_PREFIX = 'moonImg:';
+
+function readCache(key) {
+    if (imageCache[key]) return imageCache[key];
+    try {
+        const stored = sessionStorage.getItem(CACHE_PREFIX + key);
+        if (stored) { imageCache[key] = stored; return stored; }
+    } catch (e) { /* sessionStorage unavailable (e.g. privacy mode) — ignore */ }
+    return null;
+}
+
+function writeCache(key, url) {
+    imageCache[key] = url;
+    try { sessionStorage.setItem(CACHE_PREFIX + key, url); } catch (e) { /* ignore */ }
+}
 
 async function fetchMoonImageUrl(date) {
     const key = date.toISOString().slice(0, 13); // cache per hour
-    if (imageCache[key]) return imageCache[key];
+    const cached = readCache(key);
+    if (cached) return cached;
 
-    const isoForApi = date.toISOString().slice(0, 16);
-
-    // 1. NASA Dial-A-Moon, direct
-    try {
-        const res = await fetch(`https://svs.gsfc.nasa.gov/api/dialamoon/${isoForApi}`);
-        if (res.ok) {
-            const data = await res.json();
-            if (data && data.image && data.image.url) {
-                imageCache[key] = data.image.url;
-                return data.image.url;
-            }
-        }
-    } catch (e) { /* fall through */ }
-
-    // 2. Vercel proxy in front of the same NASA source
     try {
         const res = await fetch(`https://timepusdi.vercel.app/api/moon?date=${date.toISOString()}`);
         if (res.ok) {
             const data = await res.json();
             if (data && data.image) {
-                imageCache[key] = data.image;
+                writeCache(key, data.image);
                 return data.image;
             }
         }
-    } catch (e) { /* fall through */ }
+    } catch (e) { /* fall through to CSS moon */ }
 
     return null;
 }
