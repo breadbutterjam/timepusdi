@@ -169,14 +169,6 @@
       transform: translateX(3px);
     }
 
-    .section {
-      margin-top: 2rem;
-    }
-
-    .section:first-child {
-      margin-top: 0;
-    }
-
     .section-label {
       font-size: 0.68rem;
       font-weight: 500;
@@ -184,11 +176,8 @@
       text-transform: uppercase;
       color: var(--text-secondary);
       padding: 0 1.25rem;
+      margin-top: 2rem;
       margin-bottom: 0.6rem;
-    }
-
-    .section .project-list {
-      padding-top: 0;
     }
 
     /* Staggered entrance animation */
@@ -214,8 +203,8 @@
       header { padding: 3.5rem 2.5rem 2rem; }
       header h1 { font-size: 2.5rem; }
       .section-label { padding: 0 2.5rem; }
-      .section .project-list {
-        padding: 0 2.5rem;
+      .project-list {
+        padding: 1.5rem 2.5rem;
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 1.25rem;
@@ -239,64 +228,30 @@
 
   </div>
 <script>
-  // Section is optional. Items are grouped by the order in which each
-  // section name first appears in this data array.
   const data = [
-    { section: 'Games', title: 'Mini Sudoku', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/games/mini-sudoku.html' },
-    { section: 'Games', title: 'Mini Sudoku with Animals', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/games/mini-sudoku-images.html' },
-    { section: 'Games', title: 'Trump Card Viewer', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/trumpcardsandbox/index.html' },
-
-    { section: 'Moon and Tithis', title: 'Gujarati Calendar', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/gujarati-calendar.html' },
-    { section: 'Everything Else', title: 'Meandering Elephant', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/meanderingele/me.html' },
-    { section: 'Everything Else', title: 'Music Player', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/music/index.html' },
-    { section: 'Everything Else', title: 'Tide visualiser', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/tide.html' },
-
-    
-    { section: 'Dashboards', title: 'Personal Dashboard', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/dashboard/index.html' },
-    { section: 'Moon and Tithis', title: 'Moon Phase Viewer', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/moon-phase-viewer.html' },
-    { section: 'Everything Else', title: 'Pomo', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/pomo.html' },
-    { section: 'Everything Else', title: 'Pi', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/pi/index.html' },
-    { section: 'Everything Else', title: 'Pi - Pro', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/pi/pi2.html' },
-
-    { section: 'Other', title: 'Index', desc: 'Self reference page', link: '#' }
+    { title: 'Index', desc: 'Self reference page', link: '#' },
+    { title: 'Personal Dashboard', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/dashboard/index.html' },
+    { title: 'Mini Sudoku', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/games/mini-sudoku.html' },
+    { title: 'Mini Sudoku with Animals', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/games/mini-sudoku-images.html' },
+    { title: 'Trump Card Viewer', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/trumpcardsandbox/index.html' },
+    { title: 'Meandering Elephant', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/meanderingele/me.html' },
+    { title: 'Music Player', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/music/index.html' },
+    { title: 'Tide visualiser', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/tide.html' },
+    { title: 'Gujarati Calendar', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/gujarati-calendar.html' },
+    { title: 'Moon Phase Viewer', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/moon-phase-viewer.html' },
+    { title: 'Pomo', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/pomo.html' },
+    { title: 'Pi', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/pi/index.html' },
+    { title: 'Pi - Pro', desc: '', link: 'https://breadbutterjam.github.io/timepusdi/pi/pi2.html' },
   ];
 
   function addCards(){
-    const container = document.querySelector('.project-list');
-    container.innerHTML = '';
-
-    // Build sections from the data itself. JavaScript Map preserves insertion
-    // order, so sections appear in the order of their first occurrence above.
-    const sections = new Map();
-
-    data.forEach(item => {
-      const sectionName = item.section || 'Other';
-      if (!sections.has(sectionName)) {
-        sections.set(sectionName, []);
-      }
-      sections.get(sectionName).push(item);
-    });
-
-    sections.forEach((items, sectionName) => {
-      const section = document.createElement('section');
-      section.className = 'section';
-
-      const label = document.createElement('div');
-      label.className = 'section-label';
-      label.textContent = sectionName;
-      section.appendChild(label);
-
-      const list = document.createElement('div');
-      list.className = 'project-list';
-
-      items.forEach(item => {
-        list.appendChild(createCard(item));
-      });
-
-      section.appendChild(list);
-      container.appendChild(section);
-    });
+     const container = document.querySelector('.project-list'); 
+     data.forEach(item => {
+       const card = createCard(item);
+       container.appendChild(card);
+     });
   }
+
 
   function createCard(data){
     const a = document.createElement('a');
@@ -322,7 +277,7 @@
     a.appendChild(body);
     return a;
   }
-
+  
   /*
       <a class="card" href="https://breadbutterjam.github.io/timepusdi/Asia.html">
         <div class="card-thumb">🌏</div>
