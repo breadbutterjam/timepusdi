@@ -502,7 +502,7 @@
                 { name: "Bhadrapad", year: 2026, newMoon: "2026-09-11", fullMoon: "2026-09-26" },
                 { name: "Ashwin", year: 2026, newMoon: "2026-10-10", fullMoon: "2026-10-26" },
                 { name: "Kartik", year: 2026, newMoon: "2026-11-09", fullMoon: "2026-11-24" },
-                { name: "Magshar", year: 2026, newMoon: "2026-12-09", fullMoon: "2027-12-24" },
+                { name: "Magshar", year: 2026, newMoon: "2026-12-09", fullMoon: "2026-12-24" },
                 { name: "Posh", year: 2027, newMoon: "2027-01-07", fullMoon: "2027-01-22" },
                 { name: "Maha", year: 2027, newMoon: "2027-02-06", fullMoon: "2027-02-20" },
                 { name: "Fagan", year: 2027, newMoon: "2027-03-08", fullMoon: "2027-03-22" }
@@ -666,7 +666,12 @@
                         currentMonth = month;
                         isShukla = false;
                         anchorDate = fullMoon;
-                        dayInPaksha = Math.floor((date - fullMoon) / (1000 * 60 * 60 * 24));
+                        // Count backwards from the upcoming new moon so the day right
+                        // before it always lands on tithi 14 (Amas), instead of counting
+                        // forward from the full moon, which could run out of days before
+                        // reaching Amas and jump straight to next month's Sud Ekam.
+                        const daysFromEnd = Math.floor((nextNewMoon - date) / (1000 * 60 * 60 * 24)) - 1;
+                        dayInPaksha = Math.max(0, 14 - daysFromEnd);
                         break;
                     }
                 }
@@ -790,7 +795,10 @@
 
         function updateTithiInfo(lunarInfo) {
             // const gujaratiDate = `${lunarInfo.month.name} ${lunarInfo.isShukla ? 'Sud' : 'Vad'} ${lunarInfo.dayInPaksha}`;
-            const gujaratiDate = `${lunarInfo.month.name} ${lunarInfo.isShukla ? 'Sud' : 'Vad'} ${lunarInfo.tithiName}`;
+            const isPurnimaOrAmas = lunarInfo.tithiName === 'Purnima' || lunarInfo.tithiName === 'Amas';
+            const gujaratiDate = isPurnimaOrAmas
+                ? `${lunarInfo.month.name} ${lunarInfo.tithiName}`
+                : `${lunarInfo.month.name} ${lunarInfo.isShukla ? 'Sud' : 'Vad'} ${lunarInfo.tithiName}`;
             
             document.getElementById('gujaratiDate').textContent = gujaratiDate;
             // document.getElementById('tithiName').textContent = lunarInfo.tithiName;

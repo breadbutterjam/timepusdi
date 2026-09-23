@@ -266,7 +266,12 @@ function calculateLunarInfo(date) {
             const nextNewMoon = new Date(LUNAR_DATA.months[i + 1].newMoon);
             if (date > fullMoon && date < nextNewMoon) {
                 currentMonth = month; isShukla = false;
-                dayInPaksha = Math.floor((date - fullMoon) / 86400000);
+                // Count backwards from the upcoming new moon so the day right
+                // before it always lands on tithi 14 (Amas), instead of counting
+                // forward from the full moon, which could run out of days before
+                // reaching Amas and jump straight to next month's Sud Ekam.
+                const daysFromEnd = Math.floor((nextNewMoon - date) / 86400000) - 1;
+                dayInPaksha = Math.max(0, 14 - daysFromEnd);
                 break;
             }
         }
@@ -392,8 +397,10 @@ async function render(date) {
 
     // Tithi + upcoming phases
     const lunarInfo = calculateLunarInfo(date);
-    document.getElementById('gujaratiDate').textContent =
-        `${lunarInfo.month.name} ${lunarInfo.isShukla ? 'Sud' : 'Vad'} ${lunarInfo.tithiName}`;
+    const isPurnimaOrAmas = lunarInfo.tithiName === 'Purnima' || lunarInfo.tithiName === 'Amas';
+    document.getElementById('gujaratiDate').textContent = isPurnimaOrAmas
+        ? `${lunarInfo.month.name} ${lunarInfo.tithiName}`
+        : `${lunarInfo.month.name} ${lunarInfo.isShukla ? 'Sud' : 'Vad'} ${lunarInfo.tithiName}`;
 
     const upcoming = getUpcomingMoonPhases(date);
     const labels = { newMoon: 'next new moon', fullMoon: 'next full moon' };
