@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Moon Phase Viewer</title>
+<link rel="preconnect" href="https://timepusdi.vercel.app">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="card">
+
+    <div class="top-text">
+        <div class="tithi-line">
+            <button class="nav-btn" id="prevDayBtn" aria-label="Previous day">‹</button>
+            <div class="gujarati-date" id="gujaratiDate">Loading…</div>
+            <button class="nav-btn" id="nextDayBtn" aria-label="Next day">›</button>
+        </div>
+        <div class="phase-line" id="phaseLine">&nbsp;</div>
+        <div class="till-line" id="tillLine"></div>
+        <div class="today-label" id="todayLabel"></div>
+    </div>
+
+    <div class="moon-wrap" id="moonWrap">
+        <img class="moon-img" id="moonImage" alt="Moon phase">
+        <div class="moon-css" id="moonCss"><div class="moon-light" id="moonLight"></div></div>
+    </div>
+
+    <div class="bottom-text">
+        <div class="upcoming-row">
+            <div class="upcoming-label" id="phase1Label">next full moon</div>
+            <div class="upcoming-date" id="phase1Date">Loading…</div>
+        </div>
+        <div class="upcoming-row">
+            <div class="upcoming-label" id="phase2Label">next new moon</div>
+            <div class="upcoming-date" id="phase2Date">Loading…</div>
+        </div>
+    </div>
+
+    <div class="error-note" id="errorNote"></div>
+</div>
+
+<!-- Detail view: opened by tapping the moon. Navigates tithi-by-tithi
+     (not day-by-day) via the ‹ › buttons, independent of the main
+     screen's date. -->
+<div class="detail-view" id="detailView">
+    <button class="detail-close" id="detailClose" aria-label="Close">&times;</button>
+
+    <div class="detail-header">
+        <div class="detail-title-line">
+            <button class="nav-btn" id="detailPrevBtn" aria-label="Previous tithi">‹</button>
+            <div class="detail-title" id="detailTitle">Loading…</div>
+            <button class="nav-btn" id="detailNextBtn" aria-label="Next tithi">›</button>
+        </div>
+        <div class="detail-subtitle" id="detailSubtitle"></div>
+        <div class="detail-date" id="detailDate"></div>
+    </div>
+
+    <div class="detail-photo-wrap">
+        <img class="moon-img" id="detailImage" alt="Moon phase, full view">
+        <div class="moon-css" id="detailCss" style="width:min(80vw,360px); height:min(80vw,360px);">
+            <div class="moon-light" id="detailLight"></div>
+        </div>
+    </div>
+
+    <div class="detail-footer">
+        <div class="upcoming-row">
+            <div class="upcoming-label" id="detailPhase1Label">next full moon</div>
+            <div class="upcoming-date" id="detailPhase1Date">Loading…</div>
+        </div>
+        <div class="upcoming-row">
+            <div class="upcoming-label" id="detailPhase2Label">next new moon</div>
+            <div class="upcoming-date" id="detailPhase2Date">Loading…</div>
+        </div>
+    </div>
+</div>
+
+<script src="js/ephemeris.js"></script>
+<script src="js/tithi-engine.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

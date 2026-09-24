@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Moon Phases &amp; Tithi</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="rotate-msg">
+    <span class="glyph">&#128241;</span>
+    <h1>Rotate your device</h1>
+    <p>This moon phase &amp; tithi explorer is built for landscape &mdash; turn your phone sideways to continue.</p>
+  </div>
+
+  <div id="app">
+    <div id="sun-panel">
+      <img src="assets/sun.webp" alt="Sun" />
+    </div>
+
+    <div id="right-panel">
+      <div id="slider-row">
+        <span class="deg-label">0&deg;</span>
+        <div id="slider-wrap">
+          <input type="range" id="phase-slider" min="0" max="360" step="1" value="0" aria-label="Angle since new moon">
+          <div class="tick" style="left:25%"></div>
+          <div class="tick-label" style="left:25%">first quarter</div>
+          <div class="tick" style="left:50%"></div>
+          <div class="tick-label" style="left:50%">full moon</div>
+          <div class="tick" style="left:75%"></div>
+          <div class="tick-label" style="left:75%">last quarter</div>
+        </div>
+        <span class="deg-label">360&deg;</span>
+      </div>
+
+      <div id="diagram-row">
+        <div id="orbit-wrap">
+          <svg id="orbit-svg" viewBox="0 0 640 340" preserveAspectRatio="xMidYMid meet" xmlns:xlink="http://www.w3.org/1999/xlink">
+            <line id="sun-line" x1="300" y1="170" x2="0" y2="170" stroke="rgba(255,255,255,0.4)" stroke-width="1" stroke-dasharray="3 3"/>
+            <circle id="orbit-circle" cx="300" cy="170" r="128" fill="none" stroke="var(--line)" stroke-width="1"/>
+            <line id="moon-line" x1="300" y1="170" x2="428" y2="170" stroke="rgba(255,255,255,0.45)" stroke-width="1" stroke-dasharray="3 3"/>
+            <text id="angle-text" x="360" y="160">0&deg;</text>
+            <image id="earth-img" href="assets/earth.webp" xlink:href="assets/earth.webp" x="220" y="90" width="160" height="160" preserveAspectRatio="xMidYMid slice"/>
+            <g id="moon-group" transform="translate(428,170)">
+              <circle id="moon-disc" r="20" fill="var(--moon-dark)" stroke="rgba(255,255,255,0.25)" stroke-width="0.75"/>
+              <clipPath id="moon-clip"><circle r="20"/></clipPath>
+              <path id="moon-lit" d="" fill="var(--moon-lit)" clip-path="url(#moon-clip)"/>
+            </g>
+          </svg>
+        </div>
+
+        <div id="info-panel">
+          <div class="info-block">
+            <div class="info-label">Angle difference</div>
+            <div class="info-value" id="val-angle">0&deg;</div>
+          </div>
+          <div class="info-block">
+            <div class="info-label">Phase</div>
+            <div class="info-value" id="val-phase">New Moon</div>
+          </div>
+          <div class="info-block">
+            <div class="info-label">Tithi</div>
+            <div class="info-value" id="val-tithi">Vad Amas</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+<script src="script.js"></script>
+</html>
