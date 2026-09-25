@@ -101,6 +101,7 @@ let tithiMode = (function () {
     return 'sunrise'; // default
 })();
 let currentMainTithiInfo = null; // the tithi shown for currentDayStartMs (see getMainTithiForDay)
+let currentUpcoming = null; // { nextFullMoon, nextNewMoon } for currentDayStartMs — see renderAll
 let renderToken = 0;
 
 /* ---------- misc helpers ---------- */
@@ -177,7 +178,7 @@ function phaseNameForWindow(windowStartMs, windowEndMs, midInstant) {
 const ORDERED_PHASE_SLUGS = [
     'new',
     'waxing-crescent-1', 'waxing-crescent-2', 'waxing-crescent-3',
-    'waxing-crescent-4', 
+    'waxing-crescent-4',
     'first-quarter',
     'waxing-gibbous-1', 'waxing-gibbous-2', 'waxing-gibbous-3',
     'waxing-gibbous-4', 
@@ -352,7 +353,11 @@ async function renderAll() {
     const elong = MoonEphemeris.elongationDeg(representativeInstant);
     const phaseName = phaseNameForWindow(dayStart, dayEnd, representativeInstant);
 
-    const upcoming = TithiEngine.getUpcoming(new Date(dayStart));
+    // Search from the END of today (not the start) so that if today
+    // itself is the full/new moon day, we correctly show the NEXT
+    // occurrence rather than today's own date.
+    const upcoming = TithiEngine.getUpcoming(new Date(dayEnd));
+    currentUpcoming = upcoming;
 
     // ---- main screen ----
     document.getElementById('gujaratiDate').textContent = label.full;
@@ -360,6 +365,13 @@ async function renderAll() {
     document.getElementById('tillLine').textContent = gregText;
     if (upcoming.nextFullMoon) document.getElementById('phase1Date').textContent = formatLongDateIST(upcoming.nextFullMoon);
     if (upcoming.nextNewMoon) document.getElementById('phase2Date').textContent = formatLongDateIST(upcoming.nextNewMoon);
+
+    // "today" link — only shown once the viewed day differs from the
+    // real current IST day. Computed fresh each render since "today"
+    // itself moves forward as real time passes.
+    const isToday = (dayStart === istMidnightUtcMs(new Date()));
+    document.getElementById('todayLink').classList.toggle('visible', !isToday);
+    document.getElementById('detailTodayLink').classList.toggle('visible', !isToday);
 
     // ---- detail view ----
     document.getElementById('detailDateLine').textContent = gregText;
@@ -385,6 +397,20 @@ async function renderAll() {
 
 function shiftDate(days) {
     currentDayStartMs += days * DAY_MS;
+    renderAll();
+}
+
+// Jumps the whole app (main screen + detail view) to whatever
+// calendar day `date` falls on — used by the "next full/new moon"
+// rows in the main screen's bottom-text section.
+function jumpToDate(date) {
+    if (!date) return;
+    currentDayStartMs = istMidnightUtcMs(date);
+    renderAll();
+}
+
+function jumpToToday() {
+    currentDayStartMs = istMidnightUtcMs(new Date());
     renderAll();
 }
 
@@ -417,6 +443,24 @@ document.getElementById('prevDayBtn').addEventListener('click', () => shiftDate(
 document.getElementById('nextDayBtn').addEventListener('click', () => shiftDate(1));
 document.getElementById('detailPrevBtn').addEventListener('click', () => shiftDate(-1));
 document.getElementById('detailNextBtn').addEventListener('click', () => shiftDate(1));
+
+function bindJumpRow(el, getDate) {
+    el.addEventListener('click', () => jumpToDate(getDate()));
+    el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpToDate(getDate()); }
+    });
+}
+bindJumpRow(document.getElementById('phase1Row'), () => currentUpcoming && currentUpcoming.nextFullMoon);
+bindJumpRow(document.getElementById('phase2Row'), () => currentUpcoming && currentUpcoming.nextNewMoon);
+
+function bindTodayLink(el) {
+    el.addEventListener('click', jumpToToday);
+    el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); jumpToToday(); }
+    });
+}
+bindTodayLink(document.getElementById('todayLink'));
+bindTodayLink(document.getElementById('detailTodayLink'));
 
 document.querySelectorAll('input[name="tithiMode"]').forEach(radio => {
     radio.addEventListener('change', (e) => {

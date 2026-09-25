@@ -19,6 +19,7 @@
             <div class="till-line" id="tillLine"></div>
             <button class="nav-btn" id="nextDayBtn" aria-label="Next day">›</button>
         </div>
+        <div class="today-link" id="todayLink" role="button" tabindex="0">today</div>
     </div>
 
     <div class="moon-wrap" id="moonWrap">
@@ -27,11 +28,11 @@
     </div>
 
     <div class="bottom-text">
-        <div class="upcoming-row">
+        <div class="upcoming-row clickable" id="phase1Row" role="button" tabindex="0">
             <div class="upcoming-label" id="phase1Label">next full moon</div>
             <div class="upcoming-date" id="phase1Date">Loading…</div>
         </div>
-        <div class="upcoming-row">
+        <div class="upcoming-row clickable" id="phase2Row" role="button" tabindex="0">
             <div class="upcoming-label" id="phase2Label">next new moon</div>
             <div class="upcoming-date" id="phase2Date">Loading…</div>
         </div>
@@ -54,6 +55,7 @@
             <div class="till-line" id="detailDateLine"></div>
             <button class="nav-btn" id="detailNextBtn" aria-label="Next day">›</button>
         </div>
+        <div class="today-link" id="detailTodayLink" role="button" tabindex="0">today</div>
         <div class="detail-heading" id="detailPhaseHeading">Loading…</div>
         <div class="till-line" id="detailSunriseLine"></div>
         <div class="detail-heading" id="detailTithiHeading"></div>

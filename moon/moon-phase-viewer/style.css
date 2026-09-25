@@ -37,6 +37,12 @@ body{
 .gujarati-date{ font-size:1.55rem; font-weight:500; letter-spacing:0.2px; }
 .phase-line{ margin-top:10px; font-size:1.25rem; font-weight:400; color:rgba(255,255,255,0.8); }
 .till-line{ margin-top:6px; font-size:0.85rem; color:rgba(255,255,255,0.45); min-height:1.2em; }
+.today-link{
+    display:none; text-align:center; margin-top:4px; font-size:0.8rem;
+    color:rgba(255,255,255,0.55); text-decoration:underline; cursor:pointer;
+}
+.today-link.visible{ display:block; }
+.today-link:hover, .today-link:focus-visible{ color:#fff; outline:none; }
 
 /* ----- moon ----- */
 .moon-wrap{
@@ -54,6 +60,9 @@ body{
 .bottom-text{ width:100%; text-align:center; color:#fff; }
 .upcoming-row{ margin-bottom:14px; }
 .upcoming-row:last-child{ margin-bottom:0; }
+.upcoming-row.clickable{ cursor:pointer; border-radius:8px; padding:4px 8px; margin:-4px -8px 10px; transition:background 0.15s; }
+.upcoming-row.clickable:last-child{ margin-bottom:-4px; }
+.upcoming-row.clickable:hover, .upcoming-row.clickable:focus-visible{ background:rgba(255,255,255,0.06); outline:none; }
 .upcoming-label{ font-size:0.85rem; color:rgba(255,255,255,0.45); margin-bottom:4px; }
 .upcoming-date{ font-size:1.2rem; font-weight:600; }
 
