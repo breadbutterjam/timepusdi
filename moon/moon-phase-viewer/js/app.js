@@ -1,13 +1,18 @@
 /* =========================================================
    APP.JS
-   UI logic. All astronomy lives in ephemeris.js / tithi-engine.js —
-   this file just renders their output.
+   UI logic. All astronomy lives in ephemeris.js / tithi-engine.js /
+   suncalc.js — this file just renders their output.
+
+   The main screen and the detail view (opened by tapping the moon)
+   share ONE day pointer (currentDayStartMs). The ‹ › buttons in
+   either screen move the same day and both re-render together —
+   the detail view is an expanded view of the same day, not a
+   separate browsing mode.
 ========================================================= */
 
 /* ---------- Gujarati calendar naming (the one place hand-maintained
-   data lives, by design — see the "Building the Moon Phase Viewer"
-   README for why this stays a small hardcoded list rather than a
-   full computed panchang). ---------- */
+   data lives, by design — see the README for why this stays a small
+   hardcoded list rather than a full computed panchang). ---------- */
 
 // 12 lunar months, in order. NOTE: does not yet handle adhik maas
 // (leap month) — month naming will drift by one after the next
@@ -41,14 +46,64 @@ const ANCHOR_MONTH_INDEX = 2; // Jyeshta
 
 const DATA_URL = 'data/tithi-data.json';
 const MOON_IMAGE_PROXY = 'https://timepusdi.vercel.app/api/moon';
+const IST_TZ = 'Asia/Kolkata';
+const DAY_MS = 86400000;
 
-let currentDate = new Date();
+// Location for sunrise calculation. No picker yet — Mumbai only,
+// hardcoded. (SunCalc, vendored in js/suncalc.js, does the math.)
+const LOCATION = { lat: 19.0760, lng: 72.8777 };
+
+const TITHI_MODE_KEY = 'moonPhaseViewer.tithiMode';
+
+/* ---------- IST-aware date/time helpers ---------- */
+
+function istMidnightUtcMs(refDate) {
+    const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: IST_TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+    const map = {};
+    fmt.formatToParts(refDate).forEach(p => { map[p.type] = p.value; });
+    return Date.UTC(+map.year, +map.month - 1, +map.day, 0, 0, 0) - 5.5 * 3600000;
+}
+
+function formatClockTimeIST(date) {
+    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: IST_TZ, hour: 'numeric', minute: '2-digit', hour12: true });
+    return fmt.format(date).replace(' ', '').toLowerCase();
+}
+
+// "Thursday, 24-Sep-2026"
+function formatGregorianIST(date) {
+    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: IST_TZ, weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+    const map = {};
+    fmt.formatToParts(date).forEach(p => { map[p.type] = p.value; });
+    return `${map.weekday}, ${map.day}-${map.month}-${map.year}`;
+}
+
+// "Wed 07-Oct-2026" — used to disambiguate which day a clock time
+// belongs to (a tithi ending "12:43am" could be today or tomorrow).
+function formatCompactDateIST(date) {
+    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: IST_TZ, weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    const map = {};
+    fmt.formatToParts(date).forEach(p => { map[p.type] = p.value; });
+    return `${map.weekday} ${map.day}-${map.month}-${map.year}`;
+}
+
+function formatLongDateIST(date) {
+    return date.toLocaleDateString('en-US', { timeZone: IST_TZ, month: 'long', day: 'numeric', weekday: 'long' });
+}
+
+/* ---------- state ---------- */
+
+let currentDayStartMs = istMidnightUtcMs(new Date());
+let tithiMode = (function () {
+    try {
+        const stored = localStorage.getItem(TITHI_MODE_KEY);
+        if (stored === 'sunrise' || stored === 'majority') return stored;
+    } catch (e) { /* localStorage unavailable */ }
+    return 'sunrise'; // default
+})();
+let currentMainTithiInfo = null; // the tithi shown for currentDayStartMs (see getMainTithiForDay)
 let renderToken = 0;
-let detailInfo = null; // currently-displayed tithi info in the detail view
 
-/* ---------- small helpers ---------- */
-
-function dateOnly(date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
+/* ---------- misc helpers ---------- */
 
 function mod(n, m) { return ((n % m) + m) % m; }
 
@@ -68,49 +123,67 @@ function tithiLabel(tithiIndex, monthName) {
     return { isShukla, short: `${isShukla ? 'Sud' : 'Vad'} ${name}`, full: `${monthName} ${isShukla ? 'Sud' : 'Vad'} ${name}` };
 }
 
-function formatClockTime(date) {
-    let h = date.getHours();
-    const m = date.getMinutes();
-    const ampm = h >= 12 ? 'pm' : 'am';
-    h = h % 12; if (h === 0) h = 12;
-    return `${h}:${String(m).padStart(2, '0')}${ampm}`;
-}
+/* ---------- phase naming ----------
+   New Moon / First Quarter / Full Moon / Last Quarter name the exact
+   instants (elongation 0/90/180/270). Showing one of these as a
+   *range* (as an 8-way bucket scheme would) makes it look like "full
+   moon" lasts 3-4 days, which it doesn't. So: these 4 names are only
+   used for whichever single day/tithi window actually contains that
+   exact crossing; everything else gets one of the 4 continuous
+   waxing/waning descriptions. */
 
-function formatLongDate(date) {
-    return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', weekday: 'long' });
-}
-
-function formatDetailDate(date) {
-    const weekday = date.toLocaleDateString('en-US', { weekday: 'long' });
-    const day = String(date.getDate()).padStart(2, '0');
-    const mon = date.toLocaleDateString('en-US', { month: 'short' });
-    return `${weekday}, ${day}-${mon}-${date.getFullYear()}`;
-}
-
-function phaseNameFromElongation(elong) {
-    if (elong < 22.5 || elong >= 337.5) return "New Moon";
-    if (elong < 67.5) return "Waxing Crescent";
-    if (elong < 112.5) return "First Quarter";
-    if (elong < 157.5) return "Waxing Gibbous";
-    if (elong < 202.5) return "Full Moon";
-    if (elong < 247.5) return "Waning Gibbous";
-    if (elong < 292.5) return "Last Quarter";
+function continuousPhaseName(elong) {
+    if (elong < 90) return "Waxing Crescent";
+    if (elong < 180) return "Waxing Gibbous";
+    if (elong < 270) return "Waning Gibbous";
     return "Waning Crescent";
 }
 
-/* Local placeholder image slice, same 28-slice scheme as before,
-   now indexed off the real elongation fraction instead of a
-   constant-rate age approximation. */
+function crossesAngle(targetDeg, startMs, endMs) {
+    function angDiff(elong) {
+        let d = elong - targetDeg;
+        d = ((d + 180) % 360 + 360) % 360 - 180;
+        return d;
+    }
+    const stepMs = 3 * 3600000;
+    let prev = angDiff(MoonEphemeris.elongationDeg(new Date(startMs)));
+    if (Math.abs(prev) < 0.01) return true;
+    let t = startMs;
+    while (t < endMs) {
+        t = Math.min(t + stepMs, endMs);
+        const cur = angDiff(MoonEphemeris.elongationDeg(new Date(t)));
+        if (Math.abs(cur) < 0.01) return true;
+        // A real crossing of targetDeg shows up as a small, continuous
+        // sign flip. A sign flip with a ~360deg jump instead is the
+        // modulo wraparound at the *antipodal* point (targetDeg+180)
+        // — not a real crossing — so it must be excluded explicitly.
+        if ((prev < 0) !== (cur < 0) && Math.abs(cur - prev) < 180) return true;
+        prev = cur;
+    }
+    return false;
+}
+
+const SPECIAL_ANGLES = [[0, "New Moon"], [90, "First Quarter"], [180, "Full Moon"], [270, "Last Quarter"]];
+
+function phaseNameForWindow(windowStartMs, windowEndMs, midInstant) {
+    for (const [deg, name] of SPECIAL_ANGLES) {
+        if (crossesAngle(deg, windowStartMs, windowEndMs)) return name;
+    }
+    return continuousPhaseName(MoonEphemeris.elongationDeg(midInstant));
+}
+
+/* Local placeholder image slice, indexed off the real elongation
+   fraction (28-slice scheme). */
 const ORDERED_PHASE_SLUGS = [
     'new',
     'waxing-crescent-1', 'waxing-crescent-2', 'waxing-crescent-3',
-    'waxing-crescent-4',
+    'waxing-crescent-4', 
     'first-quarter',
     'waxing-gibbous-1', 'waxing-gibbous-2', 'waxing-gibbous-3',
-    'waxing-gibbous-4',
+    'waxing-gibbous-4', 
     'full',
     'waning-gibbous-1', 'waning-gibbous-2', 'waning-gibbous-3',
-    'waning-gibbous-4',
+    'waning-gibbous-4', 
     'last-quarter',
     'waning-crescent-1', 'waning-crescent-2', 'waning-crescent-3',
     'waning-crescent-4'
@@ -121,7 +194,66 @@ function localPhaseImagePath(elong) {
     return `images/moon-${ORDERED_PHASE_SLUGS[index]}.webp`;
 }
 
-/* ---------- moon photo (real imagery via proxy, same chain as before) ---------- */
+/* ---------- tithi-for-a-day: two selectable strategies ----------
+
+   "majority": whichever tithi occupies the most time within the
+   calendar day (existing logic — a scan, since most days touch at
+   most 2 tithi boundaries).
+
+   "sunrise": the tithi active at that day's Mumbai sunrise instant
+   (the traditional panchang convention) — just a single lookup,
+   no scanning needed. */
+
+function getTithiForDay(dayStartMs, dayEndMs) {
+    let t = dayStartMs, best = null, bestDuration = -1;
+    for (let i = 0; i < 8; i++) { // safety cap; realistically 1-3 iterations
+        const info = TithiEngine.getTithiInfo(new Date(t));
+        const segEnd = (info.nextStart && info.nextStart.getTime() < dayEndMs) ? info.nextStart.getTime() : dayEndMs;
+        const duration = segEnd - t;
+        if (duration > bestDuration) { bestDuration = duration; best = info; }
+        if (!info.nextStart || info.nextStart.getTime() >= dayEndMs) break;
+        t = info.nextStart.getTime();
+    }
+    return best;
+}
+
+function getSunriseInstant(dayStartMs) {
+    // IST noon as the reference instant handed to SunCalc — safely
+    // mid-day so its solar-day resolution can't land on the wrong
+    // side of a UTC date boundary.
+    const ref = new Date(dayStartMs + 12 * 3600000);
+    return SunCalc.getTimes(ref, LOCATION.lat, LOCATION.lng).sunrise;
+}
+
+function getMainTithiForDay(dayStartMs, dayEndMs, mode, sunriseInstant) {
+    if (mode === 'majority') return getTithiForDay(dayStartMs, dayEndMs);
+    return TithiEngine.getTithiInfo(sunriseInstant);
+}
+
+// The "till" line(s) for the detail view: always the main tithi's
+// own end time, plus its date (shown for now to make it unambiguous
+// whether "till 12:43am" means later tonight or the small hours of
+// tomorrow — a sunrise-selected tithi very often ends after midnight).
+// A second line names the *following* tithi only if that one also
+// ends within the same calendar day.
+function computeTillLines(mainTithiInfo, dayEndMs) {
+    const lines = { line1: '', line2: '' };
+    if (!mainTithiInfo.nextStart) return lines;
+
+    lines.line1 = `till ${formatClockTimeIST(mainTithiInfo.nextStart)}, ${formatCompactDateIST(mainTithiInfo.nextStart)}`;
+
+    if (mainTithiInfo.nextStart.getTime() < dayEndMs) {
+        const nextInfo = TithiEngine.getTithiInfo(mainTithiInfo.nextStart);
+        if (nextInfo.nextStart && nextInfo.nextStart.getTime() < dayEndMs) {
+            const nextMonthName = monthNameFor(nextInfo.start);
+            const nextLabel = tithiLabel(nextInfo.tithi, nextMonthName);
+            lines.line2 = `${nextLabel.short} till ${formatClockTimeIST(nextInfo.nextStart)}, ${formatCompactDateIST(nextInfo.nextStart)}`;
+        }
+    }
+    return lines;
+}
+
+/* ---------- moon photo (real imagery via proxy) ---------- */
 
 const imageCache = {};
 const CACHE_PREFIX = 'moonImg:';
@@ -161,163 +293,137 @@ function updateCssMoon(elong, lightEl) {
     }
 }
 
-// Loads a moon photo into imgEl (placeholder first, then real photo),
-// with CSS-crescent fallback if both image sources fail. Shared by
-// the main screen and the detail view. `token` guards against a
-// slow response landing after the user has already navigated away.
-function loadMoonPhoto(date, elong, imgEl, cssEl, cssLightEl, token, tokenGetter) {
-    cssEl.classList.remove('active');
-    imgEl.style.opacity = '1';
-    imgEl.onload = () => { imgEl.style.display = 'block'; };
-    imgEl.onerror = () => {
-        if (token !== tokenGetter()) return;
-        imgEl.style.display = 'none';
-        cssEl.classList.add('active');
-        updateCssMoon(elong, cssLightEl);
-    };
-    imgEl.src = localPhaseImagePath(elong);
+// Loads one moon photo and applies it to every {imgEl, cssEl, lightEl}
+// target in `targets` (main screen + detail view share one fetch).
+function loadMoonPhoto(date, elong, targets, token, tokenGetter) {
+    const placeholder = localPhaseImagePath(elong);
+    for (const { imgEl, cssEl, lightEl } of targets) {
+        cssEl.classList.remove('active');
+        imgEl.style.opacity = '1';
+        imgEl.onload = () => { imgEl.style.display = 'block'; };
+        imgEl.onerror = (function (imgEl, cssEl, lightEl) {
+            return () => {
+                if (token !== tokenGetter()) return;
+                imgEl.style.display = 'none';
+                cssEl.classList.add('active');
+                updateCssMoon(elong, lightEl);
+            };
+        })(imgEl, cssEl, lightEl);
+        imgEl.src = placeholder;
+    }
 
     fetchMoonImageUrl(date).then(url => {
         if (!url || token !== tokenGetter()) return;
         const preload = new Image();
         preload.onload = () => {
             if (token !== tokenGetter()) return;
-            cssEl.classList.remove('active');
-            imgEl.style.opacity = '0.4';
-            imgEl.onerror = null;
-            imgEl.onload = () => { imgEl.style.display = 'block'; imgEl.style.opacity = '1'; };
-            imgEl.src = url;
+            for (const { imgEl, cssEl } of targets) {
+                cssEl.classList.remove('active');
+                imgEl.style.opacity = '0.4';
+                imgEl.onerror = null;
+                imgEl.onload = () => { imgEl.style.display = 'block'; imgEl.style.opacity = '1'; };
+                imgEl.src = url;
+            }
         };
         preload.src = url;
     });
 }
 
-/* ---------- main screen render ---------- */
+/* ---------- unified render (main screen + detail view) ---------- */
 
-async function render(date) {
+async function renderAll() {
     const token = ++renderToken;
-    const tithiInfo = TithiEngine.getTithiInfo(date);
-    const monthName = monthNameFor(tithiInfo.start);
-    const label = tithiLabel(tithiInfo.tithi, monthName);
+    const dayStart = currentDayStartMs;
+    const dayEnd = dayStart + DAY_MS;
 
+    const sunriseInstant = getSunriseInstant(dayStart);
+    const mainTithiInfo = getMainTithiForDay(dayStart, dayEnd, tithiMode, sunriseInstant);
+    currentMainTithiInfo = mainTithiInfo;
+
+    const monthName = monthNameFor(mainTithiInfo.start);
+    const label = tithiLabel(mainTithiInfo.tithi, monthName);
+    const gregText = formatGregorianIST(new Date(dayStart + 43200000));
+
+    // Representative instant: midpoint of however much of the shown
+    // tithi actually falls within today — used for phase name + photo.
+    const overlapStart = Math.max(mainTithiInfo.start.getTime(), dayStart);
+    const overlapEnd = mainTithiInfo.nextStart ? Math.min(mainTithiInfo.nextStart.getTime(), dayEnd) : dayEnd;
+    const representativeInstant = new Date((overlapStart + overlapEnd) / 2);
+    const elong = MoonEphemeris.elongationDeg(representativeInstant);
+    const phaseName = phaseNameForWindow(dayStart, dayEnd, representativeInstant);
+
+    const upcoming = TithiEngine.getUpcoming(new Date(dayStart));
+
+    // ---- main screen ----
     document.getElementById('gujaratiDate').textContent = label.full;
+    document.getElementById('phaseLine').textContent = phaseName;
+    document.getElementById('tillLine').textContent = gregText;
+    if (upcoming.nextFullMoon) document.getElementById('phase1Date').textContent = formatLongDateIST(upcoming.nextFullMoon);
+    if (upcoming.nextNewMoon) document.getElementById('phase2Date').textContent = formatLongDateIST(upcoming.nextNewMoon);
 
-    // "till 8:30pm, Sud Teras after that"
-    const tillEl = document.getElementById('tillLine');
-    if (tithiInfo.nextStart && tithiInfo.nextTithi !== null) {
-        const nextMonthName = monthNameFor(tithiInfo.nextStart);
-        const nextLabel = tithiLabel(tithiInfo.nextTithi, nextMonthName);
-        tillEl.textContent = `till ${formatClockTime(tithiInfo.nextStart)}, ${nextLabel.short} after that`;
-    } else {
-        tillEl.textContent = '';
-    }
+    // ---- detail view ----
+    document.getElementById('detailDateLine').textContent = gregText;
+    document.getElementById('detailPhaseHeading').textContent = phaseName;
+    document.getElementById('detailSunriseLine').textContent = `at sunrise ${formatClockTimeIST(sunriseInstant)}`;
+    document.getElementById('detailTithiHeading').textContent = label.full;
+    const tillLines = computeTillLines(mainTithiInfo, dayEnd);
+    document.getElementById('detailTillLine1').textContent = tillLines.line1;
+    document.getElementById('detailTillLine2').textContent = tillLines.line2;
+    if (upcoming.nextFullMoon) document.getElementById('detailPhase1Date').textContent = formatLongDateIST(upcoming.nextFullMoon);
+    if (upcoming.nextNewMoon) document.getElementById('detailPhase2Date').textContent = formatLongDateIST(upcoming.nextNewMoon);
 
-    const upcoming = TithiEngine.getUpcoming(date);
-    if (upcoming.nextFullMoon) {
-        document.getElementById('phase1Label').textContent = 'next full moon';
-        document.getElementById('phase1Date').textContent = formatLongDate(upcoming.nextFullMoon);
-    }
-    if (upcoming.nextNewMoon) {
-        document.getElementById('phase2Label').textContent = 'next new moon';
-        document.getElementById('phase2Date').textContent = formatLongDate(upcoming.nextNewMoon);
-    }
-
-    const elong = MoonEphemeris.elongationDeg(date);
-    const illum = Math.round(MoonEphemeris.illuminationFraction(elong) * 1000) / 10;
-    document.getElementById('phaseLine').textContent = `${phaseNameFromElongation(elong)} ${illum}%`;
-
-    const today = dateOnly(new Date());
-    const compareDate = dateOnly(date);
-    document.getElementById('todayLabel').textContent =
-        (compareDate.getTime() === today.getTime()) ? '' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
+    // ---- shared photo (fetched once, applied to both) ----
     loadMoonPhoto(
-        date, elong,
-        document.getElementById('moonImage'),
-        document.getElementById('moonCss'),
-        document.getElementById('moonLight'),
+        representativeInstant, elong,
+        [
+            { imgEl: document.getElementById('moonImage'), cssEl: document.getElementById('moonCss'), lightEl: document.getElementById('moonLight') },
+            { imgEl: document.getElementById('detailImage'), cssEl: document.getElementById('detailCss'), lightEl: document.getElementById('detailLight') }
+        ],
         token, () => renderToken
     );
 }
 
 function shiftDate(days) {
-    currentDate.setDate(currentDate.getDate() + days);
-    render(currentDate);
+    currentDayStartMs += days * DAY_MS;
+    renderAll();
 }
 
-/* ---------- detail view (tap the moon; tithi-by-tithi nav) ---------- */
-
-let detailRenderToken = 0;
-
-function renderDetail(tithiInfo) {
-    detailInfo = tithiInfo;
-    const token = ++detailRenderToken;
-    const monthName = monthNameFor(tithiInfo.start);
-    const label = tithiLabel(tithiInfo.tithi, monthName);
-
-    document.getElementById('detailTitle').textContent = label.full;
-
-    let subtitle;
-    if (tithiInfo.tithi === 15) subtitle = 'Full moon';
-    else if (tithiInfo.tithi === 0) subtitle = 'New moon';
-    else {
-        // Phase name at the midpoint of this tithi's span.
-        const mid = tithiInfo.nextStart
-            ? new Date((tithiInfo.start.getTime() + tithiInfo.nextStart.getTime()) / 2)
-            : tithiInfo.start;
-        subtitle = phaseNameFromElongation(MoonEphemeris.elongationDeg(mid));
-    }
-    document.getElementById('detailSubtitle').textContent = subtitle;
-    document.getElementById('detailDate').textContent = formatDetailDate(tithiInfo.start);
-
-    const upcoming = TithiEngine.getUpcoming(tithiInfo.start);
-    if (upcoming.nextFullMoon) {
-        document.getElementById('detailPhase1Label').textContent = 'next full moon';
-        document.getElementById('detailPhase1Date').textContent = formatLongDate(upcoming.nextFullMoon);
-    }
-    if (upcoming.nextNewMoon) {
-        document.getElementById('detailPhase2Label').textContent = 'next new moon';
-        document.getElementById('detailPhase2Date').textContent = formatLongDate(upcoming.nextNewMoon);
-    }
-
-    // Photo for a representative instant within this tithi (a couple
-    // hours after it starts, so we're solidly inside it).
-    const photoMoment = new Date(tithiInfo.start.getTime() + 2 * 3600000);
-    const elong = MoonEphemeris.elongationDeg(photoMoment);
-    loadMoonPhoto(
-        photoMoment, elong,
-        document.getElementById('detailImage'),
-        document.getElementById('detailCss'),
-        document.getElementById('detailLight'),
-        token, () => detailRenderToken
-    );
-}
+/* ---------- detail view + settings panel ---------- */
 
 function openDetailView() {
-    const moonImage = document.getElementById('moonImage');
-    if (moonImage.style.display === 'none' || !moonImage.src) return; // nothing loaded yet
+    if (!currentMainTithiInfo) return;
     document.getElementById('detailView').classList.add('active');
-    renderDetail(TithiEngine.getTithiInfo(currentDate));
 }
 function closeDetailView() {
     document.getElementById('detailView').classList.remove('active');
+    closeSettings();
 }
-function detailPrev() {
-    if (!detailInfo) return;
-    renderDetail(TithiEngine.getTithiInfo(new Date(detailInfo.start.getTime() - 1)));
+function openSettings() {
+    document.getElementById('modeSunrise').checked = (tithiMode === 'sunrise');
+    document.getElementById('modeMajority').checked = (tithiMode === 'majority');
+    document.getElementById('settingsPanel').classList.add('active');
 }
-function detailNext() {
-    if (!detailInfo || !detailInfo.nextStart) return;
-    renderDetail(TithiEngine.getTithiInfo(new Date(detailInfo.nextStart.getTime())));
+function closeSettings() {
+    document.getElementById('settingsPanel').classList.remove('active');
 }
 
 /* ---------- boot ---------- */
 
 document.getElementById('moonWrap').addEventListener('click', openDetailView);
 document.getElementById('detailClose').addEventListener('click', closeDetailView);
-document.getElementById('detailPrevBtn').addEventListener('click', detailPrev);
-document.getElementById('detailNextBtn').addEventListener('click', detailNext);
+document.getElementById('detailSettingsBtn').addEventListener('click', openSettings);
+document.getElementById('settingsDoneBtn').addEventListener('click', closeSettings);
 document.getElementById('prevDayBtn').addEventListener('click', () => shiftDate(-1));
 document.getElementById('nextDayBtn').addEventListener('click', () => shiftDate(1));
+document.getElementById('detailPrevBtn').addEventListener('click', () => shiftDate(-1));
+document.getElementById('detailNextBtn').addEventListener('click', () => shiftDate(1));
 
-TithiEngine.init(DATA_URL).finally(() => render(currentDate));
+document.querySelectorAll('input[name="tithiMode"]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        tithiMode = e.target.value;
+        try { localStorage.setItem(TITHI_MODE_KEY, tithiMode); } catch (e2) { /* ignore */ }
+        renderAll();
+    });
+});
+
+TithiEngine.init(DATA_URL).finally(() => renderAll());

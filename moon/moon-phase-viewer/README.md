@@ -12,12 +12,14 @@ live fallback for any date outside that table.
 ```
 index.html            the whole UI (markup only)
 style.css              styling
+js/suncalc.js          vendored SunCalc (BSD-licensed) — sunrise time only
 js/ephemeris.js        Sun + Moon position formulas (no deps, no network)
 js/tithi-engine.js     loads data/tithi-data.json, binary-searches it,
                         falls back to live ephemeris.js for out-of-range dates
-js/app.js              rendering, date nav, the tithi-nav detail view,
-                        the real moon-photo fetch chain — and the ONE
-                        hand-maintained bit of data: MONTH_NAMES + ANCHOR
+js/app.js              rendering, shared day nav, the detail view + settings
+                        panel, the real moon-photo fetch chain — and the two
+                        hand-maintained bits of data: MONTH_NAMES + ANCHOR,
+                        and the Mumbai LOCATION used for sunrise
 data/tithi-data.json   pre-generated tithi boundary times (currently
                         covers 2024-01-01 through 2033-12-31)
 images/                optional local placeholder photos (see below) —
@@ -89,12 +91,40 @@ you either way — but regenerating keeps every date on the fast path.
   like an actual moon (rather than the CSS-drawn crescent), drop
   28 WebP files into `images/` named per the list in
   `js/app.js` (`ORDERED_PHASE_SLUGS`). Purely cosmetic, not required.
+- **Location is fixed to Mumbai.** No picker yet; `LOCATION` in
+  `js/app.js` is a hardcoded `{lat, lng}`. Adding a picker (same shape
+  as the `LOCATIONS` table in the sunrise/sunset utility this was
+  built alongside) is a natural next step but out of scope for now.
+- **Midnight-tithi is not implemented as a third mode** — only sunrise
+  and majority-hours exist today. Skipped deliberately to keep the
+  settings panel to one clear choice for now.
 
 ## The detail view
 
-Tapping the moon photo opens a full-screen view that navigates
-**tithi-by-tithi** (not day-by-day) via the ‹ › buttons — e.g. tapping
-› from "Bhadarvo Sud Baras" jumps straight to the start of "Bhadarvo
-Sud Teras", whenever that instant actually falls, rather than stepping
-a fixed 24 hours. This is separate, deliberately, from the main
-screen's day-based ‹ › navigation.
+Tapping the moon photo opens a full-screen view of the **same day**
+shown on the main screen — the ‹ › buttons there shift the day exactly
+like the main screen's do (both are backed by one shared day pointer),
+not a separate tithi-by-tithi browsing mode. It adds what the compact
+main screen leaves out: the exact end time of the shown tithi, and
+(when a second tithi also ends before midnight the same day) that
+tithi's name and end time too.
+
+## Which tithi represents a day: two selectable strategies
+
+A calendar day can contain a tithi boundary partway through it, so
+"which tithi is today" needs a rule. A gear icon in the detail view
+opens a small settings panel with two:
+
+- **Tithi at sunrise** (default) — the traditional panchang
+  convention: whichever tithi is active at that day's sunrise. Sunrise
+  is computed for **Mumbai only** for now (hardcoded lat/lng in
+  `js/app.js`'s `LOCATION` constant — no location picker yet) via a
+  vendored copy of [SunCalc](https://github.com/mourner/suncalc)
+  (`js/suncalc.js`), matched to what's used elsewhere for this kind of
+  calculation.
+- **Tithi with max hours** — whichever tithi occupies the most of the
+  24-hour calendar day (a plain majority vote, no sunrise involved).
+
+The choice is saved (`localStorage`) and applies to both the main
+screen and the detail view — there's one "tithi for today" per day,
+not a different one per screen.

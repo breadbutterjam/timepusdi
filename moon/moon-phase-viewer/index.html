@@ -12,14 +12,13 @@
 <div class="card">
 
     <div class="top-text">
-        <div class="tithi-line">
+        <div class="gujarati-date" id="gujaratiDate">Loading…</div>
+        <div class="phase-line" id="phaseLine">&nbsp;</div>
+        <div class="nav-row">
             <button class="nav-btn" id="prevDayBtn" aria-label="Previous day">‹</button>
-            <div class="gujarati-date" id="gujaratiDate">Loading…</div>
+            <div class="till-line" id="tillLine"></div>
             <button class="nav-btn" id="nextDayBtn" aria-label="Next day">›</button>
         </div>
-        <div class="phase-line" id="phaseLine">&nbsp;</div>
-        <div class="till-line" id="tillLine"></div>
-        <div class="today-label" id="todayLabel"></div>
     </div>
 
     <div class="moon-wrap" id="moonWrap">
@@ -41,20 +40,25 @@
     <div class="error-note" id="errorNote"></div>
 </div>
 
-<!-- Detail view: opened by tapping the moon. Navigates tithi-by-tithi
-     (not day-by-day) via the ‹ › buttons, independent of the main
-     screen's date. -->
+<!-- Detail view: opened by tapping the moon. Shares the same day
+     pointer as the main screen (‹ › here shift the day, exactly like
+     the main screen's nav) and adds the info the compact view hides:
+     the tithi's end time(s) and the settings gear. -->
 <div class="detail-view" id="detailView">
     <button class="detail-close" id="detailClose" aria-label="Close">&times;</button>
+    <button class="detail-settings" id="detailSettingsBtn" aria-label="Settings">&#9881;</button>
 
     <div class="detail-header">
-        <div class="detail-title-line">
-            <button class="nav-btn" id="detailPrevBtn" aria-label="Previous tithi">‹</button>
-            <div class="detail-title" id="detailTitle">Loading…</div>
-            <button class="nav-btn" id="detailNextBtn" aria-label="Next tithi">›</button>
+        <div class="nav-row">
+            <button class="nav-btn" id="detailPrevBtn" aria-label="Previous day">‹</button>
+            <div class="till-line" id="detailDateLine"></div>
+            <button class="nav-btn" id="detailNextBtn" aria-label="Next day">›</button>
         </div>
-        <div class="detail-subtitle" id="detailSubtitle"></div>
-        <div class="detail-date" id="detailDate"></div>
+        <div class="detail-heading" id="detailPhaseHeading">Loading…</div>
+        <div class="till-line" id="detailSunriseLine"></div>
+        <div class="detail-heading" id="detailTithiHeading"></div>
+        <div class="till-line" id="detailTillLine1"></div>
+        <div class="till-line" id="detailTillLine2"></div>
     </div>
 
     <div class="detail-photo-wrap">
@@ -74,8 +78,23 @@
             <div class="upcoming-date" id="detailPhase2Date">Loading…</div>
         </div>
     </div>
+
+    <!-- Settings panel: which tithi "wins" a calendar day. -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="settings-title">Tithi selection</div>
+        <label class="settings-option">
+            <input type="radio" name="tithiMode" value="sunrise" id="modeSunrise">
+            <span>Tithi at sunrise<br><small>Mumbai — the tithi active at sunrise represents the day</small></span>
+        </label>
+        <label class="settings-option">
+            <input type="radio" name="tithiMode" value="majority" id="modeMajority">
+            <span>Tithi with max hours<br><small>whichever tithi occupies the most of the calendar day</small></span>
+        </label>
+        <button class="settings-done" id="settingsDoneBtn">Done</button>
+    </div>
 </div>
 
+<script src="js/suncalc.js"></script>
 <script src="js/ephemeris.js"></script>
 <script src="js/tithi-engine.js"></script>
 <script src="js/app.js"></script>
