@@ -67,9 +67,20 @@
   #loading.hidden { opacity: 0; pointer-events: none; }
 
   /* Picture-in-picture label for the Earth-view moon */
-  #pip-frame {
+  #pip-label {
     position: fixed;
     top: calc(20px + env(safe-area-inset-top, 0px));
+    right: 20px;
+    width: 132px;
+    text-align: center;
+    font-size: 10.5px;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    pointer-events: none;
+  }
+  #pip-frame {
+    position: fixed;
+    top: calc(44px + env(safe-area-inset-top, 0px));
     right: 20px;
     width: 132px;
     height: 132px;
@@ -90,17 +101,6 @@
     object-fit: cover;
     display: none;
   }
-  #pip-label {
-    position: fixed;
-    top: calc(158px + env(safe-area-inset-top, 0px));
-    right: 20px;
-    width: 132px;
-    text-align: center;
-    font-size: 10.5px;
-    letter-spacing: 0.03em;
-    color: var(--text-secondary);
-    pointer-events: none;
-  }
 
   /* ============================================================
      CONTROL PANEL — bottom-center, glass card
@@ -116,12 +116,15 @@
     -webkit-backdrop-filter: blur(18px);
     border: 1px solid var(--panel-border);
     border-radius: var(--radius-lg);
-    padding: 16px 20px 14px;
+    padding: 8px;
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
     z-index: 20;
   }
+  #controls .row { flex: 1; }
+  #controls .hint { display: none; }
 
   .row {
     display: flex;
@@ -214,21 +217,278 @@
     color: var(--accent);
   }
 
+  /* ============================================================
+     PHASE INFO PANEL — angle / phase / tithi readout
+     ============================================================ */
+  #phase-info-panel {
+    position: fixed;
+    top: calc(190px + env(safe-area-inset-top, 0px));
+    right: 20px;
+    width: 190px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--panel-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-lg);
+    padding: 16px 20px;
+    z-index: 20;
+  }
+  #phase-info-panel .info-label {
+    font-size: 10.5px;
+    color: var(--text-secondary);
+    letter-spacing: 0.02em;
+    margin-bottom: 3px;
+  }
+  #phase-info-panel .info-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: 0.005em;
+  }
+  #phase-info-panel.hidden { display: none; }
+  #phase-info-panel .info-block.hidden { display: none; }
+
+  /* ============================================================
+     SETTINGS GEAR + PANEL
+     ============================================================ */
+  #settings-toggle {
+    position: fixed;
+    right: 20px;
+    bottom: calc(26px + env(safe-area-inset-bottom, 0px));
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 1px solid var(--panel-border);
+    background: var(--panel-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 21;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  #settings-toggle:hover { color: var(--text-primary); border-color: var(--accent-dim); }
+  #settings-toggle svg { width: 16px; height: 16px; }
+  #settings-toggle.active { color: var(--accent); border-color: var(--accent-dim); }
+
+  #settings-panel {
+    position: fixed;
+    right: 20px;
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+    width: 220px;
+    background: var(--panel-bg);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1px solid var(--panel-border);
+    border-radius: var(--radius-lg);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 21;
+    opacity: 0;
+    transform: translateY(6px);
+    pointer-events: none;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+  }
+  #settings-panel.open {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .settings-title {
+    font-size: 10.5px;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    font-size: 12px;
+    color: var(--text-primary);
+    cursor: pointer;
+  }
+  .toggle-row-nested {
+    padding-left: 14px;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+  }
+  .toggle {
+    position: relative;
+    flex: 0 0 auto;
+    width: 32px;
+    height: 18px;
+  }
+  .toggle input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--track);
+    border-radius: 999px;
+    transition: background 0.2s ease;
+  }
+  .toggle-track::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .toggle input:checked + .toggle-track {
+    background: var(--accent-dim);
+  }
+  .toggle input:checked + .toggle-track::before {
+    transform: translateX(14px);
+    background: var(--accent);
+  }
+  .toggle input:disabled + .toggle-track { opacity: 0.4; }
+
   @media (max-width: 480px) {
-    #pip-frame { width: 96px; height: 96px; right: 14px; top: calc(14px + env(safe-area-inset-top, 0px)); }
-    #pip-label { width: 96px; right: 14px; top: calc(114px + env(safe-area-inset-top, 0px)); font-size: 9.5px; }
-    #controls { padding: 13px 16px 12px; gap: 10px; }
+    #pip-label { width: 96px; right: 14px; top: calc(14px + env(safe-area-inset-top, 0px)); font-size: 9.5px; }
+    #pip-frame { width: 96px; height: 96px; right: 14px; top: calc(32px + env(safe-area-inset-top, 0px)); }
+    #phase-info-panel { right: 14px; top: calc(138px + env(safe-area-inset-top, 0px)); width: 150px; padding: 12px 16px; gap: 10px; }
+    #phase-info-panel .info-value { font-size: 14px; }
+  }
+
+  /* ============================================================
+     ROTATE-TO-LANDSCAPE PROMPT — mobile portrait only
+     ============================================================ */
+  #rotate-message {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: var(--bg);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 32px;
+    text-align: center;
+  }
+  #rotate-message svg {
+    width: 46px;
+    height: 46px;
+    color: var(--accent);
+    animation: rotate-hint 1.8s ease-in-out infinite;
+  }
+  #rotate-message p {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    max-width: 240px;
+  }
+  @keyframes rotate-hint {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(90deg); }
+  }
+
+  /* Phones/tablets held in portrait: hide the app, show the prompt */
+  @media (orientation: portrait) and (max-width: 900px) {
+    #scene-container, #controls, #pip-frame, #pip-label, #loading,
+    #phase-info-panel, #settings-toggle, #settings-panel { display: none !important; }
+    #rotate-message { display: flex; }
+  }
+
+  /* Mobile landscape: dock the control panel flush to the bottom edge, borderless */
+  @media (orientation: landscape) and (max-height: 500px) {
+    #controls {
+      bottom: 0;
+      border: none;
+      background: transparent;
+    }
+    #phase-info-panel { padding: 10px 14px; gap: 8px; top: calc(184px + env(safe-area-inset-top, 0px)); right: 12px; width: 170px; }
+    #phase-info-panel .info-label { font-size: 9.5px; margin-bottom: 1px; }
+    #phase-info-panel .info-value { font-size: 13px; }
+    #settings-panel { bottom: calc(58px + env(safe-area-inset-bottom, 0px)); width: 190px; padding: 10px 14px; }
   }
 </style>
+
 </head>
 <body>
 
 <div id="loading">calibrating orbit…</div>
 
+<div id="rotate-message">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="6" y="3" width="12" height="18" rx="2"></rect>
+    <line x1="10" y1="19" x2="14" y2="19"></line>
+  </svg>
+  <p>Rotate your phone to landscape to view the moon phase visualizer.</p>
+</div>
+
 <div id="scene-container"></div>
 
-<div id="pip-frame"><canvas id="pip-canvas"></canvas><img id="pip-photo" alt="" /></div>
 <div id="pip-label">moon from earth</div>
+<div id="pip-frame"><canvas id="pip-canvas"></canvas><img id="pip-photo" alt="" /></div>
+
+<div id="phase-info-panel">
+  <div class="info-block" data-info="angle">
+    <div class="info-label">Angle difference</div>
+    <div class="info-value" id="val-angle">0&deg;</div>
+  </div>
+  <div class="info-block" data-info="phase">
+    <div class="info-label">Phase</div>
+    <div class="info-value" id="val-phase">New Moon</div>
+  </div>
+  <div class="info-block" data-info="tithi">
+    <div class="info-label">Tithi</div>
+    <div class="info-value" id="val-tithi">Vad Amas</div>
+  </div>
+</div>
+
+<button id="settings-toggle" aria-label="Settings">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+  </svg>
+</button>
+
+<div id="settings-panel">
+  <div class="settings-title">Display</div>
+  <label class="toggle-row">
+    <span>Sun–Earth–Moon lines</span>
+    <span class="toggle"><input type="checkbox" id="toggle-lines" checked><span class="toggle-track"></span></span>
+  </label>
+  <label class="toggle-row">
+    <span>Info panel</span>
+    <span class="toggle"><input type="checkbox" id="toggle-info-panel" checked><span class="toggle-track"></span></span>
+  </label>
+  <label class="toggle-row toggle-row-nested">
+    <span>Angle</span>
+    <span class="toggle"><input type="checkbox" id="toggle-angle" checked><span class="toggle-track"></span></span>
+  </label>
+  <label class="toggle-row toggle-row-nested">
+    <span>Moon phase</span>
+    <span class="toggle"><input type="checkbox" id="toggle-phase" checked><span class="toggle-track"></span></span>
+  </label>
+  <label class="toggle-row toggle-row-nested">
+    <span>Tithi</span>
+    <span class="toggle"><input type="checkbox" id="toggle-tithi" checked><span class="toggle-track"></span></span>
+  </label>
+</div>
 
 <div id="controls">
   <div class="row">
@@ -593,6 +853,168 @@
     scene.add(ring);
   }
 
+  /* ============================================================
+     ALIGNMENT LINES — thin dotted lines from Sun→Earth and
+     Earth→Moon centers. Only ever shown in the top-down view;
+     visibility also respects the "Sun–Earth–Moon lines" setting.
+     ============================================================ */
+  var sunEarthLine, earthMoonLine;
+  var isTopDownView = true;
+  function createAlignmentLines() {
+    var lineMat = new THREE.LineDashedMaterial({
+      color: 0xffffff, transparent: true, opacity: 0.28,
+      dashSize: 0.6, gapSize: 0.6
+    });
+
+    var sunEarthGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(CONFIG.sunDistanceX, 0, 0),
+      new THREE.Vector3(0, 0, 0)
+    ]);
+    sunEarthLine = new THREE.Line(sunEarthGeo, lineMat.clone());
+    sunEarthLine.computeLineDistances();
+    scene.add(sunEarthLine);
+
+    var earthMoonGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, 0, 0),
+      new THREE.Vector3(CONFIG.moonOrbitRadius, 0, 0)
+    ]);
+    earthMoonLine = new THREE.Line(earthMoonGeo, lineMat.clone());
+    earthMoonLine.computeLineDistances(); // valid for any rotation — endpoint distance never changes
+    scene.add(earthMoonLine);
+
+    applyLineVisibility();
+  }
+
+  function applyLineVisibility() {
+    var visible = settings.lines && isTopDownView;
+    sunEarthLine.visible = visible;
+    earthMoonLine.visible = visible;
+  }
+
+  /* ============================================================
+     PHASE / TITHI CALCULATIONS — ported from the 2D moon-phase
+     explorer's logic (Gujarati tithi naming, elongation-based
+     phase names).
+     ============================================================ */
+  var TITHI_NAMES = [
+    'Ekam', 'Beej', 'Trij', 'Choth', 'Pancham',
+    'Chhath', 'Satam', 'Aatham', 'Nom', 'Dasham',
+    'Ekadashi', 'Baras', 'Teras', 'Chaudas'
+  ];
+  var PURNIMA_AMAS = ['Purnima', 'Amas']; // [15th of Sud, 15th of Vad]
+
+  var SECTION_META = [
+    { key: 'waxing-crescent', label: 'Waxing Crescent' }, // 0-90
+    { key: 'waxing-gibbous', label: 'Waxing Gibbous' },   // 90-180
+    { key: 'waning-gibbous', label: 'Waning Gibbous' },   // 180-270
+    { key: 'waning-crescent', label: 'Waning Crescent' }  // 270-360
+  ];
+  var FIXED_META = {
+    0: { key: 'new-moon', label: 'New Moon' },
+    90: { key: 'first-quarter', label: 'First Quarter' },
+    180: { key: 'full-moon', label: 'Full Moon' },
+    270: { key: 'last-quarter', label: 'Last Quarter' }
+  };
+
+  function normDeg(a) { return ((a % 360) + 360) % 360; }
+
+  function getTithi(angle) {
+    if (angle === 0 || angle === 360) return { paksha: 'Vad', name: PURNIMA_AMAS[1] };
+    if (angle === 180) return { paksha: 'Sud', name: PURNIMA_AMAS[0] };
+    var idx = Math.floor(angle / 12) % 30;
+    var paksha = idx < 15 ? 'Sud' : 'Vad';
+    var pos = idx % 15;
+    var name = pos < 14 ? TITHI_NAMES[pos] : (paksha === 'Sud' ? PURNIMA_AMAS[0] : PURNIMA_AMAS[1]);
+    return { paksha: paksha, name: name };
+  }
+
+  function getPhase(angle) {
+    if (FIXED_META[angle]) return FIXED_META[angle];
+    var section = Math.floor(angle / 90);
+    var local = angle - section * 90;
+    var sub = Math.min(4, Math.max(1, Math.ceil(local / 22.5)));
+    var meta = SECTION_META[section];
+    return { key: meta.key + '-' + sub, label: meta.label };
+  }
+
+  var valAngleEl = document.getElementById('val-angle');
+  var valPhaseEl = document.getElementById('val-phase');
+  var valTithiEl = document.getElementById('val-tithi');
+
+  function updatePhaseInfo(orbitAngleRad) {
+    var angleDeg = normDeg(orbitAngleRad * 180 / Math.PI);
+    var elongation = angleDeg <= 180 ? angleDeg : 360 - angleDeg;
+    var phase = getPhase(angleDeg);
+    var tithi = getTithi(angleDeg);
+
+    valAngleEl.textContent = Math.round(elongation) + '\u00B0';
+    valPhaseEl.textContent = phase.label;
+    valTithiEl.textContent = tithi.paksha + ' ' + tithi.name;
+  }
+
+  /* ============================================================
+     SETTINGS PANEL — visibility toggles
+     ============================================================ */
+  var settings = {
+    lines: true,
+    infoPanel: true,
+    angle: true,
+    phase: true,
+    tithi: true
+  };
+
+  var settingsToggleBtn = document.getElementById('settings-toggle');
+  var settingsPanelEl = document.getElementById('settings-panel');
+  var phaseInfoPanelEl = document.getElementById('phase-info-panel');
+  var toggleLines = document.getElementById('toggle-lines');
+  var toggleInfoPanel = document.getElementById('toggle-info-panel');
+  var toggleAngle = document.getElementById('toggle-angle');
+  var togglePhase = document.getElementById('toggle-phase');
+  var toggleTithi = document.getElementById('toggle-tithi');
+  var angleBlockEl = phaseInfoPanelEl.querySelector('[data-info="angle"]');
+  var phaseBlockEl = phaseInfoPanelEl.querySelector('[data-info="phase"]');
+  var tithiBlockEl = phaseInfoPanelEl.querySelector('[data-info="tithi"]');
+
+  function applyInfoPanelVisibility() {
+    phaseInfoPanelEl.classList.toggle('hidden', !settings.infoPanel);
+    angleBlockEl.classList.toggle('hidden', !settings.angle);
+    phaseBlockEl.classList.toggle('hidden', !settings.phase);
+    tithiBlockEl.classList.toggle('hidden', !settings.tithi);
+  }
+
+  settingsToggleBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var open = settingsPanelEl.classList.toggle('open');
+    settingsToggleBtn.classList.toggle('active', open);
+  });
+  document.addEventListener('click', function (e) {
+    if (!settingsPanelEl.classList.contains('open')) return;
+    if (settingsPanelEl.contains(e.target) || settingsToggleBtn.contains(e.target)) return;
+    settingsPanelEl.classList.remove('open');
+    settingsToggleBtn.classList.remove('active');
+  });
+
+  toggleLines.addEventListener('change', function () {
+    settings.lines = toggleLines.checked;
+    applyLineVisibility();
+  });
+  toggleInfoPanel.addEventListener('change', function () {
+    settings.infoPanel = toggleInfoPanel.checked;
+    applyInfoPanelVisibility();
+  });
+  toggleAngle.addEventListener('change', function () {
+    settings.angle = toggleAngle.checked;
+    applyInfoPanelVisibility();
+  });
+  togglePhase.addEventListener('change', function () {
+    settings.phase = togglePhase.checked;
+    applyInfoPanelVisibility();
+  });
+  toggleTithi.addEventListener('change', function () {
+    settings.tithi = toggleTithi.checked;
+    applyInfoPanelVisibility();
+  });
+
   function updateMoonPosition(angle) {
     moon.position.set(
       Math.cos(angle) * CONFIG.moonOrbitRadius,
@@ -602,6 +1024,14 @@
     // Tidal lock: same face always toward Earth
     moon.up.set(0, 1, 0);
     moon.lookAt(0, 0, 0);
+
+    // Keep the Earth→Moon dotted line's far end pinned to the moon
+    if (earthMoonLine) {
+      earthMoonLine.geometry.attributes.position.setXYZ(1, moon.position.x, moon.position.y, moon.position.z);
+      earthMoonLine.geometry.attributes.position.needsUpdate = true;
+    }
+
+    updatePhaseInfo(angle);
   }
 
   /* ============================================================
@@ -707,11 +1137,15 @@
     camThetaTarget = CONFIG.camThetaTopDown;
     btnTop.classList.add('active');
     btnSide.classList.remove('active');
+    isTopDownView = true;
+    applyLineVisibility();
   });
   btnSide.addEventListener('click', function () {
     camThetaTarget = CONFIG.camThetaSideOn;
     btnSide.classList.add('active');
     btnTop.classList.remove('active');
+    isTopDownView = false;
+    applyLineVisibility();
   });
 
   /* ============================================================
@@ -793,8 +1227,10 @@
   createLighting();
   createEarth();
   createMoon();
+  createAlignmentLines();
   updateCamera();
   updateMoonPosition(0);
+  applyInfoPanelVisibility();
   onResize();
 
   /* ============================================================
