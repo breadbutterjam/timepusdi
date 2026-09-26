@@ -71,6 +71,51 @@ body{
     font-size:0.7rem; color:rgba(255,255,255,0.25);
 }
 
+/* ----- help / info button + overlay ----- */
+.help-btn{
+    position:absolute; bottom:calc(14px + env(safe-area-inset-bottom,0px)); right:16px;
+    font-size:22px; line-height:1; color:rgba(255,255,255,0.3); cursor:pointer; z-index:2;
+    background:none; border:none; padding:4px;
+}
+.help-btn:hover, .help-btn:focus-visible{ color:rgba(255,255,255,0.8); outline:none; }
+
+.help-view{
+    display:none;
+    position:fixed; inset:0; background:#000; z-index:1000;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:20px 20px calc(28px + env(safe-area-inset-bottom,0px));
+    padding-top:calc(64px + env(safe-area-inset-top,0px));
+}
+.help-view.active{ display:block; }
+.help-content{ max-width:420px; margin:0 auto; color:#fff; }
+.help-title{ font-size:1.25rem; font-weight:600; margin-bottom:22px; text-align:center; }
+
+.accordion{ border-bottom:1px solid rgba(255,255,255,0.12); }
+.accordion:first-of-type{ border-top:1px solid rgba(255,255,255,0.12); }
+.accordion-header{
+    width:100%; display:flex; justify-content:space-between; align-items:center;
+    background:none; border:none; color:#fff; font-size:1rem; font-weight:600;
+    padding:16px 2px; cursor:pointer; text-align:left; font-family:inherit;
+}
+.accordion-icon{
+    font-size:1.3rem; font-weight:400; color:rgba(255,255,255,0.45);
+    transition:transform 0.2s; flex-shrink:0; margin-left:12px;
+}
+.accordion.open .accordion-icon{ transform:rotate(45deg); }
+.accordion-body{ max-height:0; overflow:hidden; transition:max-height 0.3s ease; }
+.accordion.open .accordion-body{ max-height:1400px; }
+.accordion-body-inner{
+    padding:0 2px 18px; font-size:0.9rem; line-height:1.6; color:rgba(255,255,255,0.7);
+}
+.accordion-body-inner p{ margin-bottom:10px; }
+.accordion-body-inner p:last-child{ margin-bottom:0; }
+.accordion-body-inner ul{ padding-left:1.2em; margin:8px 0; }
+.accordion-body-inner li{ margin-bottom:8px; }
+.accordion-body-inner li:last-child{ margin-bottom:0; }
+.accordion-body-inner strong{ color:#fff; font-weight:600; }
+.accordion-body-inner a{ color:#9ecbff; text-decoration:underline; }
+.accordion-body-inner a:hover{ color:#c3ddff; }
+
 /* ----- detail view (tithi-by-tithi browser, opened by tapping the moon) ----- */
 .detail-view{
     display:none;

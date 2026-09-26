@@ -178,7 +178,7 @@ function phaseNameForWindow(windowStartMs, windowEndMs, midInstant) {
 const ORDERED_PHASE_SLUGS = [
     'new',
     'waxing-crescent-1', 'waxing-crescent-2', 'waxing-crescent-3',
-    'waxing-crescent-4',
+    'waxing-crescent-4', 
     'first-quarter',
     'waxing-gibbous-1', 'waxing-gibbous-2', 'waxing-gibbous-3',
     'waxing-gibbous-4', 
@@ -461,6 +461,22 @@ function bindTodayLink(el) {
 }
 bindTodayLink(document.getElementById('todayLink'));
 bindTodayLink(document.getElementById('detailTodayLink'));
+
+/* ---------- help / info overlay ---------- */
+
+document.getElementById('helpBtn').addEventListener('click', () => {
+    document.getElementById('helpView').classList.add('active');
+});
+document.getElementById('helpClose').addEventListener('click', () => {
+    document.getElementById('helpView').classList.remove('active');
+});
+document.querySelectorAll('.accordion-header').forEach(header => {
+    header.addEventListener('click', () => {
+        const acc = header.closest('.accordion');
+        const nowOpen = acc.classList.toggle('open');
+        header.setAttribute('aria-expanded', nowOpen ? 'true' : 'false');
+    });
+});
 
 document.querySelectorAll('input[name="tithiMode"]').forEach(radio => {
     radio.addEventListener('change', (e) => {

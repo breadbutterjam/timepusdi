@@ -39,6 +39,111 @@
     </div>
 
     <div class="error-note" id="errorNote"></div>
+
+    <button class="help-btn" id="helpBtn" aria-label="Help and info">&#9432;</button>
+</div>
+
+<!-- Help / info overlay: how the app works, sources, other tools. -->
+<div class="help-view" id="helpView">
+    <button class="detail-close" id="helpClose" aria-label="Close">&times;</button>
+    <div class="help-content">
+        <div class="help-title">About this Moon Phase Viewer</div>
+
+        <div class="accordion">
+            <button class="accordion-header" aria-expanded="false">
+                How this works
+                <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+                <div class="accordion-body-inner">
+                    <p>Everything here is calculated, not looked up from a fixed
+                    calendar. The app works out the Sun's and Moon's real
+                    positions for the exact date and time you're viewing, and
+                    derives the Moon's phase and the Gujarati tithi from the
+                    angle between them.</p>
+
+                    <p>A <strong>tithi</strong> is one of 30 divisions of the
+                    lunar month, each covering 12° of that angle. Because a
+                    tithi rarely lines up neatly with a calendar day, one day
+                    can contain a tithi boundary partway through it. The gear
+                    icon in the detail view (tap the Moon to open it) lets you
+                    choose how "today's tithi" is picked:</p>
+                    <ul>
+                        <li><strong>Tithi at sunrise</strong> (default) — the
+                        traditional panchang convention: whichever tithi is
+                        active at sunrise in Mumbai.</li>
+                        <li><strong>Tithi with max hours</strong> — whichever
+                        tithi occupies the most of the 24-hour day.</li>
+                    </ul>
+
+                    <p>The Moon photo is real NASA imagery for that exact
+                    date and time — not a generic phase icon — matched to
+                    the computed phase.</p>
+
+                    <p>Tithi timings are precomputed for speed (currently
+                    2024–2033) and calculated live on the fly for any date
+                    outside that range, so nothing breaks if you navigate
+                    far into the future or past.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion">
+            <button class="accordion-header" aria-expanded="false">
+                Sources
+                <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+                <div class="accordion-body-inner">
+                    <p><strong>Sun &amp; Moon position formulas</strong> —
+                    adapted from Richard Fitzpatrick's <em>An Introduction to
+                    the Almagest</em>, a modern presentation of classical
+                    low-precision solar and lunar theory.
+                    <a href="https://farside.ph.utexas.edu/books/Syntaxis/Almagest/node39.html" target="_blank" rel="noopener">Read the source</a></p>
+
+                    <p><strong>Sunrise times</strong> — computed with a
+                    vendored copy of <a href="https://github.com/mourner/suncalc" target="_blank" rel="noopener">SunCalc</a>
+                    by Vladimir Agafonkin (BSD-2-Clause license).</p>
+
+                    <p><strong>Moon photography</strong> — NASA Scientific
+                    Visualization Studio's "Dial-A-Moon" series, real
+                    rendered imagery of the Moon's true phase and libration
+                    for a given hour.
+                    <a href="https://svs.gsfc.nasa.gov/gallery/moonphase/" target="_blank" rel="noopener">See the gallery</a></p>
+
+                    <p><strong>Tithi and Gujarati month names</strong> —
+                    traditional Hindu luni-solar (panchang) calendar
+                    conventions, hand-maintained rather than pulled from an
+                    external source.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion">
+            <button class="accordion-header" aria-expanded="false">
+                Explore more
+                <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+                <div class="accordion-body-inner">
+                    <p>Other places to play with Moon phases and the night
+                    sky:</p>
+                    <ul>
+                        <li><a href="https://breadbutterjam.github.io/timepusdi/moon/moon-phase-interactive/index.html" target="_blank" rel="noopener">Moon Phase Interactive</a>
+                        Explore the moon's phase and illumination angle with a live, interactive 3D model of the Sun-Earth-Moon system.</li>
+                        <li><a href="https://svs.gsfc.nasa.gov/gallery/moonphase/" target="_blank" rel="noopener">NASA SVS — Moon Phase and Libration</a>
+                        — the yearly Dial-A-Moon animation this app's photos
+                        come from, browsable hour by hour.</li>
+                        <li><a href="https://www.timeanddate.com/moon/phases/" target="_blank" rel="noopener">timeanddate.com — Moon Phases</a>
+                        — precise Moon phase times for any city worldwide.</li>
+                        <li><a href="https://stellarium-web.org/" target="_blank" rel="noopener">Stellarium Web</a>
+                        — a free, full night-sky planetarium that runs in
+                        your browser.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Detail view: opened by tapping the moon. Shares the same day

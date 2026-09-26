@@ -128,3 +128,14 @@ opens a small settings panel with two:
 The choice is saved (`localStorage`) and applies to both the main
 screen and the detail view — there's one "tithi for today" per day,
 not a different one per screen.
+
+## Help / info overlay
+
+The ⓘ icon in the bottom-right corner of the main screen opens a
+full-screen overlay with three collapsible sections: **How this
+works** (a plain-language explanation of the calculation and the two
+tithi-selection modes), **Sources** (what the astronomy, sunrise, and
+Moon-photo data are actually based on), and **Explore more** (links
+out to a few other real moon-phase tools). All copy lives directly in
+`index.html` inside `#helpView` — it's static content, not generated,
+so edit it there.
