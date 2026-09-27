@@ -424,6 +424,64 @@
     #phase-info-panel .info-value { font-size: 13px; }
     #settings-panel { bottom: calc(58px + env(safe-area-inset-bottom, 0px)); width: 190px; padding: 10px 14px; }
   }
+
+  /* ============================================================
+     COMPACT LANDSCAPE — iPhone X through iPhone 12-sized phones
+     in landscape (short side ≤ ~390px). The 3D scene is confined
+     to the left ~72% of the screen (retuned via applyResponsiveTuning
+     in JS); everything else collects into a right-hand column so
+     nothing overlaps in the limited vertical space. Layers on top
+     of the tier above.
+     ============================================================ */
+  @media (orientation: landscape) and (max-height: 400px) {
+    #scene-container { width: 72%; }
+
+    #pip-label {
+      top: calc(8px + env(safe-area-inset-top, 0px));
+      right: 8px;
+      width: 72px;
+      font-size: 8.5px;
+    }
+    #pip-frame {
+      top: calc(22px + env(safe-area-inset-top, 0px));
+      right: 8px;
+      width: 72px;
+      height: 72px;
+    }
+
+    #phase-info-panel {
+      top: calc(8px + env(safe-area-inset-top, 0px));
+      right: 88px;
+      width: 140px;
+      padding: 8px 10px;
+      gap: 5px;
+    }
+    #phase-info-panel .info-label { font-size: 8px; margin-bottom: 0; }
+    #phase-info-panel .info-value { font-size: 11.5px; }
+
+    #controls {
+      flex-direction: column;
+      align-items: stretch;
+      left: auto;
+      right: 50px;
+      bottom: 6px;
+      width: 190px;
+      gap: 5px;
+      padding: 6px 8px;
+      transform: none;
+    }
+    #controls .row { flex: 0 0 auto; }
+    #view-toggle button { padding: 5px 9px; font-size: 10.5px; }
+
+    #settings-toggle {
+      right: 8px;
+      bottom: 6px;
+      width: 30px;
+      height: 30px;
+    }
+    #settings-toggle svg { width: 14px; height: 14px; }
+    #settings-panel { bottom: calc(42px + env(safe-area-inset-bottom, 0px)); right: 8px; width: 180px; padding: 8px 12px; }
+  }
 </style>
 
 </head>
@@ -519,15 +577,30 @@
     earthRadius: 6,
     moonRadius: 1.55,
     moonOrbitRadius: 15.5,
-    sunRadius: 22,
-    sunDistanceX: 70,           // sun anchored far to the left, off-axis pivot
     earthAxialSpinSpeed: 0.035, // radians/sec, auto-spin — stops permanently once the user drags Earth
     earthDragSensitivity: 0.008, // radians of spin per pixel of drag
     orbitCycleSeconds: 24,      // seconds for one full auto-play lunar cycle
-    camDistance: 60,            // pulled back so the moon's orbit ring clears the frame vertically
     camThetaTopDown: 0.16,      // radians from vertical (~9°) — avoids gimbal lock
     camThetaSideOn: Math.PI / 2 - 0.05,
-    camTweenSpeed: 3.2
+    camTweenSpeed: 3.2,
+
+    // Wide layout (desktop/tablet/larger phones) — the scene fills the whole viewport
+    sunRadiusWide: 22,
+    sunDistanceXWide: 70,       // sun anchored far to the left, off-axis pivot
+    camDistanceWide: 60,        // pulled back so the moon's orbit ring clears the frame vertically
+
+    // Compact landscape (iPhone X through iPhone 12-sized phones) — the scene only
+    // occupies the left ~72% of the screen (see the matching CSS breakpoint), so the
+    // sun needs to sit closer in and the camera needs a bit more room to compose within
+    // that narrower box. Starting values — likely needs on-device tuning to match exactly.
+    sunRadiusCompact: 17,
+    sunDistanceXCompact: 48,
+    camDistanceCompact: 72,
+
+    // Mutable "current" values — kept in sync by applyResponsiveTuning()
+    sunRadius: 22,
+    sunDistanceX: 70,
+    camDistance: 60
   };
 
   var container = document.getElementById('scene-container');
@@ -743,7 +816,7 @@
      ============================================================ */
   var sunGroup = new THREE.Group();
   function createSun() {
-    var sunGeo = new THREE.SphereGeometry(CONFIG.sunRadius, 48, 48);
+    var sunGeo = new THREE.SphereGeometry(CONFIG.sunRadiusWide, 48, 48);
     var sunMat = new THREE.MeshBasicMaterial({ color: 0xffb35c });
     var sunMesh = new THREE.Mesh(sunGeo, sunMat);
     sunGroup.add(sunMesh);
@@ -761,7 +834,7 @@
     var glowTex = new THREE.CanvasTexture(glowCanvas);
     var glowMat = new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false });
     var glowSprite = new THREE.Sprite(glowMat);
-    glowSprite.scale.set(CONFIG.sunRadius * 6, CONFIG.sunRadius * 6, 1);
+    glowSprite.scale.set(CONFIG.sunRadiusWide * 6, CONFIG.sunRadiusWide * 6, 1);
     sunGroup.add(glowSprite);
 
     sunGroup.position.set(CONFIG.sunDistanceX, 0, 0);
@@ -883,6 +956,30 @@
     scene.add(earthMoonLine);
 
     applyLineVisibility();
+  }
+
+  /* ============================================================
+     RESPONSIVE SCENE TUNING — swaps sun size/position and camera
+     distance between the "wide" (default) and "compact landscape"
+     (iPhone X–12-sized phones) tunings, matched to the CSS
+     breakpoint that shrinks #scene-container to 72% width.
+     ============================================================ */
+  var compactMediaQuery = window.matchMedia('(orientation: landscape) and (max-height: 400px)');
+
+  function applyResponsiveTuning() {
+    var compact = compactMediaQuery.matches;
+    CONFIG.sunRadius = compact ? CONFIG.sunRadiusCompact : CONFIG.sunRadiusWide;
+    CONFIG.sunDistanceX = compact ? CONFIG.sunDistanceXCompact : CONFIG.sunDistanceXWide;
+    CONFIG.camDistance = compact ? CONFIG.camDistanceCompact : CONFIG.camDistanceWide;
+
+    sunGroup.position.x = CONFIG.sunDistanceX;
+    sunGroup.scale.setScalar(CONFIG.sunRadius / CONFIG.sunRadiusWide); // geometry is baked at wide size
+    sunLight.position.x = CONFIG.sunDistanceX;
+
+    if (sunEarthLine) {
+      sunEarthLine.geometry.attributes.position.setXYZ(0, CONFIG.sunDistanceX, 0, 0);
+      sunEarthLine.geometry.attributes.position.needsUpdate = true;
+    }
   }
 
   function applyLineVisibility() {
@@ -1209,15 +1306,24 @@
      RESIZE
      ============================================================ */
   function onResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    applyResponsiveTuning();
+
+    var w = container.clientWidth;
+    var h = container.clientHeight;
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(w, h);
 
     var pipRect = pipCanvas.getBoundingClientRect();
     var size = Math.max(1, Math.round(pipRect.width));
     pipRenderer.setSize(size, size, false);
   }
   window.addEventListener('resize', onResize);
+  if (compactMediaQuery.addEventListener) {
+    compactMediaQuery.addEventListener('change', onResize);
+  } else if (compactMediaQuery.addListener) {
+    compactMediaQuery.addListener(onResize); // older Safari
+  }
 
   /* ============================================================
      INIT
@@ -1228,6 +1334,7 @@
   createEarth();
   createMoon();
   createAlignmentLines();
+  applyResponsiveTuning();
   updateCamera();
   updateMoonPosition(0);
   applyInfoPanelVisibility();
