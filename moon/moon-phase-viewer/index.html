@@ -16,7 +16,10 @@
         <div class="phase-line" id="phaseLine">&nbsp;</div>
         <div class="nav-row">
             <button class="nav-btn" id="prevDayBtn" aria-label="Previous day">‹</button>
-            <div class="till-line" id="tillLine"></div>
+            <div class="date-field" id="mainDateField">
+                <div class="till-line" id="tillLine"></div>
+                <input type="date" class="date-picker-input" id="datePickerMain" aria-label="Choose a date">
+            </div>
             <button class="nav-btn" id="nextDayBtn" aria-label="Next day">›</button>
         </div>
         <div class="today-link" id="todayLink" role="button" tabindex="0">today</div>
@@ -129,8 +132,6 @@
                     <p>Other places to play with Moon phases and the night
                     sky:</p>
                     <ul>
-                        <li><a href="https://breadbutterjam.github.io/timepusdi/moon/moon-phase-interactive/index.html" target="_blank" rel="noopener">Moon Phase Interactive</a>
-                        Explore the moon's phase and illumination angle with a live, interactive 3D model of the Sun-Earth-Moon system.</li>
                         <li><a href="https://svs.gsfc.nasa.gov/gallery/moonphase/" target="_blank" rel="noopener">NASA SVS — Moon Phase and Libration</a>
                         — the yearly Dial-A-Moon animation this app's photos
                         come from, browsable hour by hour.</li>
@@ -157,7 +158,10 @@
     <div class="detail-header">
         <div class="nav-row">
             <button class="nav-btn" id="detailPrevBtn" aria-label="Previous day">‹</button>
-            <div class="till-line" id="detailDateLine"></div>
+            <div class="date-field" id="detailDateField">
+                <div class="till-line" id="detailDateLine"></div>
+                <input type="date" class="date-picker-input" id="datePickerDetail" aria-label="Choose a date">
+            </div>
             <button class="nav-btn" id="detailNextBtn" aria-label="Next day">›</button>
         </div>
         <div class="today-link" id="detailTodayLink" role="button" tabindex="0">today</div>

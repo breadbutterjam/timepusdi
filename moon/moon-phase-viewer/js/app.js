@@ -77,6 +77,21 @@ function formatGregorianIST(date) {
     return `${map.weekday}, ${map.day}-${map.month}-${map.year}`;
 }
 
+// "2026-09-24" — the exact string format <input type="date"> uses,
+// so this doubles as both the display-sync value and (reversed, see
+// parseISTDateInputValue) the read path when the user picks a date.
+function toISTDateInputValue(date) {
+    return new Intl.DateTimeFormat('en-CA', { timeZone: IST_TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+
+// Reads an <input type="date"> value ("YYYY-MM-DD", no timezone of
+// its own) as an IST calendar date, returning that day's IST-midnight
+// UTC instant — consistent with istMidnightUtcMs() everywhere else.
+function parseISTDateInputValue(value) {
+    const [y, m, d] = value.split('-').map(Number);
+    return Date.UTC(y, m - 1, d, 0, 0, 0) - 5.5 * 3600000;
+}
+
 // "Wed 07-Oct-2026" — used to disambiguate which day a clock time
 // belongs to (a tithi ending "12:43am" could be today or tomorrow).
 function formatCompactDateIST(date) {
@@ -178,16 +193,16 @@ function phaseNameForWindow(windowStartMs, windowEndMs, midInstant) {
 const ORDERED_PHASE_SLUGS = [
     'new',
     'waxing-crescent-1', 'waxing-crescent-2', 'waxing-crescent-3',
-    'waxing-crescent-4', 
+    'waxing-crescent-4', 'waxing-crescent-5', 'waxing-crescent-6',
     'first-quarter',
     'waxing-gibbous-1', 'waxing-gibbous-2', 'waxing-gibbous-3',
-    'waxing-gibbous-4', 
+    'waxing-gibbous-4', 'waxing-gibbous-5', 'waxing-gibbous-6',
     'full',
     'waning-gibbous-1', 'waning-gibbous-2', 'waning-gibbous-3',
-    'waning-gibbous-4', 
+    'waning-gibbous-4', 'waning-gibbous-5', 'waning-gibbous-6',
     'last-quarter',
     'waning-crescent-1', 'waning-crescent-2', 'waning-crescent-3',
-    'waning-crescent-4'
+    'waning-crescent-4', 'waning-crescent-5', 'waning-crescent-6'
 ];
 function localPhaseImagePath(elong) {
     const fraction = elong / 360;
@@ -363,6 +378,7 @@ async function renderAll() {
     document.getElementById('gujaratiDate').textContent = label.full;
     document.getElementById('phaseLine').textContent = phaseName;
     document.getElementById('tillLine').textContent = gregText;
+    document.getElementById('datePickerMain').value = toISTDateInputValue(new Date(dayStart + 43200000));
     if (upcoming.nextFullMoon) document.getElementById('phase1Date').textContent = formatLongDateIST(upcoming.nextFullMoon);
     if (upcoming.nextNewMoon) document.getElementById('phase2Date').textContent = formatLongDateIST(upcoming.nextNewMoon);
 
@@ -375,6 +391,7 @@ async function renderAll() {
 
     // ---- detail view ----
     document.getElementById('detailDateLine').textContent = gregText;
+    document.getElementById('datePickerDetail').value = toISTDateInputValue(new Date(dayStart + 43200000));
     document.getElementById('detailPhaseHeading').textContent = phaseName;
     document.getElementById('detailSunriseLine').textContent = `at sunrise ${formatClockTimeIST(sunriseInstant)}`;
     document.getElementById('detailTithiHeading').textContent = label.full;
@@ -411,6 +428,14 @@ function jumpToDate(date) {
 
 function jumpToToday() {
     currentDayStartMs = istMidnightUtcMs(new Date());
+    renderAll();
+}
+
+// Used by the date-picker inputs — the value is already a resolved
+// IST-midnight instant (see parseISTDateInputValue), not a Date to
+// re-derive one from.
+function jumpToDayStart(dayStartMs) {
+    currentDayStartMs = dayStartMs;
     renderAll();
 }
 
@@ -461,6 +486,24 @@ function bindTodayLink(el) {
 }
 bindTodayLink(document.getElementById('todayLink'));
 bindTodayLink(document.getElementById('detailTodayLink'));
+
+/* ---------- date picker (tap the date to jump straight to one) ---------- */
+
+function bindDatePicker(fieldEl, inputEl) {
+    inputEl.addEventListener('change', () => {
+        if (!inputEl.value) return;
+        jumpToDayStart(parseISTDateInputValue(inputEl.value));
+    });
+    // The transparent input already opens its own picker on click/tap
+    // in every browser that supports <input type="date">; this just
+    // gives Chromium browsers a slightly snappier response when the
+    // click lands on the wrapper rather than precisely on the input.
+    fieldEl.addEventListener('click', () => {
+        try { inputEl.showPicker(); } catch (e) { /* unsupported — native click handling still works */ }
+    });
+}
+bindDatePicker(document.getElementById('mainDateField'), document.getElementById('datePickerMain'));
+bindDatePicker(document.getElementById('detailDateField'), document.getElementById('datePickerDetail'));
 
 /* ---------- help / info overlay ---------- */
 
