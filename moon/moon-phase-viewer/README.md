@@ -132,10 +132,22 @@ not a different one per screen.
 ## Help / info overlay
 
 The ⓘ icon in the bottom-right corner of the main screen opens a
-full-screen overlay with three collapsible sections: **How this
-works** (a plain-language explanation of the calculation and the two
-tithi-selection modes), **Sources** (what the astronomy, sunrise, and
-Moon-photo data are actually based on), and **Explore more** (links
-out to a few other real moon-phase tools). All copy lives directly in
-`index.html` inside `#helpView` — it's static content, not generated,
-so edit it there.
+full-screen overlay with four collapsible sections: **Quick tips**
+(the same two orientation points as the first-run splash, plus a
+button to re-show it), **How this works** (a plain-language
+explanation of the calculation and the two tithi-selection modes),
+**Sources** (what the astronomy, sunrise, and Moon-photo data are
+actually based on), and **Explore more** (links out to a few other
+real moon-phase tools). All copy lives directly in `index.html` inside
+`#helpView` — it's static content, not generated, so edit it there.
+
+## First-run splash
+
+A one-time overlay (`#splashView`) explains the two non-obvious
+interactions — tapping the tithi name opens the detail view, tapping
+the date opens a date picker — the first time the app loads. Checking
+"Don't show this again" before dismissing it sets a `localStorage`
+flag (`moonPhaseViewer.hideSplash`) so it won't auto-show on future
+loads; it stays reachable anytime via the "Show welcome screen again"
+button in the info overlay's Quick tips section, which never touches
+that stored flag itself — only the checkbox does.

@@ -54,6 +54,7 @@ const DAY_MS = 86400000;
 const LOCATION = { lat: 19.0760, lng: 72.8777 };
 
 const TITHI_MODE_KEY = 'moonPhaseViewer.tithiMode';
+const SPLASH_HIDE_KEY = 'moonPhaseViewer.hideSplash';
 
 /* ---------- IST-aware date/time helpers ---------- */
 
@@ -461,6 +462,10 @@ function closeSettings() {
 /* ---------- boot ---------- */
 
 document.getElementById('moonWrap').addEventListener('click', openDetailView);
+document.getElementById('gujaratiDate').addEventListener('click', openDetailView);
+document.getElementById('gujaratiDate').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetailView(); }
+});
 document.getElementById('detailClose').addEventListener('click', closeDetailView);
 document.getElementById('detailSettingsBtn').addEventListener('click', openSettings);
 document.getElementById('settingsDoneBtn').addEventListener('click', closeSettings);
@@ -528,5 +533,32 @@ document.querySelectorAll('input[name="tithiMode"]').forEach(radio => {
         renderAll();
     });
 });
+
+/* ---------- first-run splash ---------- */
+
+function shouldShowSplashOnBoot() {
+    try { return localStorage.getItem(SPLASH_HIDE_KEY) !== 'true'; } catch (e) { return true; }
+}
+function openSplash() {
+    document.getElementById('splashView').classList.add('active');
+}
+function closeSplash() {
+    const dontShow = document.getElementById('splashDontShow').checked;
+    if (dontShow) {
+        try { localStorage.setItem(SPLASH_HIDE_KEY, 'true'); } catch (e) { /* ignore */ }
+    }
+    document.getElementById('splashView').classList.remove('active');
+}
+document.getElementById('splashDoneBtn').addEventListener('click', closeSplash);
+
+// Reachable on demand from the info overlay's "Quick tips" section —
+// showing it again never touches the stored "don't show again" flag,
+// only actually checking the box and pressing "Got it" does.
+document.getElementById('showSplashAgainBtn').addEventListener('click', () => {
+    document.getElementById('splashDontShow').checked = false;
+    openSplash();
+});
+
+if (shouldShowSplashOnBoot()) openSplash();
 
 TithiEngine.init(DATA_URL).finally(() => renderAll());

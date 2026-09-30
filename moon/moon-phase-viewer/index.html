@@ -9,11 +9,34 @@
 </head>
 <body>
 
+<!-- First-run splash: quick orientation, shown once unless dismissed
+     with "don't show again" (localStorage). Also reachable on demand
+     from the info overlay's "Quick tips" section. -->
+<div class="splash-view" id="splashView">
+    <div class="splash-content">
+        <div class="splash-title">Moon Phases</div>
+
+        <div class="splash-tip">
+            <span class="splash-tip-icon">&#9790;</span>
+            <span class="splash-tip-text">Tap the <strong>tithi name</strong> to open the detail view — sunrise time, exact tithi timings, and settings.</span>
+        </div>
+        <div class="splash-tip">
+            <span class="splash-tip-icon">&#128197;</span>
+            <span class="splash-tip-text">Tap the <strong>date</strong> to open a date picker and jump straight to any day.</span>
+        </div>
+
+        <label class="splash-checkbox">
+            <input type="checkbox" id="splashDontShow">
+            <span>Don't show this again</span>
+        </label>
+        <button class="splash-done" id="splashDoneBtn">Got it</button>
+    </div>
+</div>
+
 <div class="card">
 
     <div class="top-text">
-        <div class="gujarati-date" id="gujaratiDate">Loading…</div>
-        <div class="phase-line" id="phaseLine">&nbsp;</div>
+        <div class="today-link" id="todayLink" role="button" tabindex="0">today</div>
         <div class="nav-row">
             <button class="nav-btn" id="prevDayBtn" aria-label="Previous day">‹</button>
             <div class="date-field" id="mainDateField">
@@ -22,7 +45,8 @@
             </div>
             <button class="nav-btn" id="nextDayBtn" aria-label="Next day">›</button>
         </div>
-        <div class="today-link" id="todayLink" role="button" tabindex="0">today</div>
+        <div class="gujarati-date" id="gujaratiDate" role="button" tabindex="0">Loading…</div>
+        <div class="phase-line" id="phaseLine">&nbsp;</div>
     </div>
 
     <div class="moon-wrap" id="moonWrap">
@@ -51,6 +75,25 @@
     <button class="detail-close" id="helpClose" aria-label="Close">&times;</button>
     <div class="help-content">
         <div class="help-title">About this Moon Phase Viewer</div>
+
+        <div class="accordion">
+            <button class="accordion-header" aria-expanded="false">
+                Quick tips
+                <span class="accordion-icon">+</span>
+            </button>
+            <div class="accordion-body">
+                <div class="accordion-body-inner">
+                    <ul>
+                        <li>Tap the <strong>tithi name</strong> to open the
+                        detail view — sunrise time, exact tithi timings, and
+                        settings.</li>
+                        <li>Tap the <strong>date</strong> to open a date
+                        picker and jump straight to any day.</li>
+                    </ul>
+                    <button class="show-splash-btn" id="showSplashAgainBtn">Show welcome screen again</button>
+                </div>
+            </div>
+        </div>
 
         <div class="accordion">
             <button class="accordion-header" aria-expanded="false">
@@ -156,6 +199,7 @@
     <button class="detail-settings" id="detailSettingsBtn" aria-label="Settings">&#9881;</button>
 
     <div class="detail-header">
+        <div class="today-link" id="detailTodayLink" role="button" tabindex="0">today</div>
         <div class="nav-row">
             <button class="nav-btn" id="detailPrevBtn" aria-label="Previous day">‹</button>
             <div class="date-field" id="detailDateField">
@@ -164,12 +208,11 @@
             </div>
             <button class="nav-btn" id="detailNextBtn" aria-label="Next day">›</button>
         </div>
-        <div class="today-link" id="detailTodayLink" role="button" tabindex="0">today</div>
-        <div class="detail-heading" id="detailPhaseHeading">Loading…</div>
-        <div class="till-line" id="detailSunriseLine"></div>
         <div class="detail-heading" id="detailTithiHeading"></div>
-        <div class="till-line" id="detailTillLine1"></div>
-        <div class="till-line" id="detailTillLine2"></div>
+        <div class="till-line detail-tight" id="detailSunriseLine"></div>
+        <div class="till-line detail-tight" id="detailTillLine1"></div>
+        <div class="till-line detail-tight" id="detailTillLine2"></div>
+        <div class="detail-heading" id="detailPhaseHeading">Loading…</div>
     </div>
 
     <div class="detail-photo-wrap">
