@@ -56,6 +56,16 @@ const LOCATION = { lat: 19.0760, lng: 72.8777 };
 const TITHI_MODE_KEY = 'moonPhaseViewer.tithiMode';
 const SPLASH_HIDE_KEY = 'moonPhaseViewer.hideSplash';
 
+// Background photo prefetch: a bounded sliding window around whatever
+// day is currently shown, not an unbounded chain. Every render call
+// re-anchors this window on the current day, so navigating slides it
+// rather than growing it — the edge that scrolls into view gets
+// queued, everything already fetched is skipped (see
+// prefetchedDayKeys), and nothing beyond these bounds is ever touched
+// until the user actually navigates there.
+const PREFETCH_DAYS_BACK = 3;
+const PREFETCH_DAYS_FORWARD = 5;
+
 /* ---------- IST-aware date/time helpers ---------- */
 
 function istMidnightUtcMs(refDate) {
@@ -277,24 +287,59 @@ const CACHE_PREFIX = 'moonImg:';
 function readCache(key) {
     if (imageCache[key]) return imageCache[key];
     try {
-        const stored = sessionStorage.getItem(CACHE_PREFIX + key);
+        // localStorage (not sessionStorage) so the URL cache survives
+        // across reloads/visits too, not just this tab session.
+        const stored = localStorage.getItem(CACHE_PREFIX + key);
         if (stored) { imageCache[key] = stored; return stored; }
-    } catch (e) { /* sessionStorage unavailable */ }
+    } catch (e) { /* localStorage unavailable */ }
     return null;
 }
 function writeCache(key, url) {
     imageCache[key] = url;
-    try { sessionStorage.setItem(CACHE_PREFIX + key, url); } catch (e) { /* ignore */ }
+    try { localStorage.setItem(CACHE_PREFIX + key, url); } catch (e) { /* ignore */ }
 }
-async function fetchMoonImageUrl(date) {
+// `lowPriority` is set for background prefetch calls (see below) so
+// they never compete with the fetch for whatever day the user is
+// actually looking at right now.
+// The underlying NASA dataset the proxy serves from turns out to be a
+// single real year's worth of hourly renders — a date outside that
+// year silently clamps to the nearest edge frame instead of erroring
+// (confirmed: requesting 2027-01-27 returned frame 8760 = the very
+// last hour of 2026, phase 38.23%, instead of that date's real ~0%
+// new-moon phase). Rather than hardcoding which year(s) are safe — a
+// boundary this app can't independently confirm — every response is
+// cross-checked against our own independently-computed illumination,
+// using the `phase` field the proxy conveniently already returns. A
+// wildly different value means the photo doesn't match the requested
+// date, whatever the underlying reason, so it's rejected and the
+// caller falls back to the CSS-drawn crescent (always phase-accurate,
+// just not a real photo) instead of silently showing the wrong Moon.
+const PHOTO_PHASE_TOLERANCE_PERCENT = 10;
+
+async function fetchMoonImageUrl(date, { lowPriority = false } = {}) {
     const key = date.toISOString().slice(0, 13); // cache per hour
     const cached = readCache(key);
     if (cached) return cached;
     try {
-        const res = await fetch(`${MOON_IMAGE_PROXY}?date=${date.toISOString()}`);
+        const res = await fetch(`${MOON_IMAGE_PROXY}?date=${date.toISOString()}`, lowPriority ? { priority: 'low' } : {});
         if (res.ok) {
             const data = await res.json();
-            if (data && data.image) { writeCache(key, data.image); return data.image; }
+            if (data && data.image) {
+                if (typeof data.phase === 'number') {
+                    const expected = MoonEphemeris.illuminationFraction(MoonEphemeris.elongationDeg(date)) * 100;
+                    const diff = Math.abs(data.phase - expected);
+                    if (diff > PHOTO_PHASE_TOLERANCE_PERCENT) {
+                        console.warn(
+                            `Moon photo proxy returned a mismatched phase for ${date.toISOString()} ` +
+                            `(expected ~${expected.toFixed(1)}%, got ${data.phase}% — proxy's own reported ` +
+                            `date was "${data.date}"). Discarding it in favour of the CSS-drawn crescent.`
+                        );
+                        return null;
+                    }
+                }
+                writeCache(key, data.image);
+                return data.image;
+            }
         }
     } catch (e) { /* fall through to CSS moon */ }
     return null;
@@ -348,24 +393,32 @@ function loadMoonPhoto(date, elong, targets, token, tokenGetter) {
 
 /* ---------- unified render (main screen + detail view) ---------- */
 
+// Everything needed to display (or prefetch) a given day: which tithi
+// represents it (mode-aware), and the representative instant used for
+// the phase name + photo. Shared by renderAll() and the background
+// prefetcher below so the two can never disagree about what a given
+// day actually looks like.
+function computeDayDisplay(dayStartMs) {
+    const dayEnd = dayStartMs + DAY_MS;
+    const sunriseInstant = getSunriseInstant(dayStartMs);
+    const mainTithiInfo = getMainTithiForDay(dayStartMs, dayEnd, tithiMode, sunriseInstant);
+    const overlapStart = Math.max(mainTithiInfo.start.getTime(), dayStartMs);
+    const overlapEnd = mainTithiInfo.nextStart ? Math.min(mainTithiInfo.nextStart.getTime(), dayEnd) : dayEnd;
+    const representativeInstant = new Date((overlapStart + overlapEnd) / 2);
+    return { dayStart: dayStartMs, dayEnd, sunriseInstant, mainTithiInfo, representativeInstant };
+}
+
 async function renderAll() {
     const token = ++renderToken;
     const dayStart = currentDayStartMs;
-    const dayEnd = dayStart + DAY_MS;
 
-    const sunriseInstant = getSunriseInstant(dayStart);
-    const mainTithiInfo = getMainTithiForDay(dayStart, dayEnd, tithiMode, sunriseInstant);
+    const { dayEnd, sunriseInstant, mainTithiInfo, representativeInstant } = computeDayDisplay(dayStart);
     currentMainTithiInfo = mainTithiInfo;
 
     const monthName = monthNameFor(mainTithiInfo.start);
     const label = tithiLabel(mainTithiInfo.tithi, monthName);
     const gregText = formatGregorianIST(new Date(dayStart + 43200000));
 
-    // Representative instant: midpoint of however much of the shown
-    // tithi actually falls within today — used for phase name + photo.
-    const overlapStart = Math.max(mainTithiInfo.start.getTime(), dayStart);
-    const overlapEnd = mainTithiInfo.nextStart ? Math.min(mainTithiInfo.nextStart.getTime(), dayEnd) : dayEnd;
-    const representativeInstant = new Date((overlapStart + overlapEnd) / 2);
     const elong = MoonEphemeris.elongationDeg(representativeInstant);
     const phaseName = phaseNameForWindow(dayStart, dayEnd, representativeInstant);
 
@@ -411,6 +464,96 @@ async function renderAll() {
         ],
         token, () => renderToken
     );
+
+    // ---- background prefetch: nearby days + the two footer jump-targets ----
+    schedulePrefetchWindow(dayStart);
+    schedulePrefetchDates([upcoming.nextFullMoon, upcoming.nextNewMoon]);
+}
+
+/* ---------- background photo prefetch (bounded sliding window) ---------- */
+
+let prefetchQueue = [];
+let prefetchRunning = false;
+const prefetchedDayKeys = new Set();
+
+// Chrome/Android's Save-Data / connection-type signal. Not available
+// everywhere (no Safari/Firefox support as of writing) — treated as
+// "unknown, so don't assume it's fine to prefetch" only when present
+// and actually indicating a constrained connection; absence of the
+// API itself is not treated as a signal either way.
+function isConstrainedConnection() {
+    try {
+        const c = navigator.connection;
+        if (!c) return false;
+        return !!c.saveData || /^(slow-2g|2g)$/.test(c.effectiveType || '');
+    } catch (e) { return false; }
+}
+
+// Re-anchors the prefetch window on `centerDayStartMs`. Called on
+// every render, so navigating slides the window — newly-in-range days
+// get queued, everything already fetched (tracked in
+// prefetchedDayKeys) is skipped, and nothing outside
+// [-PREFETCH_DAYS_BACK, +PREFETCH_DAYS_FORWARD] is touched until the
+// user actually navigates there and this runs again with a new center.
+function schedulePrefetchWindow(centerDayStartMs) {
+    if (isConstrainedConnection()) return;
+    for (let i = -PREFETCH_DAYS_BACK; i <= PREFETCH_DAYS_FORWARD; i++) {
+        if (i === 0) continue; // today's own photo is already being loaded above
+        queuePrefetchDay(centerDayStartMs + i * DAY_MS);
+    }
+    runPrefetchQueue();
+}
+
+// The main screen's two clickable footer rows ("next full moon" / "next
+// new moon") are one tap away too, same as the sliding window's edges —
+// so they get the same treatment. Crucially, these targets change as
+// the user navigates (jumping to "next full moon" makes the date change
+// to the *following* one), and since this runs on every render with
+// whatever the freshly-recomputed dates are, each new target flows
+// through the same tracked queue automatically — nothing special
+// needed to "notice" the date changed, it's just a new dayStartMs key.
+function schedulePrefetchDates(dates) {
+    if (isConstrainedConnection()) return;
+    for (const date of dates) {
+        if (!date) continue;
+        queuePrefetchDay(istMidnightUtcMs(date));
+    }
+    runPrefetchQueue();
+}
+
+function queuePrefetchDay(dayStartMs) {
+    if (!prefetchedDayKeys.has(dayStartMs)) {
+        prefetchedDayKeys.add(dayStartMs);
+        prefetchQueue.push(dayStartMs);
+    }
+}
+
+function runPrefetchQueue() {
+    if (prefetchRunning || prefetchQueue.length === 0) return;
+    prefetchRunning = true;
+    const runNext = async () => {
+        const dayStartMs = prefetchQueue.shift();
+        if (dayStartMs !== undefined) await prefetchOneDay(dayStartMs);
+        prefetchRunning = false;
+        if (prefetchQueue.length > 0) runPrefetchQueue();
+    };
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(runNext, { timeout: 2000 });
+    } else {
+        setTimeout(runNext, 300);
+    }
+}
+
+async function prefetchOneDay(dayStartMs) {
+    try {
+        const { representativeInstant } = computeDayDisplay(dayStartMs);
+        const url = await fetchMoonImageUrl(representativeInstant, { lowPriority: true });
+        if (url) {
+            const img = new Image();
+            img.fetchPriority = 'low'; // no-op where unsupported
+            img.src = url; // warms the browser's own HTTP image cache
+        }
+    } catch (e) { /* best-effort background work; never surface errors for this */ }
 }
 
 function shiftDate(days) {

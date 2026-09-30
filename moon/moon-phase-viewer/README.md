@@ -151,3 +151,43 @@ flag (`moonPhaseViewer.hideSplash`) so it won't auto-show on future
 loads; it stays reachable anytime via the "Show welcome screen again"
 button in the info overlay's Quick tips section, which never touches
 that stored flag itself — only the checkbox does.
+
+## Moon photo phase validation
+
+The proxy's underlying NASA imagery turns out to be a single real
+year of hourly renders (2026, confirmed by a clamped response for a
+2027 date returning frame `8760` — exactly 24×365 — instead of an
+error). Rather than hardcode a year boundary, `fetchMoonImageUrl` in
+`js/app.js` cross-checks the `phase` percentage the proxy's response
+already includes against this app's own independently-computed
+illumination for that date. A response more than
+`PHOTO_PHASE_TOLERANCE_PERCENT` (10 percentage points) off gets
+discarded — logged to the console for debugging, not shown to the
+user — and the caller falls back to the CSS-drawn crescent, which is
+always phase-accurate even without a real photo. This self-corrects
+regardless of *why* a given date's photo is wrong (clamping, a dataset
+gap, anything else), rather than only covering the one boundary we
+happened to observe.
+
+## Background photo prefetch
+
+Once the current day's photo loads, `js/app.js` quietly prefetches a
+bounded window of nearby days in the background — `PREFETCH_DAYS_BACK`
+(3) and `PREFETCH_DAYS_FORWARD` (5), both easy to tune at the top of
+the file. It's a genuinely bounded window, not an unbounded chain:
+every render re-anchors it on the current day, so navigating *slides*
+the window (only the newly-exposed edge day gets fetched) rather than
+growing it, and nothing outside that range is touched until you
+actually navigate there. The two footer rows ("next full moon" / "next
+new moon") get the same treatment as one-tap-away targets — and since
+*those* target dates themselves change as you navigate (jumping to
+"next full moon" makes the next full moon a month later), each newly
+computed target flows through the same tracked queue on every render,
+so it just keeps quietly staying one step ahead. Fetches are issued at
+low priority (`fetch(..., {priority:'low'})` / `img.fetchPriority`,
+both no-ops on browsers that don't support them) so they never compete
+with whatever photo you're actually looking at, and the whole thing is
+skipped for anyone on Chrome/Android's Save-Data mode or a detected
+slow connection. The resolved photo URLs are cached in `localStorage`
+(upgraded from `sessionStorage`), so they also survive across reloads
+and later visits, not just the current tab session.
