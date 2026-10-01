@@ -79,13 +79,21 @@ you either way — but regenerating keeps every date on the fast path.
 
 ## Known limitations (by design, for now)
 
-- **Adhik maas (leap month) is not automated.** `js/app.js` hardcodes
-  12 month names and counts forward from one fixed anchor date. This
-  is correct until the *next* adhik maas occurs, after which month
-  names will drift by one until you either (a) manually bump the
-  anchor date past it (a 2-line change — see the comment above
-  `ANCHOR_MS` in `js/app.js`), or (b) a future version automates
-  detection. This was an explicit, deliberate scope cut for v1.
+- **Adhik maas (leap month) is a hand-maintained table, not
+  calculated.** `ADHIK_MAAS` in `js/app.js` lists each known
+  occurrence as `{year, month}` — `month` being a `MONTH_NAMES` index,
+  `year` the Gregorian/IST year the adhik month's own Sud Ekam falls
+  in. `buildMonthSequence()` walks every new moon in the loaded data
+  file outward from `ANCHOR_MS` in both directions once at startup,
+  correctly repeating an adhik month's index rather than advancing
+  past it — so month names stay correct for every adhik occurrence
+  *that's listed*, not just whichever one the anchor happens to sit
+  after (how this worked before). This needs roughly one new entry
+  every 2-3 years; add it as soon as the date's known. An entry
+  outside `data/tithi-data.json`'s generated range has no effect
+  until that range is widened (see "Keeping the data fresh" above) —
+  dates outside the range fall back to plain, non-adhik-aware modular
+  counting, same as every other out-of-range fallback in this app.
 - **Optional local placeholder images**: if you want the instant
   placeholder shown before the real NASA photo loads to look more
   like an actual moon (rather than the CSS-drawn crescent), drop

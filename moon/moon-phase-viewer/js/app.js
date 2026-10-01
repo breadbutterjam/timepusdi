@@ -23,6 +23,25 @@ const MONTH_NAMES = [
     "Ashwin", "Kartik", "Magshar", "Posh", "Maha", "Fagan"
 ];
 
+// Adhik maas (leap month) occurrences: each one is a real extra lunar
+// month inserted immediately BEFORE the regular occurrence of the
+// named month — e.g. {year:2026, month:2} means an "Adhik Jyeshta"
+// (index 2) appeared in 2026, directly preceding that year's regular
+// Jyeshta. `year` is the Gregorian/IST year the adhik month's own
+// Sud Ekam falls in. `month` is a MONTH_NAMES index (same convention
+// used everywhere else in this file).
+//
+// This needs ~1 new entry roughly every 2-3 years to stay correct —
+// add the next one as soon as it's known. Only entries that fall
+// within data/tithi-data.json's generated range (see README) actually
+// affect anything; see buildMonthSequence() below for how far that
+// currently reaches, and monthNameFor()'s fallback for what happens
+// outside it.
+const ADHIK_MAAS = [
+    { year: 2023, month: 4 }, // Adhik Shravan
+    { year: 2026, month: 2 }  // Adhik Jyeshta
+];
+
 const TITHI_NAMES = [
     "Ekam", "Beej", "Trij", "Choth", "Pancham",
     "Chhath", "Satam", "Aatham", "Nom", "Dasham",
@@ -31,16 +50,14 @@ const TITHI_NAMES = [
 const PURNIMA_AMAS = ["Purnima", "Amas"];
 
 // Anchor: a known Sud Ekam (tithi index 0) instant, and which of the
-// 12 month names it corresponds to. Everything else is counted from
-// here by the tithi engine. This exact timestamp is the real
-// generated Jyeshta Sud Ekam 2026 — see data/tithi-data.json.
-//
-// IMPORTANT: this must be set to a sud-ekam AFTER the most recent
-// adhik maas (leap month) and BEFORE the next one, or month names
-// will be off by one (see MONTH_NAMES comment above). As of writing,
-// the most recent adhik maas (Adhik Jyeshta) fell in May 2026, so
-// this anchor is deliberately the *regular* Jyeshta right after it —
-// not the earlier Chaitra, which would already be stale.
+// 12 month names it corresponds to — the one fixed point the whole
+// month sequence (see buildMonthSequence()) is built outward from in
+// both directions. This exact timestamp is the real generated
+// Jyeshta Sud Ekam 2026 — see data/tithi-data.json. Since adhik maas
+// is now handled by actually walking the sequence (rather than plain
+// modular counting), this no longer needs to sit on any particular
+// side of an adhik occurrence — any verified {instant, index} pair
+// works.
 const ANCHOR_MS = Date.parse('2026-06-15T02:55:04Z');
 const ANCHOR_MONTH_INDEX = 2; // Jyeshta
 
@@ -116,6 +133,10 @@ function formatLongDateIST(date) {
     return date.toLocaleDateString('en-US', { timeZone: IST_TZ, month: 'long', day: 'numeric', weekday: 'long' });
 }
 
+function istYearOf(date) {
+    return +new Intl.DateTimeFormat('en-CA', { timeZone: IST_TZ, year: 'numeric' }).format(date);
+}
+
 /* ---------- state ---------- */
 
 let currentDayStartMs = istMidnightUtcMs(new Date());
@@ -130,11 +151,99 @@ let currentMainTithiInfo = null; // the tithi shown for currentDayStartMs (see g
 let currentUpcoming = null; // { nextFullMoon, nextNewMoon } for currentDayStartMs — see renderAll
 let renderToken = 0;
 
+// Precomputed, adhik-maas-aware month sequence — one entry per new
+// moon in the loaded data file, built once by buildMonthSequence()
+// after TithiEngine finishes loading. See that function for how it's
+// built; monthNameFor() below is just a lookup against this.
+let monthSequence = []; // [{ms, index, isAdhik}, ...] sorted ascending
+
 /* ---------- misc helpers ---------- */
 
 function mod(n, m) { return ((n % m) + m) % m; }
 
+// Walks every new moon in the loaded data file outward from ANCHOR_MS
+// in both directions, assigning each one a month index and an adhik
+// flag per ADHIK_MAAS — so, unlike plain modular counting, an adhik
+// occurrence correctly repeats the following month's index instead of
+// silently shifting everything after it by one.
+//
+// The rule: an adhik month always takes the SAME index as the regular
+// month immediately after it, and does not itself advance the running
+// "last regular month" counter — only the regular occurrence does.
+// Walking forward, that means checking whether the next step's
+// candidate index matches a table entry for its own year before
+// accepting it as regular. Walking backward is the mirror image: from
+// a regular month, check whether the new moon immediately before it
+// is that same month's adhik twin; from an adhik month, the one
+// before it is always the plain previous regular month.
+function buildMonthSequence() {
+    const newMoonDates = TithiEngine.getNewMoonDates();
+    monthSequence = [];
+    if (newMoonDates.length === 0) return;
+
+    function adhikMatch(year, monthIndex) {
+        return ADHIK_MAAS.some(e => e.year === year && e.month === monthIndex);
+    }
+
+    let anchorPos = -1, bestDiff = Infinity;
+    for (let i = 0; i < newMoonDates.length; i++) {
+        const diff = Math.abs(newMoonDates[i].getTime() - ANCHOR_MS);
+        if (diff < bestDiff) { bestDiff = diff; anchorPos = i; }
+    }
+
+    const seq = new Array(newMoonDates.length);
+    seq[anchorPos] = { index: ANCHOR_MONTH_INDEX, isAdhik: false };
+
+    let regIdx = ANCHOR_MONTH_INDEX;
+    for (let i = anchorPos + 1; i < newMoonDates.length; i++) {
+        const year = istYearOf(newMoonDates[i]);
+        const candidate = mod(regIdx + 1, 12);
+        if (adhikMatch(year, candidate)) {
+            seq[i] = { index: candidate, isAdhik: true }; // regIdx stays — next step re-tries the same candidate
+        } else {
+            seq[i] = { index: candidate, isAdhik: false };
+            regIdx = candidate;
+        }
+    }
+
+    let state = { index: ANCHOR_MONTH_INDEX, isAdhik: false };
+    for (let i = anchorPos - 1; i >= 0; i--) {
+        if (state.isAdhik) {
+            seq[i] = { index: mod(state.index - 1, 12), isAdhik: false };
+        } else {
+            const year = istYearOf(newMoonDates[i]);
+            seq[i] = adhikMatch(year, state.index)
+                ? { index: state.index, isAdhik: true }
+                : { index: mod(state.index - 1, 12), isAdhik: false };
+        }
+        state = seq[i];
+    }
+
+    monthSequence = newMoonDates.map((d, i) => ({ ms: d.getTime(), index: seq[i].index, isAdhik: seq[i].isAdhik }));
+}
+
+// Last monthSequence entry at or before `ms`, or null if `ms` is
+// before the first entry.
+function monthSequenceEntryAt(ms) {
+    let lo = 0, hi = monthSequence.length - 1, ans = -1;
+    while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (monthSequence[mid].ms <= ms) { ans = mid; lo = mid + 1; } else { hi = mid - 1; }
+    }
+    return ans === -1 ? null : monthSequence[ans];
+}
+
 function monthNameFor(date) {
+    const range = TithiEngine.getDataRange();
+    const ms = date.getTime();
+    if (range && ms >= range.start && ms <= range.end && monthSequence.length > 0) {
+        const entry = monthSequenceEntryAt(ms);
+        if (entry) return entry.isAdhik ? `Adhik ${MONTH_NAMES[entry.index]}` : MONTH_NAMES[entry.index];
+    }
+    // Outside the generated data range (or sequence not built yet):
+    // plain modular counting, same as before adhik-maas support was
+    // added. Not adhik-aware — regenerate data/tithi-data.json with a
+    // wider range (see generator/) for full correctness further out.
     const offset = TithiEngine.getMonthOffset(date, ANCHOR_MS);
     return MONTH_NAMES[mod(ANCHOR_MONTH_INDEX + offset, 12)];
 }
@@ -704,4 +813,7 @@ document.getElementById('showSplashAgainBtn').addEventListener('click', () => {
 
 if (shouldShowSplashOnBoot()) openSplash();
 
-TithiEngine.init(DATA_URL).finally(() => renderAll());
+TithiEngine.init(DATA_URL).finally(() => {
+    buildMonthSequence();
+    renderAll();
+});

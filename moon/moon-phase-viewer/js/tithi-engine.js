@@ -190,11 +190,32 @@ window.TithiEngine = (function () {
         return Math.round(days / SYNODIC);
     }
 
+    // Every tithi===0 (new moon) instant in the loaded data range, in
+    // chronological order. Generic astronomy, not Gujarati-specific —
+    // callers needing calendar/leap-month logic (adhik maas) build on
+    // top of this rather than this engine knowing about any of that.
+    function getNewMoonDates() {
+        if (!sudEkamIndices) return [];
+        return sudEkamIndices.map(i => new Date(transitionMs[i]));
+    }
+
+    // {start, end} in ms of the loaded data file's actual coverage, or
+    // null if nothing is loaded. Lets a caller tell "genuinely outside
+    // the generated range" apart from "within range, just past the
+    // last new moon" — the two need different fallback handling for
+    // anything (like adhik maas) that's only precomputed in-range.
+    function getDataRange() {
+        if (!transitions || transitions.length === 0) return null;
+        return { start: dataRange.start, end: dataRange.end };
+    }
+
     return {
         init: init,
         getTithiInfo: getTithiInfo,
         getUpcoming: getUpcoming,
         getMonthOffset: getMonthOffset,
+        getNewMoonDates: getNewMoonDates,
+        getDataRange: getDataRange,
         isDataLoaded: () => !!transitions && transitions.length > 0
     };
 })();
