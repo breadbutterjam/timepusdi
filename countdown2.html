@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown</title>
+
+    <!-- ============================================================
+         STYLES
+         All look-and-feel lives here. Tweak the tokens in :root first.
+         ============================================================ -->
+    <style>
+        /* ---------- Design tokens ---------- */
+        :root {
+            /* Background */
+            --bg-image: url("ocean.jpg");
+            --bg-fallback: #0b3c5d;           /* shown if the image is missing */
+
+            /* Digital: big time readout */
+            --time-color: white;
+            --time-opacity: 0.5;
+            --time-font: monospace;
+            --time-max-size: 12.7em;          /* same as Pomo */
+            --time-fit-width: 92vw;           /* time never grows wider than this */
+
+            /* Small caption (label + target date) */
+            --caption-color: white;
+            --caption-opacity: 1;
+            --caption-size: 1em;
+
+            /* "set new countdown" link */
+            --link-color: white;
+            --link-opacity: 0.7;
+
+            /* Setup panel */
+            --pane-bg: rgba(255, 255, 255, 0.3);
+            --pane-color: black;
+            --pane-width: 220px;
+            --pane-radius: 0.5em;
+            --error-color: #7a0000;
+
+            /* Analog: small digital readout above the dial */
+            --analog-time-color: black;
+            --analog-time-opacity: 1;
+            --analog-time-size: 2.75em;
+            --analog-time-font: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            --analog-time-weight: 300;
+            --analog-time-halo: 0 0 6px rgba(255, 255, 255, 0.9);
+
+            /* Analog: dial */
+            --analog-size: min(440px, 86vw, 58vh);
+            --analog-readout-gap: 14px;       /* space between the readout and the dial */
+            --analog-face-fill: rgba(255, 255, 255, 0.8);
+            --analog-hand-color: black;       /* hour + minute hands */
+            --analog-hand-width: 8;           /* in dial units (the dial is 450 wide) */
+            --analog-second-color: #FFCC51;
+            --analog-hub-fill: #FFCC51;
+            --analog-hub-stroke: black;
+            --analog-hub-stroke-width: 5;
+            --analog-ghost-minute-opacity: 0.4;   /* hands of units that are not in play yet sit dimmed at 12 */
+            --analog-ghost-hour-opacity: 0.3;
+        }
+
+        /* ---------- Page ---------- */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+
+        .bgImage {
+            background-color: var(--bg-fallback);
+            background-image: var(--bg-image);
+            background-size: cover;
+            background-position: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Two screens: the page shows one at a time via body[data-screen] */
+        body[data-screen="setup"]     .timeWrap { display: none; }
+        body[data-screen="countdown"] .setup    { display: none; }
+
+        /* Utilities */
+        .gayab     { display: none !important; }        /* removed from layout */
+        .invisible { visibility: hidden; }              /* hidden but keeps its space */
+
+        /* ---------- Setup screen ---------- */
+        .setup {
+            position: absolute;
+            width: var(--pane-width);
+            background-color: var(--pane-bg);
+            color: var(--pane-color);
+            border-radius: var(--pane-radius);
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        /* The panel holds two views: the date picker and the settings */
+        .view {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .field {
+            font-size: 0.8em;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .field input {
+            font-size: 1.1em;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .linkRow {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .errorMsg {
+            font-size: 0.75em;
+            color: var(--error-color);
+            min-height: 1em;
+        }
+
+        /* Text-style button, used for the small links */
+        .linkBtn {
+            background: none;
+            border: none;
+            padding: 0;
+            font: inherit;
+            color: inherit;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .linkBtn:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; }
+
+        .setup .linkBtn { font-size: 0.8em; }
+        .setup #settingsBtn { margin-left: auto; }      /* stays on the right even when "add label" is gone */
+
+        /* Settings view */
+        .viewTitle { font-size: 0.8em; }
+
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        /* ---------- Countdown screen ---------- */
+        .timeWrap {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2em;
+            color: var(--time-color);
+            pointer-events: none;
+        }
+
+        .readout {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2em;
+        }
+
+        .timeWrap .linkBtn {
+            color: var(--link-color);
+            opacity: var(--link-opacity);
+            pointer-events: auto;
+        }
+
+        .caption {
+            color: var(--caption-color);
+            font-size: var(--caption-size);
+            opacity: var(--caption-opacity);
+            text-align: center;
+            padding: 0 1em;
+        }
+
+        .timeCont {
+            /* --chars is set from JS (length of the text, e.g. "12:04:33:21" = 11).
+               Monospace glyphs are ~0.6em wide, so this keeps the line inside the screen. */
+            font-size: min(var(--time-max-size), calc(var(--time-fit-width) / (var(--chars, 5) * 0.6)));
+            font-family: var(--time-font);
+            opacity: var(--time-opacity);
+            white-space: nowrap;
+        }
+
+        #endofTimer { display: none; }
+
+        /* ---------- Display: digital vs analog ---------- */
+        .dial { display: none; }
+        body[data-display="analog"] .dial { display: block; }
+
+        /* Analog layout: the dial sits dead centre, the readout stacks directly above it.
+           (Selector is more specific than the setup-screen rule so it never un-hides the countdown early.) */
+        body[data-screen="countdown"][data-display="analog"] .timeWrap {
+            inset: 0;
+            display: grid;
+            grid-template-rows: 1fr auto 1fr;
+            justify-items: center;
+        }
+
+        body[data-display="analog"] .readout {
+            align-self: end;
+            padding-bottom: var(--analog-readout-gap);
+        }
+
+        body[data-display="analog"] .timeCont {
+            font-family: var(--analog-time-font);
+            font-size: var(--analog-time-size);
+            font-weight: var(--analog-time-weight);
+            font-variant-numeric: tabular-nums;
+            color: var(--analog-time-color);
+            opacity: var(--analog-time-opacity);
+            text-shadow: var(--analog-time-halo);
+            line-height: 1.1;
+        }
+
+        /* ---------- Analog dial ---------- */
+        .dial {
+            grid-row: 2;
+            width: var(--analog-size);
+            height: var(--analog-size);
+        }
+
+        .dialFace { fill: var(--analog-face-fill); }
+
+        .hand line {
+            stroke: var(--analog-hand-color);
+            stroke-width: var(--analog-hand-width);
+            stroke-linecap: round;
+        }
+
+        .hand--second line { stroke: var(--analog-second-color); }
+
+        .hand--minute.ghost { opacity: var(--analog-ghost-minute-opacity); }
+        .hand--hour.ghost   { opacity: var(--analog-ghost-hour-opacity); }
+
+        .hub {
+            fill: var(--analog-hub-fill);
+            stroke: var(--analog-hub-stroke);
+            stroke-width: var(--analog-hub-stroke-width);
+        }
+    </style>
+</head>
+
+<!-- ============================================================
+     MARKUP
+     Structure only. No styling decisions here.
+     ============================================================ -->
+<body data-screen="setup" data-display="digital" onload="init();">
+
+    <div class="bgImage"></div>
+
+    <!-- Screen 1: pick the date + time (and the display style under "settings") -->
+    <div class="setup">
+
+        <div class="view" id="mainView">
+            <label class="field">
+                Count down to
+                <input type="datetime-local" id="targetInput">
+            </label>
+            <label class="field gayab" id="labelField">
+                Label
+                <input type="text" id="labelInput" maxlength="40" placeholder="e.g. Holiday">
+            </label>
+            <div class="linkRow">
+                <button type="button" class="linkBtn" id="addLabelBtn">add label</button>
+                <button type="button" class="linkBtn" id="settingsBtn">settings</button>
+            </div>
+            <div class="errorMsg" id="errorMsg" role="alert"></div>
+            <input type="button" id="startBtn" value="Start countdown">
+        </div>
+
+        <div class="view gayab" id="settingsView">
+            <div class="viewTitle">Display</div>
+            <label class="option"><input type="radio" name="display" value="digital" checked> Digital</label>
+            <label class="option"><input type="radio" name="display" value="analog"> Analog</label>
+            <input type="button" id="settingsDoneBtn" value="Done">
+        </div>
+
+    </div>
+
+    <!-- Screen 2: the running / finished countdown -->
+    <div class="timeWrap">
+        <div class="readout">
+            <button type="button" class="linkBtn invisible" id="newCountdownLink">set new countdown</button>
+            <div class="caption"></div>
+            <div class="timeCont"></div>
+        </div>
+
+        <!-- Analog dial (only visible when Display = Analog). Drawn pointing at 12; JS rotates each hand.
+             Centre is 225,225. Hands are lengths/widths taken from the Figma frames.
+             Not in the frames yet: tick marks, numerals, progress ring. -->
+        <svg class="dial" viewBox="0 0 450 450" role="img" aria-label="Analog countdown dial">
+            <circle class="dialFace" cx="225" cy="225" r="222"/>
+            <g class="hand hand--hour"   id="handHour">  <line x1="225" y1="228" x2="225" y2="110"/></g>
+            <g class="hand hand--minute" id="handMinute"><line x1="225" y1="230" x2="225" y2="15"/></g>
+            <circle class="hub" cx="225" cy="225" r="12.5"/>
+            <g class="hand hand--second" id="handSecond"><line x1="225" y1="259" x2="225" y2="8"/></g>
+        </svg>
+    </div>
+
+    <audio id="endofTimer" src="ding.mp3" preload="auto"></audio>
+
+    <!-- ============================================================
+         SCRIPT
+         ============================================================ -->
+    <script>
+        /* ---------- Config: easy-to-swap values ---------- */
+        const CONFIG = {
+            tickMs: 250,                      // how often to re-check the clock
+            hideEmptyLeadingUnits: true,      // drop days, then hours, once they reach zero (12:04:33 -> 04:33)
+            defaultDisplay: "digital",        // "digital" | "analog"
+            displayStorageKey: "countdown.display.v1",
+            sweepHands: true                  // analog: hands glide (true) or jump once a second (false)
+        };
+
+        /* ---------- State ---------- */
+        let targetDate = null;                // Date we are counting down to
+        let targetLabel = "";
+        let intervalId = null;
+        let rafId = null;
+        let hasFinished = false;
+        let lastText = "";
+
+        /* ---------- Element refs ---------- */
+        const timeCont        = document.querySelector(".timeCont");
+        const captionEl       = document.querySelector(".caption");
+        const mainView        = document.querySelector("#mainView");
+        const settingsView    = document.querySelector("#settingsView");
+        const targetInput     = document.querySelector("#targetInput");
+        const labelInput      = document.querySelector("#labelInput");
+        const labelField      = document.querySelector("#labelField");
+        const addLabelBtn     = document.querySelector("#addLabelBtn");
+        const settingsBtn     = document.querySelector("#settingsBtn");
+        const settingsDoneBtn = document.querySelector("#settingsDoneBtn");
+        const displayRadios   = document.querySelectorAll('input[name="display"]');
+        const errorMsg        = document.querySelector("#errorMsg");
+        const startBtn        = document.querySelector("#startBtn");
+        const newCountdownBtn = document.querySelector("#newCountdownLink");
+        const endAudio        = document.querySelector("#endofTimer");
+        const handHour        = document.querySelector("#handHour");
+        const handMinute      = document.querySelector("#handMinute");
+        const handSecond      = document.querySelector("#handSecond");
+
+        /* ---------- Helpers ---------- */
+        const pad = (n) => n.toString().padStart(2, "0");
+
+        // Date -> "YYYY-MM-DDTHH:MM" in LOCAL time, which is what <input type=datetime-local> expects
+        function toInputValue(d) {
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        // The start of the next hour (e.g. 14:37 -> 15:00)
+        function nextHour() {
+            const d = new Date();
+            d.setHours(d.getHours() + 1, 0, 0, 0);
+            return d;
+        }
+
+        function formatCaption(date, label) {
+            const when = date.toLocaleString(undefined, {
+                weekday: "short", day: "numeric", month: "short", year: "numeric",
+                hour: "2-digit", minute: "2-digit"
+            });
+            return label ? `${label} · ${when}` : when;
+        }
+
+        // Analog hands glide unless the config says otherwise or the person prefers reduced motion
+        function useSweep() {
+            return CONFIG.sweepHands && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        }
+
+        /* ---------- Init ---------- */
+        function init() {
+            addEventListeners();
+            setDisplay(loadDisplay());
+            showSetup();                      // nothing starts until the user presses "Start countdown"
+        }
+
+        function addEventListeners() {
+            addLabelBtn.addEventListener("click", revealLabel);
+            startBtn.addEventListener("click", startCountdown);
+            newCountdownBtn.addEventListener("click", showSetup);
+
+            settingsBtn.addEventListener("click", openSettings);
+            settingsDoneBtn.addEventListener("click", closeSettings);
+            displayRadios.forEach((radio) => {
+                radio.addEventListener("change", () => setDisplay(radio.value));
+            });
+
+            // Enter in either field starts the countdown
+            [targetInput, labelInput].forEach((el) => {
+                el.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") startCountdown();
+                });
+            });
+
+            // Re-check immediately when the tab becomes visible again
+            document.addEventListener("visibilitychange", () => {
+                if (!document.hidden && targetDate && !hasFinished) tick();
+            });
+        }
+
+        /* ---------- Display preference (digital / analog) ---------- */
+        function loadDisplay() {
+            try {
+                const saved = localStorage.getItem(CONFIG.displayStorageKey);
+                if (saved === "digital" || saved === "analog") return saved;
+            } catch (e) { /* storage unavailable: fall back to default */ }
+            return CONFIG.defaultDisplay;
+        }
+
+        function setDisplay(mode) {
+            document.body.dataset.display = mode;
+            displayRadios.forEach((radio) => { radio.checked = (radio.value === mode); });
+            try { localStorage.setItem(CONFIG.displayStorageKey, mode); } catch (e) { /* ignore */ }
+
+            if (targetDate && !hasFinished) {      // switched while a countdown is running
+                renderDial();
+                startDialLoop();
+            }
+        }
+
+        /* ---------- Screen 1: setup ---------- */
+        function showSetup() {
+            if (intervalId) clearInterval(intervalId);
+            intervalId = null;
+            stopDialLoop();
+            targetDate = null;
+            hasFinished = false;
+
+            targetInput.value = toInputValue(nextHour());
+            labelInput.value = "";
+            labelField.classList.add("gayab");
+            addLabelBtn.classList.remove("gayab");
+            errorMsg.textContent = "";
+            newCountdownBtn.classList.add("invisible");
+            closeSettings();
+            document.title = "Countdown";
+
+            document.body.dataset.screen = "setup";
+        }
+
+        function revealLabel() {
+            labelField.classList.remove("gayab");
+            addLabelBtn.classList.add("gayab");
+            labelInput.focus();
+        }
+
+        function openSettings() {
+            mainView.classList.add("gayab");
+            settingsView.classList.remove("gayab");
+        }
+
+        function closeSettings() {
+            settingsView.classList.add("gayab");
+            mainView.classList.remove("gayab");
+        }
+
+        /* ---------- Screen 2: countdown ---------- */
+        function startCountdown() {
+            const picked = new Date(targetInput.value);   // datetime-local is parsed as local time
+
+            if (!targetInput.value || isNaN(picked)) {
+                errorMsg.textContent = "Pick a date and time.";
+                return;
+            }
+            if (picked.getTime() <= Date.now()) {
+                errorMsg.textContent = "Pick a time in the future.";
+                return;
+            }
+
+            targetDate = picked;
+            targetLabel = labelInput.value.trim();
+            hasFinished = false;
+            lastText = "";
+
+            captionEl.textContent = formatCaption(targetDate, targetLabel);
+            newCountdownBtn.classList.add("invisible");
+            document.body.dataset.screen = "countdown";
+
+            tick();
+            intervalId = setInterval(tick, CONFIG.tickMs);
+            startDialLoop();
+        }
+
+        // Always derive the remaining time from the clock (never by decrementing),
+        // so it stays correct when the tab sleeps or the laptop is closed.
+        function tick() {
+            const remainingSec = Math.max(0, Math.ceil((targetDate.getTime() - Date.now()) / 1000));
+            const text = formatRemaining(remainingSec);
+
+            if (text !== lastText) {
+                lastText = text;
+                timeCont.textContent = text;
+                timeCont.style.setProperty("--chars", text.length);
+                document.title = text + (targetLabel ? " · " + targetLabel : "");
+            }
+
+            renderDial();
+
+            if (remainingSec === 0 && !hasFinished) {
+                finish();
+            }
+        }
+
+        // Splits a number of seconds into units and says which units are "in play".
+        // The digital text and the analog hands both use this, so they always agree.
+        function splitUnits(totalSec) {
+            const days    = Math.floor(totalSec / 86400);
+            const hours   = Math.floor((totalSec % 86400) / 3600);
+            const minutes = Math.floor((totalSec % 3600) / 60);
+            const seconds = totalSec % 60;
+
+            const showDays    = !CONFIG.hideEmptyLeadingUnits || days > 0;
+            const showHours   = showDays || hours > 0;
+            const showMinutes = showHours || minutes > 0;
+            return { days, hours, minutes, seconds, showDays, showHours, showMinutes };
+        }
+
+        function formatRemaining(totalSec) {
+            const u = splitUnits(totalSec);
+            const parts = [pad(u.minutes), pad(u.seconds)];
+            if (u.showHours) parts.unshift(pad(u.hours));
+            if (u.showDays)  parts.unshift(pad(u.days));
+            return parts.join(":");
+        }
+
+        function finish() {
+            hasFinished = true;
+            clearInterval(intervalId);
+            intervalId = null;
+            stopDialLoop();
+            renderDial();                                    // settle every hand at zero
+
+            endAudio.play().catch(() => { /* browser blocked autoplay or file missing */ });
+            newCountdownBtn.classList.remove("invisible");   // 00:00 stays on screen
+        }
+
+        /* ---------- Analog dial ---------- */
+        // Hands count down: they turn anticlockwise toward 12 as the value shrinks.
+        //   seconds hand: 60 s per turn      minute hand: 60 min per turn      hour hand: 12 h per turn
+        // Units that are not in play yet (e.g. hours when under an hour is left) sit dimmed at 12.
+        function renderDial() {
+            if (!targetDate || document.body.dataset.display !== "analog") return;
+
+            const remMs    = Math.max(0, targetDate.getTime() - Date.now());
+            const shownSec = Math.ceil(remMs / 1000);               // what the digital text shows
+            const handSec  = useSweep() ? remMs / 1000 : shownSec;  // what the hands point at
+            const u = splitUnits(shownSec);
+
+            setHand(handSecond, (handSec % 60) * 6, true);
+            setHand(handMinute, ((handSec / 60) % 60) * 6, u.showMinutes);
+            setHand(handHour, ((handSec / 3600) % 12) * 30, u.showHours);
+        }
+
+        function setHand(el, degrees, inPlay) {
+            el.classList.toggle("ghost", !inPlay);
+            el.setAttribute("transform", `rotate(${inPlay ? degrees : 0} 225 225)`);
+        }
+
+        // Smooth sweep: redraw every animation frame while a countdown is running
+        function startDialLoop() {
+            stopDialLoop();
+            if (!useSweep() || document.body.dataset.display !== "analog") return;
+            const frame = () => {
+                renderDial();
+                rafId = requestAnimationFrame(frame);
+            };
+            rafId = requestAnimationFrame(frame);
+        }
+
+        function stopDialLoop() {
+            if (rafId) cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+    </script>
+
+</body>
+</html>
