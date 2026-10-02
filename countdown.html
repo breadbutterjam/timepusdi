@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown</title>
+
+    <!-- ============================================================
+         STYLES
+         All look-and-feel lives here. Tweak the tokens in :root first.
+         ============================================================ -->
+    <style>
+        /* ---------- Design tokens ---------- */
+        :root {
+            /* Background */
+            --bg-image: url("ocean.jpg");
+            --bg-fallback: #0b3c5d;           /* shown if the image is missing */
+
+            /* Big time readout */
+            --time-color: white;
+            /* --time-opacity: 0.2; */
+            --time-opacity: 0.5;
+            --time-font: monospace;
+            --time-max-size: 12.7em;          /* same as Pomo */
+            --time-fit-width: 92vw;           /* time never grows wider than this */
+
+            /* Small caption under the time */
+            --caption-color: white;
+            /* --caption-opacity: 0.45; */
+            --caption-opacity: 1;
+            --caption-size: 1em;
+
+            /* "set new countdown" link above the time */
+            --link-color: white;
+            --link-opacity: 0.7;
+
+            /* Setup panel */
+            --pane-bg: rgba(255, 255, 255, 0.3);
+            --pane-color: black;
+            --pane-width: 220px;
+            --pane-radius: 0.5em;
+            --error-color: #7a0000;
+        }
+
+        /* ---------- Page ---------- */
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: sans-serif;
+        }
+
+        .bgImage {
+            background-color: var(--bg-fallback);
+            background-image: var(--bg-image);
+            background-size: cover;
+            background-position: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Two screens: the page shows one at a time via body[data-screen] */
+        body[data-screen="setup"]     .timeWrap { display: none; }
+        body[data-screen="countdown"] .setup    { display: none; }
+
+        /* Utilities */
+        .gayab     { display: none !important; }        /* removed from layout */
+        .invisible { visibility: hidden; }              /* hidden but keeps its space */
+
+        /* ---------- Setup screen ---------- */
+        .setup {
+            position: absolute;
+            width: var(--pane-width);
+            background-color: var(--pane-bg);
+            color: var(--pane-color);
+            border-radius: var(--pane-radius);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        .field {
+            font-size: 0.8em;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .field input {
+            font-size: 1.1em;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .errorMsg {
+            font-size: 0.75em;
+            color: var(--error-color);
+            min-height: 1em;
+        }
+
+        /* Text-style button, used for "add label" and "set new countdown" */
+        .linkBtn {
+            background: none;
+            border: none;
+            padding: 0;
+            font: inherit;
+            color: inherit;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .linkBtn:focus-visible { outline: 1px solid currentColor; outline-offset: 2px; }
+
+        .setup .linkBtn {
+            font-size: 0.8em;
+            align-self: flex-start;
+        }
+
+        /* ---------- Countdown screen ---------- */
+        .timeWrap {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.2em;
+            color: var(--time-color);
+        }
+
+        .timeCont {
+            /* --chars is set from JS (length of the text, e.g. "12:04:33:21" = 11).
+               Monospace glyphs are ~0.6em wide, so this keeps the line inside the screen. */
+            font-size: min(var(--time-max-size), calc(var(--time-fit-width) / (var(--chars, 5) * 0.6)));
+            font-family: var(--time-font);
+            opacity: var(--time-opacity);
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        .timeWrap .linkBtn {
+            color: var(--link-color);
+            opacity: var(--link-opacity);
+        }
+
+        .caption {
+            font-size: var(--caption-size);
+            opacity: var(--caption-opacity);
+            text-align: center;
+            padding: 0 1em;
+            pointer-events: none;
+        }
+
+        #endofTimer { display: none; }
+    </style>
+</head>
+
+<!-- ============================================================
+     MARKUP
+     Structure only. No styling decisions here.
+     ============================================================ -->
+<body data-screen="setup" onload="init();">
+
+    <div class="bgImage"></div>
+
+    <!-- Screen 1: pick the date + time -->
+    <div class="setup">
+        <label class="field">
+            Count down to
+            <input type="datetime-local" id="targetInput">
+        </label>
+        <button type="button" class="linkBtn" id="addLabelBtn">add label</button>
+        <label class="field gayab" id="labelField">
+            Label
+            <input type="text" id="labelInput" maxlength="40" placeholder="e.g. Holiday">
+        </label>
+        <div class="errorMsg" id="errorMsg" role="alert"></div>
+        <input type="button" id="startBtn" value="Start countdown">
+    </div>
+
+    <!-- Screen 2: the running / finished countdown -->
+    <div class="timeWrap">
+        <button type="button" class="linkBtn invisible" id="newCountdownLink">set new countdown</button>
+        <div class="caption"></div>
+        <div class="timeCont"></div>
+        
+    </div>
+
+    <audio id="endofTimer" src="ding.mp3" preload="auto"></audio>
+
+    <!-- ============================================================
+         SCRIPT
+         ============================================================ -->
+    <script>
+        /* ---------- Config: easy-to-swap values ---------- */
+        const CONFIG = {
+            tickMs: 250,                  // how often to re-check the clock
+            hideEmptyLeadingUnits: true   // drop days, then hours, once they reach zero (12:04:33 -> 04:33)
+        };
+
+        /* ---------- State ---------- */
+        let targetDate = null;            // Date we are counting down to
+        let targetLabel = "";
+        let intervalId = null;
+        let hasFinished = false;
+        let lastText = "";
+
+        /* ---------- Element refs ---------- */
+        const timeCont        = document.querySelector(".timeCont");
+        const captionEl       = document.querySelector(".caption");
+        const targetInput     = document.querySelector("#targetInput");
+        const labelInput      = document.querySelector("#labelInput");
+        const labelField      = document.querySelector("#labelField");
+        const addLabelBtn     = document.querySelector("#addLabelBtn");
+        const errorMsg        = document.querySelector("#errorMsg");
+        const startBtn        = document.querySelector("#startBtn");
+        const newCountdownBtn = document.querySelector("#newCountdownLink");
+        const endAudio        = document.querySelector("#endofTimer");
+
+        /* ---------- Helpers ---------- */
+        const pad = (n) => n.toString().padStart(2, "0");
+
+        // Date -> "YYYY-MM-DDTHH:MM" in LOCAL time, which is what <input type=datetime-local> expects
+        function toInputValue(d) {
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        // The start of the next hour (e.g. 14:37 -> 15:00)
+        function nextHour() {
+            const d = new Date();
+            d.setHours(d.getHours() + 1, 0, 0, 0);
+            return d;
+        }
+
+        function formatCaption(date, label) {
+            const when = date.toLocaleString(undefined, {
+                weekday: "short", day: "numeric", month: "short", year: "numeric",
+                hour: "2-digit", minute: "2-digit"
+            });
+            return label ? `${label} · ${when}` : when;
+        }
+
+        /* ---------- Init ---------- */
+        function init() {
+            addEventListeners();
+            showSetup();                  // nothing starts until the user presses "Start countdown"
+        }
+
+        function addEventListeners() {
+            addLabelBtn.addEventListener("click", revealLabel);
+            startBtn.addEventListener("click", startCountdown);
+            newCountdownBtn.addEventListener("click", showSetup);
+
+            // Enter in either field starts the countdown
+            [targetInput, labelInput].forEach((el) => {
+                el.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") startCountdown();
+                });
+            });
+
+            // Re-check immediately when the tab becomes visible again
+            document.addEventListener("visibilitychange", () => {
+                if (!document.hidden && targetDate && !hasFinished) tick();
+            });
+        }
+
+        /* ---------- Screen 1: setup ---------- */
+        function showSetup() {
+            if (intervalId) clearInterval(intervalId);
+            intervalId = null;
+            targetDate = null;
+            hasFinished = false;
+
+            targetInput.value = toInputValue(nextHour());
+            labelInput.value = "";
+            labelField.classList.add("gayab");
+            addLabelBtn.classList.remove("gayab");
+            errorMsg.textContent = "";
+            newCountdownBtn.classList.add("invisible");
+            document.title = "Countdown";
+
+            document.body.dataset.screen = "setup";
+        }
+
+        function revealLabel() {
+            labelField.classList.remove("gayab");
+            addLabelBtn.classList.add("gayab");
+            labelInput.focus();
+        }
+
+        /* ---------- Screen 2: countdown ---------- */
+        function startCountdown() {
+            const picked = new Date(targetInput.value);   // datetime-local is parsed as local time
+
+            if (!targetInput.value || isNaN(picked)) {
+                errorMsg.textContent = "Pick a date and time.";
+                return;
+            }
+            if (picked.getTime() <= Date.now()) {
+                errorMsg.textContent = "Pick a time in the future.";
+                return;
+            }
+
+            targetDate = picked;
+            targetLabel = labelInput.value.trim();
+            hasFinished = false;
+            lastText = "";
+
+            captionEl.textContent = formatCaption(targetDate, targetLabel);
+            newCountdownBtn.classList.add("invisible");
+            document.body.dataset.screen = "countdown";
+
+            tick();
+            intervalId = setInterval(tick, CONFIG.tickMs);
+        }
+
+        // Always derive the remaining time from the clock (never by decrementing),
+        // so it stays correct when the tab sleeps or the laptop is closed.
+        function tick() {
+            const remainingSec = Math.max(0, Math.ceil((targetDate.getTime() - Date.now()) / 1000));
+            const text = formatRemaining(remainingSec);
+
+            if (text !== lastText) {
+                lastText = text;
+                timeCont.textContent = text;
+                timeCont.style.setProperty("--chars", text.length);
+                document.title = text + (targetLabel ? " · " + targetLabel : "");
+            }
+
+            if (remainingSec === 0 && !hasFinished) {
+                finish();
+            }
+        }
+
+        function formatRemaining(totalSec) {
+            const days    = Math.floor(totalSec / 86400);
+            const hours   = Math.floor((totalSec % 86400) / 3600);
+            const minutes = Math.floor((totalSec % 3600) / 60);
+            const seconds = totalSec % 60;
+
+            const showDays  = !CONFIG.hideEmptyLeadingUnits || days > 0;
+            const showHours = showDays || hours > 0;
+
+            const parts = [pad(minutes), pad(seconds)];
+            if (showHours) parts.unshift(pad(hours));
+            if (showDays)  parts.unshift(pad(days));
+            return parts.join(":");
+        }
+
+        function finish() {
+            hasFinished = true;
+            clearInterval(intervalId);
+            intervalId = null;
+
+            endAudio.play().catch(() => { /* browser blocked autoplay or file missing */ });
+            newCountdownBtn.classList.remove("invisible");   // 00:00 stays on screen
+        }
+    </script>
+
+</body>
+</html>

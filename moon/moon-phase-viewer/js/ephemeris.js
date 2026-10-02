@@ -119,6 +119,29 @@
         return tithiIndexFromElongation(elongationDeg(date));
     }
 
+    /* --- Lahiri ayanamsa (sidereal offset) ---
+       For Hindu/Vedic calendar purposes (adhik maas detection), which
+       works off the Sun's SIDEREAL longitude, not the tropical one
+       everything above computes. J2000.0 value and precession rate
+       are the standard Lahiri constants (matching Swiss Ephemeris'
+       SE_SIDM_LAHIRI reference: 23.8570916 deg at J2000, +50.29
+       arcsec/year) — a linear approximation, more than sufficient
+       over a span of decades; higher-order precession terms are
+       sub-arcsecond at that scale. */
+    const LAHIRI_J2000_DEG = 23.8570916;
+    const LAHIRI_RATE_DEG_PER_YEAR = 50.29 / 3600;
+
+    function ayanamsaDeg(date) {
+        const years = daysSinceJ2000(date) / 365.25;
+        return LAHIRI_J2000_DEG + LAHIRI_RATE_DEG_PER_YEAR * years;
+    }
+
+    function siderealSunLongitude(date) {
+        const d = daysSinceJ2000(date);
+        const sun = sunPosition(d);
+        return normDeg(sun.longitude - ayanamsaDeg(date));
+    }
+
     return {
         daysSinceJ2000: daysSinceJ2000,
         sunPosition: sunPosition,
@@ -127,6 +150,8 @@
         illuminationFraction: illuminationFraction,
         tithiIndexFromElongation: tithiIndexFromElongation,
         tithiIndexAt: tithiIndexAt,
+        ayanamsaDeg: ayanamsaDeg,
+        siderealSunLongitude: siderealSunLongitude,
         normDeg: normDeg
     };
 });
