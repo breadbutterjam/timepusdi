@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Generation Calculator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+<!-- =====================================================================
+     1. THEME TOKENS  — change colours, sizes and fonts here only
+     ===================================================================== -->
+<style>
+:root {
+  /* colours */
+  --color-text:        #000000;
+  --color-accent:      #5500FF;   /* output text */
+  --color-primary:     #0034DF;   /* selected CE/BCE */
+  --color-primary-ink: #FFFFFF;
+  --color-surface:     #FFFFFF;
+  --color-muted:       #D9D9D9;   /* slider thumb, Calculate button */
+  --color-border:      #000000;
+
+  /* type */
+  --font-base:  "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fs-base:    16px;
+  --fs-small:   12px;
+  --fs-title:   18px;
+  --fs-big-num: 32px;
+
+  /* shape + spacing */
+  --radius-sm:  4px;
+  --radius-md:  6px;
+  --page-width: 440px;
+  --gutter:     24px;
+  --figure-size: 32px;            /* height of each human figure */
+  --row-height:  48px;            /* vertical rhythm of generations */
+  --thumb-size:  18px;            /* slider thumb */
+  --shadow-btn:  0 4px 4px rgba(0, 0, 0, .25);
+}
+</style>
+
+<!-- =====================================================================
+     2. LAYOUT + COMPONENTS
+     ===================================================================== -->
+<style>
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-base);
+  font-size: var(--fs-base);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+[hidden] { display: none !important; }
+
+/* The app fills the viewport exactly: the result area takes whatever height is
+   left, and the figure stack is planned to fit it (so the page never scrolls). */
+html, body { height: 100%; overflow: hidden; }
+.app {
+  max-width: var(--page-width); margin: 0 auto;
+  height: 100vh; height: 100dvh;
+  display: flex; flex-direction: column;
+}
+
+/* ---- header ---- */
+.app-header {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 40px; padding: 0 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.app-header h1 { margin: 0; font-size: var(--fs-title); font-weight: 700; }
+.icon-btn { background: none; border: 0; padding: 4px; cursor: pointer; line-height: 0; }
+.icon-btn svg { width: 20px; height: 21px; fill: var(--color-text); }
+
+/* ---- settings panel ---- */
+.settings { padding: 12px 16px; border-bottom: 1px solid var(--color-border); background: #f6f6f6; }
+.settings label { display: block; font-size: var(--fs-small); margin-bottom: 4px; }
+.settings select {
+  width: 100%; height: 32px; font: inherit;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);
+}
+
+main {
+  flex: 1 1 auto; min-height: 0;
+  display: flex; flex-direction: column;
+  padding: 20px var(--gutter) 12px;
+}
+main > * { flex: none; }
+
+/* ---- slider ---- */
+.slider-wrap { position: relative; padding-top: 20px; }
+.slider-tick { position: absolute; top: 0; transform: translateX(-50%); text-align: center; pointer-events: none; }
+.slider-tick span { display: block; font-size: 11px; font-weight: 700; line-height: 14px; }
+.slider-tick i { display: block; width: 1px; height: 12px; margin: 5px auto 0; background: var(--color-border); }
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none;
+  display: block; width: 100%; height: var(--thumb-size); margin: 0;
+  background: transparent; cursor: pointer;
+}
+input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--color-border); }
+input[type=range]::-moz-range-track             { height: 1px; background: var(--color-border); }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: var(--thumb-size); height: var(--thumb-size);
+  margin-top: calc(var(--thumb-size) / -2); border-radius: 50%;
+  background: var(--color-muted); border: 0;
+}
+input[type=range]::-moz-range-thumb {
+  width: var(--thumb-size); height: var(--thumb-size);
+  border-radius: 50%; background: var(--color-muted); border: 0;
+}
+.slider-labels { display: flex; justify-content: space-between; margin: 8px -14px 0; }
+
+/* ---- inputs row ---- */
+.controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; margin: 18px -9px 0; }
+.field-label { display: block; font-size: var(--fs-small); margin-bottom: 1px; }
+.control-group { display: flex; height: 29px; }
+.control-group input[type=number] {
+  width: 100px; min-width: 0; padding: 0 8px; font: inherit;
+  border: 1px solid var(--color-border); border-radius: var(--radius-md) 0 0 var(--radius-md);
+  background: var(--color-surface);
+}
+.control-group:not(.has-era) input[type=number] { border-radius: var(--radius-md); }
+.era-toggle { display: flex; }
+.era-toggle button {
+  width: 59px; font: inherit; cursor: pointer;
+  border: 1px solid var(--color-border); border-left: 0; background: var(--color-surface); color: var(--color-text);
+}
+.era-toggle button:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+.era-toggle button.is-active { background: var(--color-primary); color: var(--color-primary-ink); }
+.age-field input[type=number] { width: 80px; border-radius: var(--radius-md); }
+
+/* ---- action buttons ---- */
+.actions { display: flex; gap: 23px; margin: 28px -9px 0; }
+.btn {
+  width: 101px; height: 41px; font: inherit; cursor: pointer;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-btn);
+}
+.btn--primary { background: var(--color-muted); }
+.btn:active { transform: translateY(1px); box-shadow: none; }
+
+/* ---- result ---- */
+/* The result area takes all remaining height. JS sets --row-height / --figure-size
+   on it so the rows fit exactly. Row heights below must match COST in the script. */
+.result {
+  flex: 1 1 0; min-height: 0; overflow: hidden;
+  margin: 20px -9px 0; padding-left: 5px; color: var(--color-accent);
+  --row-height: 48px; --figure-size: 32px;
+}
+.gen { display: flex; align-items: center; height: var(--row-height); gap: 12px; }
+.gen--top { height: calc(var(--row-height) * 1.25); }
+.figure { width: var(--figure-size); height: var(--figure-size); object-fit: contain; flex: none; }
+.gen sup { font-size: .6em; vertical-align: super; line-height: 0; }
+.gen-text strong { font-weight: 700; }
+.gen-text .relation { margin-left: 6px; }
+.gen-num { font-size: calc(var(--row-height) * .67); font-weight: 700; line-height: 1; margin-right: 12px; }
+.gen-num sup { font-size: .5em; }
+.gen-sub { display: block; font-size: clamp(10px, calc(var(--row-height) * .25), var(--fs-small)); margin-top: 2px; opacity: .8; }
+.dots {
+  display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+  width: var(--figure-size); height: calc(var(--row-height) * .9);
+}
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--color-text); }
+.note { color: var(--color-text); font-size: var(--fs-small); margin: 0 0 4px; }
+</style>
+</head>
+
+<!-- =====================================================================
+     3. STRUCTURE  — markup only, no styling decisions
+     ===================================================================== -->
+<body>
+<div class="app">
+
+  <header class="app-header">
+    <h1>Generation Calculator</h1>
+    <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settingsPanel">
+      <svg viewBox="405 8 20 21" aria-hidden="true"><path d="M424.336 15.0234C424.492 15.375 424.375 15.7266 424.102 16L422.422 17.5234C422.461 17.8359 422.461 18.1875 422.461 18.5C422.461 18.8516 422.461 19.2031 422.422 19.5156L424.102 21.0391C424.375 21.2734 424.492 21.6641 424.336 22.0156C424.18 22.4844 423.984 22.9141 423.75 23.3438L423.555 23.6562C423.281 24.0859 423.008 24.5156 422.695 24.8672C422.461 25.1797 422.07 25.2578 421.719 25.1406L419.57 24.4766C419.023 24.8672 418.438 25.1797 417.852 25.4531L417.344 27.6797C417.266 28.0312 416.992 28.3047 416.641 28.3828C416.094 28.4609 415.547 28.5 414.961 28.5C414.414 28.5 413.867 28.4609 413.32 28.3828C412.969 28.3047 412.695 28.0312 412.617 27.6797L412.109 25.4531C411.484 25.1797 410.938 24.8672 410.391 24.4766L408.242 25.1406C407.891 25.2578 407.5 25.1797 407.266 24.9062C406.953 24.5156 406.68 24.0859 406.406 23.6562L406.211 23.3438C405.977 22.9141 405.781 22.4844 405.625 22.0156C405.469 21.6641 405.586 21.3125 405.859 21.0391L407.539 19.5156C407.5 19.2031 407.5 18.8516 407.5 18.5C407.5 18.1875 407.5 17.8359 407.539 17.5234L405.859 16C405.586 15.7266 405.469 15.375 405.625 15.0234C405.781 14.5547 405.977 14.125 406.211 13.6953L406.406 13.3828C406.68 12.9531 406.953 12.5234 407.266 12.1328C407.5 11.8594 407.891 11.7812 408.242 11.8984L410.391 12.5625C410.938 12.1719 411.523 11.8203 412.109 11.5859L412.617 9.35938C412.695 9.00781 412.969 8.73438 413.32 8.65625C413.867 8.57812 414.414 8.5 415 8.5C415.547 8.5 416.094 8.57812 416.641 8.65625C416.992 8.69531 417.266 9.00781 417.344 9.35938L417.852 11.5859C418.477 11.8203 419.023 12.1719 419.57 12.5625L421.719 11.8984C422.07 11.7812 422.461 11.8594 422.695 12.1328C423.008 12.5234 423.281 12.9531 423.555 13.3828L423.75 13.6953C423.984 14.125 424.18 14.5547 424.375 15.0234H424.336ZM415 21.625C416.094 21.625 417.109 21.0391 417.695 20.0625C418.242 19.125 418.242 17.9141 417.695 16.9375C417.109 16 416.094 15.375 415 15.375C413.867 15.375 412.852 16 412.266 16.9375C411.719 17.9141 411.719 19.125 412.266 20.0625C412.852 21.0391 413.867 21.625 415 21.625Z"/></svg>
+    </button>
+  </header>
+
+  <!-- Settings: choose how far back the slider goes -->
+  <section class="settings" id="settingsPanel" hidden>
+    <label for="minSelect">Earliest year on the slider</label>
+    <select id="minSelect"></select>
+  </section>
+
+  <main>
+    <!-- Slider -->
+    <div class="slider-wrap">
+      <div class="slider-tick" id="zeroTick" hidden><span>0 CE</span><i></i></div>
+      <input type="range" id="yearSlider" aria-label="Target year" step="1">
+    </div>
+    <div class="slider-labels">
+      <span id="minLabel"></span>
+      <span id="maxLabel"></span>
+    </div>
+
+    <!-- Target year + era toggle + generation length -->
+    <div class="controls">
+      <div>
+        <label class="field-label" for="yearInput">Target Year</label>
+        <div class="control-group has-era" id="yearGroup">
+          <input type="number" id="yearInput" min="0" step="1" inputmode="numeric">
+          <div class="era-toggle" id="eraToggle" role="group" aria-label="Era">
+            <button type="button" data-era="BCE" aria-pressed="false">BCE</button>
+            <button type="button" data-era="CE" aria-pressed="true" class="is-active">CE</button>
+          </div>
+        </div>
+      </div>
+      <div class="age-field">
+        <label class="field-label" for="ageInput">Avg. age at fatherhood</label>
+        <div class="control-group">
+          <input type="number" id="ageInput" min="5" max="100" step="1" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button type="button" class="btn btn--primary" id="calcBtn">Calculate</button>
+      <button type="button" class="btn" id="resetBtn">Reset</button>
+    </div>
+
+    <!-- Output -->
+    <section class="result" id="result" aria-live="polite"></section>
+  </main>
+</div>
+
+<!-- =====================================================================
+     4. BEHAVIOUR
+     ===================================================================== -->
+<script>
+/* ---------- 4a. CONFIG — easily swappable values ---------- */
+const CONFIG = {
+  currentYear:    new Date().getFullYear(),   // slider max
+  defaultMinYear: -1000,                      // negative = BCE
+  defaultTarget:  1400,
+  defaultGenAge:  30,
+  minGenAge:      5,
+  maxGenAge:      100,
+
+  // Figure stack layout. The stack uses all the height available (no scrolling):
+  // rows are full size when there's room and shrink (down to minRowHeight) if not.
+  rowHeight:        48,     // px per generation row when there's plenty of room
+  minRowHeight:     26,     // px floor on small screens
+  relationUpTo:      4,     // generations 1..N get a relation label (father, grandfather...)
+  minVisibleBelow:   4,     // always keep at least this many generations above "You"
+
+  // Path/URL to your own PNG/JPG figure. Leave '' to use the built-in icon.
+  figureImage:    '',
+
+  // "Earliest year" bands offered in Settings (negative = BCE)
+  bands: [
+    { label: '1000 BCE',                         year: -1000 },
+    { label: '500 BCE',                          year: -500  },
+    { label: 'Birth of Jesus (0 CE)',            year: 0     },
+    { label: 'Spread of Islam (7th century)',    year: 610   },
+    { label: '1000 CE',                          year: 1000  },
+    { label: '1500 CE',                          year: 1500  },
+    { label: '1900 CE',                          year: 1900  }
+  ],
+
+  storageKey: 'generationCalculator.minYear'
+};
+
+/* Built-in fallback figure (swap via CONFIG.figureImage) */
+const FALLBACK_FIGURE = 'data:image/svg+xml,' + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 40"><circle cx="12" cy="5.5" r="5"/>' +
+  '<path d="M5 13h14a3 3 0 0 1 3 3v11h-3.5V16.5H17V39h-4.5V28h-1v11H7V16.5H5.5V27H2V16a3 3 0 0 1 3-3z"/></svg>'
+);
+
+/* ---------- 4b. PURE LOGIC (no DOM) ---------- */
+// LOGIC-START
+// Years are signed integers: -1000 = 1000 BCE, 0 = "0 CE", 1400 = 1400 CE.
+function formatYear(y, withSuffix = true) {
+  if (y < 0) return `${-y} BCE`;
+  return withSuffix ? `${y} CE` : String(y);
+}
+function ordinalSuffix(n) {
+  const r100 = n % 100;
+  if (r100 >= 11 && r100 <= 13) return 'th';
+  return ({ 1: 'st', 2: 'nd', 3: 'rd' })[n % 10] || 'th';
+}
+// 1 father, 2 grandfather, 3 great-grandfather, 4 great-great-grandfather,
+// then "N\u00D7 great-grandfather" (so 5 -> 3\u00D7, 21 -> 19\u00D7) instead of ever-longer "great-great-..." chains.
+function relationLabel(n) {
+  if (n === 1) return 'father';
+  if (n === 2) return 'grandfather';
+  if (n === 3) return 'great-grandfather';
+  if (n === 4) return 'great-great-grandfather';
+  return `${n - 2}\u00D7 great-grandfather`;
+}
+// The ancestor n generations back was born at (current - n*age).
+// We need the first one born on/before the target year, so round up.
+function generationsBetween(targetYear, currentYear, age) {
+  const span = currentYear - targetYear;
+  return span <= 0 ? 0 : Math.ceil(span / age);
+}
+function birthYearOf(n, currentYear, age) { return currentYear - n * age; }
+// ---- Figure stack planning ----
+// Heights are measured in "row units" (1 unit = one generation row). These
+// multipliers must match the CSS: .gen--top is 1.25 rows, .dots is 0.9 rows.
+const COST = { top: 1.25, dots: 0.9, gen: 1, you: 1 };
+const EPS = 1e-6;
+
+// Row units needed to show every generation (no "..." gap).
+function fullCost(n) {
+  return n <= 0 ? COST.you : COST.top + (n - 1) * COST.gen + COST.you;
+}
+// Smallest budget we want to render in: everything if the list is short,
+// otherwise top + dots + `minVisible` generations + You.
+function minUnits(n, minVisible) {
+  if (n - 1 <= minVisible) return fullCost(n);
+  return COST.top + COST.dots + COST.you + minVisible * COST.gen;
+}
+// Which rows to draw, top (oldest) to bottom ("You"), given `slots` row units
+// of height. Shows as many generations as fit; the oldest is always shown, and
+// "..." stands in for whatever doesn't fit in between.
+function planRows(n, slots) {
+  const rows = [];
+  if (n <= 0) return [{ type: 'you' }];
+  let below;                                   // generations 1..below shown above "You"
+  if (fullCost(n) <= slots + EPS) {
+    below = n - 1;
+  } else {
+    const budget = slots - COST.top - COST.dots - COST.you;
+    below = Math.max(0, Math.min(n - 2, Math.floor(budget / COST.gen + EPS)));
+  }
+  rows.push({ type: 'gen', n });
+  if (below < n - 1) rows.push({ type: 'dots' });
+  for (let i = below; i >= 1; i--) rows.push({ type: 'gen', n: i });
+  rows.push({ type: 'you' });
+  return rows;
+}
+// LOGIC-END
+
+/* ---------- 4c. UI ---------- */
+const $ = id => document.getElementById(id);
+const el = {
+  slider: $('yearSlider'), yearInput: $('yearInput'), ageInput: $('ageInput'),
+  eraToggle: $('eraToggle'), yearGroup: $('yearGroup'), zeroTick: $('zeroTick'),
+  minLabel: $('minLabel'), maxLabel: $('maxLabel'),
+  calc: $('calcBtn'), reset: $('resetBtn'), result: $('result'),
+  settingsBtn: $('settingsBtn'), settingsPanel: $('settingsPanel'), minSelect: $('minSelect')
+};
+const state = { minYear: CONFIG.defaultMinYear, target: CONFIG.defaultTarget };
+
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const THUMB_PX = 18; // keep in sync with --thumb-size
+
+function loadMinYear() {
+  try {
+    const saved = parseInt(localStorage.getItem(CONFIG.storageKey), 10);
+    if (CONFIG.bands.some(b => b.year === saved)) return saved;
+  } catch (e) { /* storage unavailable */ }
+  return CONFIG.defaultMinYear;
+}
+function saveMinYear(y) { try { localStorage.setItem(CONFIG.storageKey, String(y)); } catch (e) {} }
+
+/* Slider range, end labels, "0 CE" tick, and whether the era toggle is needed */
+function applyRange() {
+  const { minYear } = state, max = CONFIG.currentYear;
+  el.slider.min = minYear; el.slider.max = max;
+  el.minLabel.textContent = formatYear(minYear);
+  el.maxLabel.textContent = formatYear(max, false);
+
+  const showEra = minYear < 0;
+  el.eraToggle.hidden = !showEra;
+  el.yearGroup.classList.toggle('has-era', showEra);
+
+  const showTick = minYear < 0 && max > 0;
+  el.zeroTick.hidden = !showTick;
+  if (showTick) {
+    const pct = (0 - minYear) / (max - minYear);
+    el.zeroTick.style.left = `calc(${pct * 100}% + ${(0.5 - pct) * THUMB_PX}px)`;
+  }
+}
+
+/* Single place that changes the target year and syncs every control */
+function setTarget(y) {
+  state.target = clamp(Math.round(y), state.minYear, CONFIG.currentYear);
+  el.slider.value = state.target;
+  el.yearInput.value = Math.abs(state.target);
+  const era = state.target < 0 ? 'BCE' : 'CE';
+  el.eraToggle.querySelectorAll('button').forEach(b => {
+    const on = b.dataset.era === era;
+    b.classList.toggle('is-active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+}
+const currentEra = () => (el.eraToggle.querySelector('.is-active') || {}).dataset?.era || 'CE';
+function readTypedYear() {
+  const v = parseInt(el.yearInput.value, 10);
+  if (isNaN(v)) return null;
+  return (state.minYear < 0 && currentEra() === 'BCE') ? 0 - v : v;
+}
+// Age used for the calculation. Doesn't touch the field, so typing isn't interrupted.
+function currentAge() {
+  const v = parseFloat(el.ageInput.value);
+  return isNaN(v) ? CONFIG.defaultGenAge : clamp(v, CONFIG.minGenAge, CONFIG.maxGenAge);
+}
+// Write the clamped age back into the field (on blur / Enter).
+function commitAge() { el.ageInput.value = currentAge(); }
+
+/* ---------- Rendering ---------- */
+function makeFigure() {
+  const img = document.createElement('img');
+  img.className = 'figure'; img.alt = '';
+  img.src = CONFIG.figureImage || FALLBACK_FIGURE;
+  return img;
+}
+function ordinalNode(n, tag = 'span') {
+  const node = document.createElement(tag);
+  node.append(String(n));
+  const sup = document.createElement('sup');
+  sup.textContent = ordinalSuffix(n);
+  node.append(sup);
+  return node;
+}
+function genRow(n, { top, target, age }) {
+  const row = document.createElement('div');
+  row.className = 'gen' + (top ? ' gen--top' : '');
+  row.append(makeFigure());
+  const text = document.createElement('div');
+  text.className = 'gen-text';
+
+  if (top) {
+    const num = ordinalNode(n); num.className = 'gen-num';
+    text.append(num, `born / alive in ${formatYear(target)}`);
+    const sub = document.createElement('span');
+    sub.className = 'gen-sub';
+    sub.textContent = `${relationLabel(n)} \u00B7 born \u2248 ${formatYear(birthYearOf(n, CONFIG.currentYear, age))}`;
+    text.append(sub);
+  } else {
+    const strong = ordinalNode(n, 'strong');
+    strong.append(' generation');
+    text.append(strong);
+    // Only the first few generations get a relation label; further back it's just the count.
+    if (n <= CONFIG.relationUpTo) {
+      const rel = document.createElement('span');
+      rel.className = 'relation';
+      rel.textContent = `(${relationLabel(n)})`;
+      text.append(rel);
+    }
+  }
+  row.append(text);
+  return row;
+}
+// Draws the stack for the current state. Called on every change (slider, typing,
+// era, age, settings) and whenever the result area is resized.
+function render() {
+  const target = state.target, age = currentAge();
+  const n = generationsBetween(target, CONFIG.currentYear, age);
+
+  // Fit the stack to the height we have: full-size rows if there's room,
+  // otherwise shrink the rows a little (never below minRowHeight).
+  const avail = el.result.clientHeight;
+  if (!avail) return;                                   // not laid out yet
+  const need = minUnits(n, CONFIG.minVisibleBelow);
+  const rowH = Math.floor(clamp(avail / need, CONFIG.minRowHeight, CONFIG.rowHeight));
+  el.result.style.setProperty('--row-height', rowH + 'px');
+  el.result.style.setProperty('--figure-size', Math.round(rowH * 0.67) + 'px');
+
+  const rows = planRows(n, avail / rowH);
+  const out = [];
+
+  if (n === 0) {
+    const note = document.createElement('p');
+    note.className = 'note';
+    note.textContent = `${formatYear(target)} is the present \u2014 no generations to go back.`;
+    out.push(note);
+  }
+  rows.forEach((r, i) => {
+    if (r.type === 'dots') {
+      const d = document.createElement('div');
+      d.className = 'dots';
+      d.append(...[0, 1, 2].map(() => document.createElement('i')));
+      out.push(d);
+    } else if (r.type === 'you') {
+      const row = document.createElement('div');
+      row.className = 'gen';
+      const t = document.createElement('div');
+      t.className = 'gen-text'; t.textContent = 'You';
+      row.append(makeFigure(), t);
+      out.push(row);
+    } else {
+      out.push(genRow(r.n, { top: i === 0, target, age }));
+    }
+  });
+  el.result.replaceChildren(...out);
+}
+
+/* ---------- Events ---------- */
+// Everything below re-renders live; Calculate is now just a "tidy up the fields" shortcut.
+function calculate() {
+  const typed = readTypedYear();
+  setTarget(typed === null ? state.target : typed);   // clamp + sync every control
+  commitAge();
+  render();
+}
+function reset() {
+  setTarget(CONFIG.defaultTarget);
+  el.ageInput.value = CONFIG.defaultGenAge;
+  render();
+}
+
+// Slider drag -> live
+el.slider.addEventListener('input', () => { setTarget(+el.slider.value); render(); });
+
+// Typing a year -> live, as long as the number is currently in range.
+// (We don't rewrite the field while typing; it's clamped when the user finishes.)
+el.yearInput.addEventListener('input', () => {
+  const t = readTypedYear();
+  if (t !== null && t >= state.minYear && t <= CONFIG.currentYear) {
+    state.target = t;
+    el.slider.value = t;
+    render();
+  }
+});
+el.yearInput.addEventListener('change', () => {          // finished typing: clamp
+  const t = readTypedYear();
+  setTarget(t === null ? state.target : t);
+  render();
+});
+// Keep focus in the year field when tapping BCE/CE, so the field isn't "finished"
+// (and clamped to the old era's range) just because the user is switching era.
+el.eraToggle.addEventListener('mousedown', e => e.preventDefault());
+el.eraToggle.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-era]');
+  if (!btn) return;
+  const v = Math.abs(parseInt(el.yearInput.value, 10)) || 0;
+  setTarget(btn.dataset.era === 'BCE' ? 0 - v : v);
+  // setTarget clamps; if the user asked for BCE on 0, keep the toggle where they put it
+  if (v === 0) {
+    el.eraToggle.querySelectorAll('button').forEach(b => {
+      const on = b === btn;
+      b.classList.toggle('is-active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  render();
+});
+
+// Generation length -> live
+el.ageInput.addEventListener('input', render);
+el.ageInput.addEventListener('change', () => { commitAge(); render(); });
+
+[el.yearInput, el.ageInput].forEach(i =>
+  i.addEventListener('keydown', e => { if (e.key === 'Enter') calculate(); }));
+
+el.calc.addEventListener('click', calculate);
+el.reset.addEventListener('click', reset);
+
+// Re-plan the stack whenever the available height changes (window resize,
+// rotating a phone, settings panel opening/closing, ...).
+if ('ResizeObserver' in window) {
+  new ResizeObserver(() => requestAnimationFrame(render)).observe(el.result);
+} else {
+  window.addEventListener('resize', render);
+}
+
+el.settingsBtn.addEventListener('click', () => {
+  const open = el.settingsPanel.hidden;
+  el.settingsPanel.hidden = !open;
+  el.settingsBtn.setAttribute('aria-expanded', String(open));
+});
+el.minSelect.addEventListener('change', () => {
+  state.minYear = parseInt(el.minSelect.value, 10);
+  saveMinYear(state.minYear);
+  applyRange();
+  setTarget(state.target);     // re-clamp into the new range
+  render();
+});
+
+/* ---------- Init ---------- */
+(function init() {
+  CONFIG.bands.forEach(b => {
+    const o = document.createElement('option');
+    o.value = b.year; o.textContent = b.label;
+    el.minSelect.append(o);
+  });
+  state.minYear = loadMinYear();
+  el.minSelect.value = state.minYear;
+  el.ageInput.value = CONFIG.defaultGenAge;
+  applyRange();
+  setTarget(CONFIG.defaultTarget);
+  render();
+})();
+</script>
+</body>
+</html>
