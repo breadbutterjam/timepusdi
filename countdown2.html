@@ -158,6 +158,8 @@
             cursor: pointer;
         }
 
+        .option .hint { font-size: 0.8em; opacity: 0.7; }
+
         /* ---------- Countdown screen ---------- */
         .timeWrap {
             position: absolute;
@@ -290,6 +292,14 @@
             <div class="viewTitle">Display</div>
             <label class="option"><input type="radio" name="display" value="digital" checked> Digital</label>
             <label class="option"><input type="radio" name="display" value="analog"> Analog</label>
+
+            <!-- Only relevant to the analog dial, so it is hidden while Digital is selected -->
+            <div class="view gayab" id="motionGroup">
+                <div class="viewTitle">Seconds hand</div>
+                <label class="option"><input type="radio" name="motion" value="smooth" checked> Smooth</label>
+                <label class="option"><input type="radio" name="motion" value="natural"> Natural <span class="hint">(jumps each second)</span></label>
+            </div>
+
             <input type="button" id="settingsDoneBtn" value="Done">
         </div>
 
@@ -323,11 +333,12 @@
     <script>
         /* ---------- Config: easy-to-swap values ---------- */
         const CONFIG = {
-            tickMs: 250,                      // how often to re-check the clock
+            tickMs: 100,                      // how often to re-check the clock
             hideEmptyLeadingUnits: true,      // drop days, then hours, once they reach zero (12:04:33 -> 04:33)
             defaultDisplay: "digital",        // "digital" | "analog"
             displayStorageKey: "countdown.display.v1",
-            sweepHands: true                  // analog: hands glide (true) or jump once a second (false)
+            defaultMotion: "smooth",          // analog seconds hand: "smooth" glides | "natural" jumps once a second
+            motionStorageKey: "countdown.motion.v1"
         };
 
         /* ---------- State ---------- */
@@ -337,6 +348,7 @@
         let rafId = null;
         let hasFinished = false;
         let lastText = "";
+        let motion = CONFIG.defaultMotion;    // "smooth" | "natural"
 
         /* ---------- Element refs ---------- */
         const timeCont        = document.querySelector(".timeCont");
@@ -350,6 +362,8 @@
         const settingsBtn     = document.querySelector("#settingsBtn");
         const settingsDoneBtn = document.querySelector("#settingsDoneBtn");
         const displayRadios   = document.querySelectorAll('input[name="display"]');
+        const motionRadios    = document.querySelectorAll('input[name="motion"]');
+        const motionGroup     = document.querySelector("#motionGroup");
         const errorMsg        = document.querySelector("#errorMsg");
         const startBtn        = document.querySelector("#startBtn");
         const newCountdownBtn = document.querySelector("#newCountdownLink");
@@ -381,14 +395,16 @@
             return label ? `${label} · ${when}` : when;
         }
 
-        // Analog hands glide unless the config says otherwise or the person prefers reduced motion
+        // The seconds hand glides only when "Smooth" is chosen and the person has not asked their
+        // system for reduced motion (in which case it always jumps once a second)
         function useSweep() {
-            return CONFIG.sweepHands && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            return motion === "smooth" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
         }
 
         /* ---------- Init ---------- */
         function init() {
             addEventListeners();
+            setMotion(loadMotion());
             setDisplay(loadDisplay());
             showSetup();                      // nothing starts until the user presses "Start countdown"
         }
@@ -402,6 +418,9 @@
             settingsDoneBtn.addEventListener("click", closeSettings);
             displayRadios.forEach((radio) => {
                 radio.addEventListener("change", () => setDisplay(radio.value));
+            });
+            motionRadios.forEach((radio) => {
+                radio.addEventListener("change", () => setMotion(radio.value));
             });
 
             // Enter in either field starts the countdown
@@ -429,12 +448,29 @@
         function setDisplay(mode) {
             document.body.dataset.display = mode;
             displayRadios.forEach((radio) => { radio.checked = (radio.value === mode); });
+            motionGroup.classList.toggle("gayab", mode !== "analog");
             try { localStorage.setItem(CONFIG.displayStorageKey, mode); } catch (e) { /* ignore */ }
 
             if (targetDate && !hasFinished) {      // switched while a countdown is running
                 renderDial();
                 startDialLoop();
             }
+        }
+
+        /* ---------- Seconds-hand motion preference (smooth / natural) ---------- */
+        function loadMotion() {
+            try {
+                const saved = localStorage.getItem(CONFIG.motionStorageKey);
+                if (saved === "smooth" || saved === "natural") return saved;
+            } catch (e) { /* storage unavailable: fall back to default */ }
+            return CONFIG.defaultMotion;
+        }
+
+        function setMotion(mode) {
+            motion = mode;
+            motionRadios.forEach((radio) => { radio.checked = (radio.value === mode); });
+            try { localStorage.setItem(CONFIG.motionStorageKey, mode); } catch (e) { /* ignore */ }
+            renderDial();
         }
 
         /* ---------- Screen 1: setup ---------- */
@@ -562,12 +598,16 @@
 
             const remMs    = Math.max(0, targetDate.getTime() - Date.now());
             const shownSec = Math.ceil(remMs / 1000);               // what the digital text shows
-            const handSec  = useSweep() ? remMs / 1000 : shownSec;  // what the hands point at
             const u = splitUnits(shownSec);
 
-            setHand(handSecond, (handSec % 60) * 6, true);
-            setHand(handMinute, ((handSec / 60) % 60) * 6, u.showMinutes);
-            setHand(handHour, ((handSec / 3600) % 12) * 30, u.showHours);
+            // Seconds hand: glides (Smooth) or jumps to each whole second (Natural).
+            // Minute and hour hands always move continuously; their motion is too slow to notice either way.
+            const secondsValue = useSweep() ? remMs / 1000 : shownSec;
+            const exactSec     = remMs / 1000;
+
+            setHand(handSecond, (secondsValue % 60) * 6, true);
+            setHand(handMinute, ((exactSec / 60) % 60) * 6, u.showMinutes);
+            setHand(handHour, ((exactSec / 3600) % 12) * 30, u.showHours);
         }
 
         function setHand(el, degrees, inPlay) {
@@ -575,10 +615,11 @@
             el.setAttribute("transform", `rotate(${inPlay ? degrees : 0} 225 225)`);
         }
 
-        // Smooth sweep: redraw every animation frame while a countdown is running
+        // Redraw every animation frame while a countdown is running on the analog dial
+        // (in Natural mode this makes the hand jump exactly on the second)
         function startDialLoop() {
             stopDialLoop();
-            if (!useSweep() || document.body.dataset.display !== "analog") return;
+            if (document.body.dataset.display !== "analog") return;
             const frame = () => {
                 renderDial();
                 rafId = requestAnimationFrame(frame);
