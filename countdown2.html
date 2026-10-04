@@ -32,8 +32,17 @@
             --link-color: white;
             --link-opacity: 0.7;
 
+            /* Quick links (shown when the time / dial is tapped during a countdown) */
+            --quick-gap: 1.2em;               /* space between "add label" and "settings" */
+            --quick-offset: 0.6em;            /* space between the time (or dial) and the links */
+            --quick-input-bg: rgba(255, 255, 255, 0.3);
+            --quick-input-color: black;
+            --quick-shadow: 0 0 6px rgba(0, 0, 0, 0.45);
+
             /* Setup panel */
             --pane-bg: rgba(255, 255, 255, 0.3);
+            --pane-disabled-opacity: 0.4;                  /* greyed-out sections inside the panel */
+            --pane-bg-running: rgba(255, 255, 255, 0.9);   /* same panel, when opened mid-countdown */
             --pane-color: black;
             --pane-width: 220px;
             --pane-radius: 0.5em;
@@ -84,6 +93,11 @@
         /* Two screens: the page shows one at a time via body[data-screen] */
         body[data-screen="setup"]     .timeWrap { display: none; }
         body[data-screen="countdown"] .setup    { display: none; }
+        /* ...except when "settings" is opened from the countdown screen */
+        body[data-screen="countdown"][data-settings="open"] .setup {
+            display: block;
+            background-color: var(--pane-bg-running);
+        }
 
         /* Utilities */
         .gayab     { display: none !important; }        /* removed from layout */
@@ -92,6 +106,7 @@
         /* ---------- Setup screen ---------- */
         .setup {
             position: absolute;
+            z-index: 2;                         /* above the dial when opened mid-countdown */
             width: var(--pane-width);
             background-color: var(--pane-bg);
             color: var(--pane-color);
@@ -160,6 +175,10 @@
 
         .option .hint { font-size: 0.8em; opacity: 0.7; }
 
+        /* Seconds-hand section while Display = Digital: still visible, but clearly unavailable */
+        .is-disabled { opacity: var(--pane-disabled-opacity); }
+        .is-disabled .option { cursor: not-allowed; }
+
         /* ---------- Countdown screen ---------- */
         .timeWrap {
             position: absolute;
@@ -203,6 +222,67 @@
 
         #endofTimer { display: none; }
 
+        /* ---------- Tappable time / dial + quick links ---------- */
+        /* .timeWrap switches pointer events off so the empty screen stays clickable; these opt back in */
+        .timeCont, .dial {
+            pointer-events: auto;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .timeCont:focus-visible { outline: 1px solid var(--time-color); outline-offset: 6px; }
+        .dial:focus-visible     { outline: 2px solid var(--analog-second-color); outline-offset: 4px; border-radius: 50%; }
+
+        .quick {
+            position: absolute;
+            top: 100%;                          /* sits just under the time without moving it */
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: var(--quick-offset);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5em;
+            white-space: nowrap;
+            pointer-events: auto;
+            text-shadow: var(--quick-shadow);
+        }
+
+        .quickLinks { display: flex; gap: var(--quick-gap); }
+        .quick .linkBtn { font-size: 0.9em; }
+
+        .quickEdit {
+            display: flex;
+            align-items: center;
+            gap: 0.4em;
+        }
+
+        .quick input {
+            font-size: 0.9em;
+            width: 11em;
+            max-width: 55vw;
+            box-sizing: border-box;
+            background: var(--quick-input-bg);
+            color: var(--quick-input-color);
+            border: none;
+            border-radius: 0.4em;
+            padding: 0.35em 0.6em;
+            text-shadow: none;
+        }
+
+        .quick .quickSave {
+            font: inherit;
+            font-size: 0.9em;
+            padding: 0.35em 0.8em;
+            border: none;
+            border-radius: 0.4em;
+            background: var(--pane-bg-running);
+            color: var(--quick-input-color);
+            text-decoration: none;
+            text-shadow: none;
+            opacity: 1;
+        }
+
         /* ---------- Display: digital vs analog ---------- */
         .dial { display: none; }
         body[data-display="analog"] .dial { display: block; }
@@ -219,6 +299,11 @@
         body[data-display="analog"] .readout {
             align-self: end;
             padding-bottom: var(--analog-readout-gap);
+        }
+
+        /* Analog: the quick links sit under the dial (the wrapper is full screen, so measure from its centre) */
+        body[data-display="analog"] .quick {
+            top: calc(50% + var(--analog-size) / 2);
         }
 
         body[data-display="analog"] .timeCont {
@@ -293,8 +378,8 @@
             <label class="option"><input type="radio" name="display" value="digital" checked> Digital</label>
             <label class="option"><input type="radio" name="display" value="analog"> Analog</label>
 
-            <!-- Only relevant to the analog dial, so it is hidden while Digital is selected -->
-            <div class="view gayab" id="motionGroup">
+            <!-- Only applies to the analog dial: always shown (so the panel keeps its height), greyed out while Digital is selected -->
+            <div class="view" id="motionGroup">
                 <div class="viewTitle">Seconds hand</div>
                 <label class="option"><input type="radio" name="motion" value="smooth" checked> Smooth</label>
                 <label class="option"><input type="radio" name="motion" value="natural"> Natural <span class="hint">(jumps each second)</span></label>
@@ -310,19 +395,31 @@
         <div class="readout">
             <button type="button" class="linkBtn invisible" id="newCountdownLink">set new countdown</button>
             <div class="caption"></div>
-            <div class="timeCont"></div>
+            <div class="timeCont" id="timeCont" role="button" tabindex="0" aria-label="Countdown. Activate for label and display options"></div>
         </div>
 
         <!-- Analog dial (only visible when Display = Analog). Drawn pointing at 12; JS rotates each hand.
              Centre is 225,225. Hands are lengths/widths taken from the Figma frames.
              Not in the frames yet: tick marks, numerals, progress ring. -->
-        <svg class="dial" viewBox="0 0 450 450" role="img" aria-label="Analog countdown dial">
+        <svg class="dial" id="dial" viewBox="0 0 450 450" role="button" tabindex="0" aria-label="Analog countdown dial. Activate for label and display options">
             <circle class="dialFace" cx="225" cy="225" r="222"/>
             <g class="hand hand--hour"   id="handHour">  <line x1="225" y1="228" x2="225" y2="110"/></g>
             <g class="hand hand--minute" id="handMinute"><line x1="225" y1="230" x2="225" y2="15"/></g>
             <circle class="hub" cx="225" cy="225" r="12.5"/>
             <g class="hand hand--second" id="handSecond"><line x1="225" y1="259" x2="225" y2="8"/></g>
         </svg>
+
+        <!-- Shown when the time or dial is tapped: edit the label or change the display, mid-countdown -->
+        <div class="quick gayab" id="quick">
+            <div class="quickLinks">
+                <button type="button" class="linkBtn" id="quickLabelBtn">add label</button>
+                <button type="button" class="linkBtn" id="quickSettingsBtn">settings</button>
+            </div>
+            <div class="quickEdit gayab" id="quickEdit">
+                <input type="text" id="quickLabelInput" maxlength="40" placeholder="Label" aria-label="Label">
+                <button type="button" class="quickSave" id="quickLabelSave">add</button>
+            </div>
+        </div>
     </div>
 
     <audio id="endofTimer" src="ding.mp3" preload="auto"></audio>
@@ -352,6 +449,14 @@
 
         /* ---------- Element refs ---------- */
         const timeCont        = document.querySelector(".timeCont");
+        const dialEl          = document.querySelector("#dial");
+        const setupPane       = document.querySelector(".setup");
+        const quick           = document.querySelector("#quick");
+        const quickLabelBtn   = document.querySelector("#quickLabelBtn");
+        const quickSettingsBtn = document.querySelector("#quickSettingsBtn");
+        const quickLabelInput = document.querySelector("#quickLabelInput");
+        const quickEdit       = document.querySelector("#quickEdit");
+        const quickLabelSave  = document.querySelector("#quickLabelSave");
         const captionEl       = document.querySelector(".caption");
         const mainView        = document.querySelector("#mainView");
         const settingsView    = document.querySelector("#settingsView");
@@ -423,6 +528,35 @@
                 radio.addEventListener("change", () => setMotion(radio.value));
             });
 
+            // During a countdown: tap the time or the dial to bring up "add label" / "settings"
+            [timeCont, dialEl].forEach((el) => {
+                el.addEventListener("click", toggleQuick);
+                el.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleQuick(); }
+                });
+            });
+            quickLabelBtn.addEventListener("click", editLabel);
+            quickSettingsBtn.addEventListener("click", () => { hideQuick(); openSettings(); });
+            quickLabelSave.addEventListener("click", saveLabel);
+            quickLabelInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") saveLabel();
+                if (e.key === "Escape") hideQuick();
+            });
+
+            // Tapping anywhere else (or pressing Escape) tucks the links and the settings panel away again
+            document.addEventListener("click", (e) => {
+                if (document.body.dataset.screen !== "countdown") return;
+                const t = e.target;
+                if (!quick.contains(t) && !timeCont.contains(t) && !dialEl.contains(t) && !setupPane.contains(t)) hideQuick();
+                if (document.body.dataset.settings === "open" && !setupPane.contains(t) && !quick.contains(t)) closeSettings();
+            });
+            document.addEventListener("keydown", (e) => {
+                if (e.key === "Escape" && document.body.dataset.screen === "countdown") {
+                    hideQuick();
+                    closeSettings();
+                }
+            });
+
             // Enter in either field starts the countdown
             [targetInput, labelInput].forEach((el) => {
                 el.addEventListener("keydown", (e) => {
@@ -448,7 +582,9 @@
         function setDisplay(mode) {
             document.body.dataset.display = mode;
             displayRadios.forEach((radio) => { radio.checked = (radio.value === mode); });
-            motionGroup.classList.toggle("gayab", mode !== "analog");
+            const motionOn = (mode === "analog");
+            motionGroup.classList.toggle("is-disabled", !motionOn);
+            motionRadios.forEach((radio) => { radio.disabled = !motionOn; });
             try { localStorage.setItem(CONFIG.displayStorageKey, mode); } catch (e) { /* ignore */ }
 
             if (targetDate && !hasFinished) {      // switched while a countdown is running
@@ -487,6 +623,7 @@
             addLabelBtn.classList.remove("gayab");
             errorMsg.textContent = "";
             newCountdownBtn.classList.add("invisible");
+            hideQuick();
             closeSettings();
             document.title = "Countdown";
 
@@ -502,11 +639,51 @@
         function openSettings() {
             mainView.classList.add("gayab");
             settingsView.classList.remove("gayab");
+            document.body.dataset.settings = "open";     // lets the panel show on the countdown screen too
         }
 
         function closeSettings() {
             settingsView.classList.add("gayab");
             mainView.classList.remove("gayab");
+            delete document.body.dataset.settings;
+        }
+
+        /* ---------- During a countdown: quick links (add / edit label, settings) ---------- */
+        function toggleQuick() {
+            if (quick.classList.contains("gayab")) showQuick(); else hideQuick();
+        }
+
+        function showQuick() {
+            closeSettings();
+            quickLabelBtn.textContent = targetLabel ? "edit label" : "add label";
+            quick.classList.remove("gayab");
+        }
+
+        function hideQuick() {
+            quick.classList.add("gayab");
+            quickEdit.classList.add("gayab");
+            quickLabelBtn.classList.remove("gayab");
+        }
+
+        function editLabel() {
+            quickLabelInput.value = targetLabel;
+            quickLabelSave.textContent = targetLabel ? "update" : "add";
+            quickEdit.classList.remove("gayab");
+            quickLabelBtn.classList.add("gayab");
+            quickLabelInput.focus();
+            quickLabelInput.select();
+        }
+
+        // Applies the typed label (an empty box removes the label) and tucks the links away
+        function saveLabel() {
+            setLabel(quickLabelInput.value.trim());
+            hideQuick();
+        }
+
+        function setLabel(label) {
+            targetLabel = label;
+            captionEl.textContent = formatCaption(targetDate, targetLabel);
+            document.title = lastText + (targetLabel ? " · " + targetLabel : "");
         }
 
         /* ---------- Screen 2: countdown ---------- */
@@ -529,6 +706,7 @@
 
             captionEl.textContent = formatCaption(targetDate, targetLabel);
             newCountdownBtn.classList.add("invisible");
+            hideQuick();
             document.body.dataset.screen = "countdown";
 
             tick();
