@@ -5,38 +5,62 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Generation Calculator</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet">
 
 <!-- =====================================================================
-     1. THEME TOKENS  — change colours, sizes and fonts here only
+     1. THEME TOKENS  — change colours, type, sizes and the figure icon here only
      ===================================================================== -->
 <style>
 :root {
-  /* colours */
-  --color-text:        #000000;
-  --color-accent:      #5500FF;   /* output text */
-  --color-primary:     #0034DF;   /* selected CE/BCE */
-  --color-primary-ink: #FFFFFF;
-  --color-surface:     #FFFFFF;
-  --color-muted:       #D9D9D9;   /* slider thumb, Calculate button */
-  --color-border:      #000000;
+  color-scheme: light dark;
+
+  /* colours: cool neutrals + a single ink accent */
+  --color-bg:            #f2f3f3;   /* page */
+  --color-surface:       #ffffff;   /* inputs, figure nodes */
+  --color-fill:          #e6e8e8;   /* segmented-control track, hover */
+  --color-border:        #dcdfdf;   /* hairlines */
+  --color-border-strong: #c3c7c8;   /* inputs, connector line */
+  --color-text:          #222426;
+  --color-text-muted:    #686d70;
+  --color-text-faint:    #979c9f;
+  --color-accent:        #2a2d30;   /* slider fill, selected era, "You" */
+  --color-accent-ink:    #ffffff;   /* on top of accent */
 
   /* type */
-  --font-base:  "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --fs-base:    16px;
-  --fs-small:   12px;
-  --fs-title:   18px;
-  --fs-big-num: 32px;
+  --font-ui:      "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-numeral: "Newsreader", "Iowan Old Style", Georgia, serif;   /* the big generation number */
+  --fs-base:  15px;
+  --fs-small: 12px;
+  --fs-input: 16px;
 
   /* shape + spacing */
-  --radius-sm:  4px;
-  --radius-md:  6px;
-  --page-width: 440px;
-  --gutter:     24px;
-  --figure-size: 32px;            /* height of each human figure */
-  --row-height:  48px;            /* vertical rhythm of generations */
-  --thumb-size:  18px;            /* slider thumb */
-  --shadow-btn:  0 4px 4px rgba(0, 0, 0, .25);
+  --radius-sm:  8px;
+  --radius-md: 10px;
+  --page-width: 480px;
+  --gutter:     20px;
+  --header-height: 52px;
+  --thumb-size: 20px;   /* slider thumb (keep in sync with THUMB_PX in the script) */
+  --track-size:  4px;
+
+  /* built-in figure icon, drawn as a mask so it follows the text colours.
+     Swap for your own PNG/JPG with CONFIG.figureImage in the script. */
+  --figure-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 40'%3E%3Ccircle cx='12' cy='5.5' r='5'/%3E%3Cpath d='M5 13h14a3 3 0 0 1 3 3v11h-3.5V16.5H17V39h-4.5V28h-1v11H7V16.5H5.5V27H2V16a3 3 0 0 1 3-3z'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg:            #151718;
+    --color-surface:       #1d2022;
+    --color-fill:          #26292b;
+    --color-border:        #2c3032;
+    --color-border-strong: #41464a;
+    --color-text:          #e9eaea;
+    --color-text-muted:    #9ca1a4;
+    --color-text-faint:    #6a6f73;
+    --color-accent:        #e9eaea;
+    --color-accent-ink:    #151718;
+  }
 }
 </style>
 
@@ -45,125 +69,244 @@
      ===================================================================== -->
 <style>
 * { box-sizing: border-box; }
-html, body { margin: 0; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
 body {
-  font-family: var(--font-base);
-  font-size: var(--fs-base);
-  color: var(--color-text);
-  background: var(--color-surface);
+  font-family: var(--font-ui); font-size: var(--fs-base); color: var(--color-text);
+  background: var(--color-bg); -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
 }
 [hidden] { display: none !important; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 
 /* The app fills the viewport exactly: the result area takes whatever height is
    left, and the figure stack is planned to fit it (so the page never scrolls). */
-html, body { height: 100%; overflow: hidden; }
 .app {
   max-width: var(--page-width); margin: 0 auto;
   height: 100vh; height: 100dvh;
   display: flex; flex-direction: column;
+  position: relative;               /* anchors the settings / info sheets */
 }
 
 /* ---- header ---- */
 .app-header {
-  display: flex; align-items: center; justify-content: space-between;
-  height: 40px; padding: 0 16px;
+  flex: none; display: flex; align-items: center; justify-content: space-between;
+  height: var(--header-height); padding: 0 calc(var(--gutter) - 8px) 0 var(--gutter);
   border-bottom: 1px solid var(--color-border);
 }
-.app-header h1 { margin: 0; font-size: var(--fs-title); font-weight: 700; }
-.icon-btn { background: none; border: 0; padding: 4px; cursor: pointer; line-height: 0; }
-.icon-btn svg { width: 20px; height: 21px; fill: var(--color-text); }
-
-/* ---- settings panel ---- */
-.settings { padding: 12px 16px; border-bottom: 1px solid var(--color-border); background: #f6f6f6; }
-.settings label { display: block; font-size: var(--fs-small); margin-bottom: 4px; }
-.settings select {
-  width: 100%; height: 32px; font: inherit;
-  border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface);
+.app-header h1 { margin: 0; font-size: var(--fs-base); font-weight: 600; letter-spacing: -.005em; }
+.icon-btn {
+  display: grid; place-items: center; width: 36px; height: 36px;
+  border: 0; border-radius: var(--radius-sm); background: none;
+  color: var(--color-text-muted); cursor: pointer; transition: background .15s, color .15s;
 }
+.icon-btn:hover, .icon-btn[aria-expanded="true"] { background: var(--color-fill); color: var(--color-text); }
+.icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+.header-actions { display: flex; gap: 2px; }
+.field-label { display: block; margin-bottom: 6px; font-size: var(--fs-small); color: var(--color-text-muted); }
+
+/* ---- sheets: settings + info slide over the content (no layout jump) ---- */
+.scrim {
+  position: absolute; left: 0; right: 0; bottom: 0; top: var(--header-height); z-index: 10;
+  background: rgba(20, 22, 23, .28);
+}
+.sheet {
+  position: absolute; left: 0; right: 0; top: var(--header-height); z-index: 20;
+  max-height: calc(100% - var(--header-height) - 16px); overflow-y: auto; overscroll-behavior: contain;
+  padding: 16px var(--gutter) 20px;
+  background: var(--color-bg); border-bottom: 1px solid var(--color-border-strong);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .10);
+}
+.sheet-title { margin: 0 0 10px; font-size: var(--fs-base); font-weight: 600; }
+.sheet-hint { margin: -4px 0 14px; font-size: var(--fs-small); line-height: 1.4; color: var(--color-text-muted); }
+
+/* settings: every "slider starts at" option, visible at once */
+.option-list { border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface); overflow: hidden; }
+.option {
+  display: flex; align-items: center; width: 100%; min-height: 42px; padding: 0 14px;
+  border: 0; border-bottom: 1px solid var(--color-border); background: transparent;
+  text-align: left; cursor: pointer; font-size: var(--fs-base);
+}
+.option:last-child { border-bottom: 0; }
+.option:hover { background: var(--color-fill); }
+.option[aria-checked="true"] { background: var(--color-fill); font-weight: 600; box-shadow: inset 3px 0 0 var(--color-accent); }
+
+/* info: people and events with their years */
+.search {
+  display: block; width: 100%; height: 40px; margin: 0 0 12px; padding: 0 12px;
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm);
+  background: var(--color-surface); color: var(--color-text); font: inherit; font-size: var(--fs-base);
+}
+.search:focus { outline: 2px solid var(--color-accent); outline-offset: 1px; }
+.tl-empty { margin: 8px 0 0; font-size: var(--fs-small); color: var(--color-text-muted); }
+.tl-group + .tl-group { margin-top: 6px; }
+.tl-head {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 8px 0;
+  border: 0; background: transparent; cursor: pointer; text-align: left;
+  font: inherit; font-size: var(--fs-small); font-weight: 500; color: var(--color-text-muted);
+}
+.tl-head:hover { color: var(--color-text); }
+.tl-head::before {
+  content: ''; flex: none; width: 6px; height: 6px; margin: 0 4px 2px 3px;
+  border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg); transition: transform .15s;
+}
+.tl-head[aria-expanded="false"]::before { transform: rotate(-45deg); }
+.tl-count { font-weight: 400; color: var(--color-text-faint); }
+.tl-items[hidden] { display: none; }
+.tl-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  width: 100%; padding: 9px 0; border: 0; border-top: 1px solid var(--color-border);
+  background: transparent; text-align: left; cursor: pointer; font-size: var(--fs-base);
+}
+.tl-row:hover .tl-name { text-decoration: underline; text-underline-offset: 3px; }
+.tl-years { flex: none; font-size: 14px; color: var(--color-text-muted); }
+.tl-row[disabled] { cursor: default; opacity: .45; }
+.tl-row[disabled]:hover .tl-name { text-decoration: none; }
 
 main {
   flex: 1 1 auto; min-height: 0;
   display: flex; flex-direction: column;
-  padding: 20px var(--gutter) 12px;
+  padding: 22px var(--gutter) 14px;
 }
 main > * { flex: none; }
 
 /* ---- slider ---- */
 .slider-wrap { position: relative; padding-top: 20px; }
-.slider-tick { position: absolute; top: 0; transform: translateX(-50%); text-align: center; pointer-events: none; }
-.slider-tick span { display: block; font-size: 11px; font-weight: 700; line-height: 14px; }
-.slider-tick i { display: block; width: 1px; height: 12px; margin: 5px auto 0; background: var(--color-border); }
+.slider-tick {
+  position: absolute; top: 0; transform: translateX(-50%);
+  text-align: center; pointer-events: none; color: var(--color-text-faint);
+}
+.slider-tick span { display: block; font-size: 11px; font-weight: 500; line-height: 12px; }
+.slider-tick i { display: block; width: 1px; height: 14px; margin: 2px auto 0; background: var(--color-border-strong); }
 
 input[type=range] {
   -webkit-appearance: none; appearance: none;
   display: block; width: 100%; height: var(--thumb-size); margin: 0;
   background: transparent; cursor: pointer;
+  --p: .5;                         /* 0..1 position, set from the script */
 }
-input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--color-border); }
-input[type=range]::-moz-range-track             { height: 1px; background: var(--color-border); }
+input[type=range]::-webkit-slider-runnable-track {
+  height: var(--track-size); border-radius: 999px;
+  background: linear-gradient(to right,
+    var(--color-accent) calc(var(--thumb-size) / 2 + var(--p) * (100% - var(--thumb-size))),
+    var(--color-border-strong) 0);
+}
+input[type=range]::-moz-range-track    { height: var(--track-size); border-radius: 999px; background: var(--color-border-strong); }
+input[type=range]::-moz-range-progress { height: var(--track-size); border-radius: 999px; background: var(--color-accent); }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none; width: var(--thumb-size); height: var(--thumb-size);
-  margin-top: calc(var(--thumb-size) / -2); border-radius: 50%;
-  background: var(--color-muted); border: 0;
+  margin-top: calc((var(--track-size) - var(--thumb-size)) / 2);
+  border-radius: 50%; border: 2px solid var(--color-accent); background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .18);
 }
 input[type=range]::-moz-range-thumb {
-  width: var(--thumb-size); height: var(--thumb-size);
-  border-radius: 50%; background: var(--color-muted); border: 0;
+  box-sizing: content-box; width: calc(var(--thumb-size) - 4px); height: calc(var(--thumb-size) - 4px);
+  border-radius: 50%; border: 2px solid var(--color-accent); background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .18);
 }
-.slider-labels { display: flex; justify-content: space-between; margin: 8px -14px 0; }
+.slider-labels { display: flex; justify-content: space-between; margin-top: 6px; font-size: var(--fs-small); color: var(--color-text-muted); }
 
-/* ---- inputs row ---- */
-.controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px; margin: 18px -9px 0; }
-.field-label { display: block; font-size: var(--fs-small); margin-bottom: 1px; }
-.control-group { display: flex; height: 29px; }
-.control-group input[type=number] {
-  width: 100px; min-width: 0; padding: 0 8px; font: inherit;
-  border: 1px solid var(--color-border); border-radius: var(--radius-md) 0 0 var(--radius-md);
-  background: var(--color-surface);
+/* ---- inputs ---- */
+.controls { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 14px 20px; margin-top: 20px; }
+.field { min-width: 0; }
+.field-row { display: flex; gap: 8px; }
+.num-input { position: relative; }
+.field--year .num-input { width: 104px; }
+.field--age  .num-input { width: 96px; }
+input[type=number] {
+  width: 100%; height: 40px; padding: 0 12px;
+  font-size: var(--fs-input); font-weight: 500;
+  border: 1px solid var(--color-border-strong); border-radius: var(--radius-sm); background: var(--color-surface);
+  -moz-appearance: textfield; appearance: textfield;
 }
-.control-group:not(.has-era) input[type=number] { border-radius: var(--radius-md); }
-.era-toggle { display: flex; }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.field--age input { padding-right: 36px; }
+.suffix { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: var(--fs-small); color: var(--color-text-faint); pointer-events: none; }
+
+.era-toggle { display: flex; gap: 2px; height: 40px; padding: 3px; border-radius: var(--radius-sm); background: var(--color-fill); }
 .era-toggle button {
-  width: 59px; font: inherit; cursor: pointer;
-  border: 1px solid var(--color-border); border-left: 0; background: var(--color-surface); color: var(--color-text);
+  min-width: 48px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent;
+  color: var(--color-text-muted); font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: background .15s, color .15s;
 }
-.era-toggle button:last-child { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
-.era-toggle button.is-active { background: var(--color-primary); color: var(--color-primary-ink); }
-.age-field input[type=number] { width: 80px; border-radius: var(--radius-md); }
+.era-toggle button.is-active { background: var(--color-accent); color: var(--color-accent-ink); }
 
-/* ---- action buttons ---- */
-.actions { display: flex; gap: 23px; margin: 28px -9px 0; }
+/* ---- actions ---- */
+.actions { display: flex; gap: 8px; margin-top: 18px; }
 .btn {
-  width: 101px; height: 41px; font: inherit; cursor: pointer;
-  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
-  background: var(--color-surface); color: var(--color-text); box-shadow: var(--shadow-btn);
+  height: 34px; padding: 0 14px; border-radius: var(--radius-sm); cursor: pointer;
+  font-size: 14px; font-weight: 500; border: 1px solid var(--color-border-strong);
+  background: transparent; color: var(--color-text); transition: background .15s;
 }
-.btn--primary { background: var(--color-muted); }
-.btn:active { transform: translateY(1px); box-shadow: none; }
+.btn:hover { background: var(--color-fill); }
+.btn--ghost { border-color: transparent; color: var(--color-text-muted); }
 
-/* ---- result ---- */
-/* The result area takes all remaining height. JS sets --row-height / --figure-size
+/* ---- result ----
+   The result area takes all remaining height. JS sets --row-height / --figure-size
    on it so the rows fit exactly. Row heights below must match COST in the script. */
 .result {
   flex: 1 1 0; min-height: 0; overflow: hidden;
-  margin: 20px -9px 0; padding-left: 5px; color: var(--color-accent);
-  --row-height: 48px; --figure-size: 32px;
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--color-border);
+  --row-height: 48px; --figure-size: 38px;
 }
-.gen { display: flex; align-items: center; height: var(--row-height); gap: 12px; }
+.stack { position: relative; }
+/* the connector: a thin line from the oldest figure down to "You" */
+.stack::before {
+  content: ""; position: absolute; width: 2px; border-radius: 2px;
+  left: calc(var(--figure-size) / 2 - 1px);
+  top: calc(var(--row-height) * .625); bottom: calc(var(--row-height) * .5);
+  background: linear-gradient(to bottom, var(--color-border), var(--color-border-strong));
+}
+.stack.is-single::before { display: none; }
+
+.gen { position: relative; display: flex; align-items: center; gap: 14px; height: var(--row-height); }
 .gen--top { height: calc(var(--row-height) * 1.25); }
-.figure { width: var(--figure-size); height: var(--figure-size); object-fit: contain; flex: none; }
-.gen sup { font-size: .6em; vertical-align: super; line-height: 0; }
-.gen-text strong { font-weight: 700; }
-.gen-text .relation { margin-left: 6px; }
-.gen-num { font-size: calc(var(--row-height) * .67); font-weight: 700; line-height: 1; margin-right: 12px; }
-.gen-num sup { font-size: .5em; }
-.gen-sub { display: block; font-size: clamp(10px, calc(var(--row-height) * .25), var(--fs-small)); margin-top: 2px; opacity: .8; }
-.dots {
-  display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
-  width: var(--figure-size); height: calc(var(--row-height) * .9);
+
+/* each figure is a small round "node" on the connector; older ones fade (--fade) */
+.figure {
+  flex: none; display: grid; place-items: center;
+  width: var(--figure-size); height: var(--figure-size); border-radius: 50%;
+  background: var(--color-surface); border: 1px solid var(--color-border-strong);
+  opacity: var(--fade, 1);
 }
-.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--color-text); }
-.note { color: var(--color-text); font-size: var(--fs-small); margin: 0 0 4px; }
+.figure img { width: 56%; height: 56%; object-fit: contain; }
+.figure-icon {
+  width: 52%; height: 52%; background: var(--color-text-muted);
+  -webkit-mask: var(--figure-mask) center / contain no-repeat;
+          mask: var(--figure-mask) center / contain no-repeat;
+}
+.gen--top .figure-icon { background: var(--color-text); }
+.gen--you .figure { background: var(--color-accent); border-color: var(--color-accent); }
+.gen--you .figure-icon { background: var(--color-accent-ink); }
+
+.gen-text { min-width: 0; line-height: 1.25; color: var(--color-text-muted); }
+.gen-text strong { font-weight: 600; color: var(--color-text); }
+.gen-text .relation { margin-left: 6px; }
+.gen sup { font-size: .62em; line-height: 0; vertical-align: super; }
+.gen--top .gen-text { color: var(--color-text); }
+.gen--you .gen-text { font-weight: 600; color: var(--color-text); }
+
+.gen-num {
+  margin-right: 10px; color: var(--color-text);
+  font-family: var(--font-numeral); font-weight: 500; font-feature-settings: "lnum";
+  font-size: calc(var(--row-height) * .72); line-height: 1; letter-spacing: -.01em;
+}
+.gen-num sup { font-size: .4em; font-weight: 600; font-family: var(--font-ui); letter-spacing: 0; }
+.gen-sub {
+  display: block; margin-top: 3px; color: var(--color-text-muted);
+  font-size: clamp(10px, calc(var(--row-height) * .25), var(--fs-small));
+}
+
+/* "many more in between": masks the connector so the gap reads as a break */
+.dots {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly;
+  width: var(--figure-size); height: calc(var(--row-height) * .9); background: var(--color-bg);
+}
+.dots i { width: 4px; height: 4px; border-radius: 50%; background: var(--color-text-faint); }
+.note { margin: 0 0 6px; font-size: var(--fs-small); color: var(--color-text-muted); }
 </style>
 </head>
 
@@ -175,15 +318,31 @@ input[type=range]::-moz-range-thumb {
 
   <header class="app-header">
     <h1>Generation Calculator</h1>
+    <div class="header-actions">
+    <button class="icon-btn" id="infoBtn" type="button" aria-label="Dates and people" aria-expanded="false" aria-controls="infoPanel">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1.1 6.1a1.1 1.1 0 1 1-2.2 0 1.1 1.1 0 0 1 2.2 0ZM10.5 11h2.2a.8.8 0 0 1 .8.8v5.2h.7a.8.8 0 0 1 0 1.6h-3.7a.8.8 0 0 1 0-1.6h.7v-4.4h-.7a.8.8 0 0 1 0-1.6Z"/></svg>
+    </button>
     <button class="icon-btn" id="settingsBtn" type="button" aria-label="Settings" aria-expanded="false" aria-controls="settingsPanel">
       <svg viewBox="405 8 20 21" aria-hidden="true"><path d="M424.336 15.0234C424.492 15.375 424.375 15.7266 424.102 16L422.422 17.5234C422.461 17.8359 422.461 18.1875 422.461 18.5C422.461 18.8516 422.461 19.2031 422.422 19.5156L424.102 21.0391C424.375 21.2734 424.492 21.6641 424.336 22.0156C424.18 22.4844 423.984 22.9141 423.75 23.3438L423.555 23.6562C423.281 24.0859 423.008 24.5156 422.695 24.8672C422.461 25.1797 422.07 25.2578 421.719 25.1406L419.57 24.4766C419.023 24.8672 418.438 25.1797 417.852 25.4531L417.344 27.6797C417.266 28.0312 416.992 28.3047 416.641 28.3828C416.094 28.4609 415.547 28.5 414.961 28.5C414.414 28.5 413.867 28.4609 413.32 28.3828C412.969 28.3047 412.695 28.0312 412.617 27.6797L412.109 25.4531C411.484 25.1797 410.938 24.8672 410.391 24.4766L408.242 25.1406C407.891 25.2578 407.5 25.1797 407.266 24.9062C406.953 24.5156 406.68 24.0859 406.406 23.6562L406.211 23.3438C405.977 22.9141 405.781 22.4844 405.625 22.0156C405.469 21.6641 405.586 21.3125 405.859 21.0391L407.539 19.5156C407.5 19.2031 407.5 18.8516 407.5 18.5C407.5 18.1875 407.5 17.8359 407.539 17.5234L405.859 16C405.586 15.7266 405.469 15.375 405.625 15.0234C405.781 14.5547 405.977 14.125 406.211 13.6953L406.406 13.3828C406.68 12.9531 406.953 12.5234 407.266 12.1328C407.5 11.8594 407.891 11.7812 408.242 11.8984L410.391 12.5625C410.938 12.1719 411.523 11.8203 412.109 11.5859L412.617 9.35938C412.695 9.00781 412.969 8.73438 413.32 8.65625C413.867 8.57812 414.414 8.5 415 8.5C415.547 8.5 416.094 8.57812 416.641 8.65625C416.992 8.69531 417.266 9.00781 417.344 9.35938L417.852 11.5859C418.477 11.8203 419.023 12.1719 419.57 12.5625L421.719 11.8984C422.07 11.7812 422.461 11.8594 422.695 12.1328C423.008 12.5234 423.281 12.9531 423.555 13.3828L423.75 13.6953C423.984 14.125 424.18 14.5547 424.375 15.0234H424.336ZM415 21.625C416.094 21.625 417.109 21.0391 417.695 20.0625C418.242 19.125 418.242 17.9141 417.695 16.9375C417.109 16 416.094 15.375 415 15.375C413.867 15.375 412.852 16 412.266 16.9375C411.719 17.9141 411.719 19.125 412.266 20.0625C412.852 21.0391 413.867 21.625 415 21.625Z"/></svg>
     </button>
+    </div>
   </header>
 
-  <!-- Settings: choose how far back the slider goes -->
-  <section class="settings" id="settingsPanel" hidden>
-    <label for="minSelect">Earliest year on the slider</label>
-    <select id="minSelect"></select>
+  <!-- Sheets open over the content; the scrim closes them when tapped -->
+  <div class="scrim" id="scrim" hidden></div>
+
+  <!-- Settings: choose how far back the slider goes (all options visible) -->
+  <section class="sheet" id="settingsPanel" hidden aria-labelledby="settingsTitle">
+    <h2 class="sheet-title" id="settingsTitle">Slider starts at</h2>
+    <div class="option-list" id="bandList" role="radiogroup" aria-labelledby="settingsTitle"></div>
+  </section>
+
+  <!-- Info: dates, events and people (filled from TIMELINE in the script) -->
+  <section class="sheet" id="infoPanel" hidden aria-labelledby="infoTitle">
+    <h2 class="sheet-title" id="infoTitle">Dates and people</h2>
+    <p class="sheet-hint">Tap one to use it as the target year. People use their birth year.</p>
+    <input type="search" class="search" id="timelineSearch" placeholder="Search people and events" aria-label="Search people and events" autocomplete="off">
+    <div id="timelineList"></div>
   </section>
 
   <main>
@@ -199,28 +358,31 @@ input[type=range]::-moz-range-thumb {
 
     <!-- Target year + era toggle + generation length -->
     <div class="controls">
-      <div>
-        <label class="field-label" for="yearInput">Target Year</label>
-        <div class="control-group has-era" id="yearGroup">
-          <input type="number" id="yearInput" min="0" step="1" inputmode="numeric">
+      <div class="field field--year">
+        <label class="field-label" for="yearInput">Target year</label>
+        <div class="field-row" id="yearGroup">
+          <div class="num-input">
+            <input type="number" id="yearInput" min="0" step="1" inputmode="numeric">
+          </div>
           <div class="era-toggle" id="eraToggle" role="group" aria-label="Era">
             <button type="button" data-era="BCE" aria-pressed="false">BCE</button>
             <button type="button" data-era="CE" aria-pressed="true" class="is-active">CE</button>
           </div>
         </div>
       </div>
-      <div class="age-field">
-        <label class="field-label" for="ageInput">Avg. age at fatherhood</label>
-        <div class="control-group">
+      <div class="field field--age">
+        <label class="field-label" for="ageInput" title="Average age at which a man becomes a father">Age at fatherhood</label>
+        <div class="num-input">
           <input type="number" id="ageInput" min="5" max="100" step="1" inputmode="numeric">
+          <span class="suffix">yrs</span>
         </div>
       </div>
     </div>
 
     <!-- Actions -->
     <div class="actions">
-      <button type="button" class="btn btn--primary" id="calcBtn">Calculate</button>
-      <button type="button" class="btn" id="resetBtn">Reset</button>
+      <button type="button" class="btn" id="calcBtn">Calculate</button>
+      <button type="button" class="btn btn--ghost" id="resetBtn">Reset</button>
     </div>
 
     <!-- Output -->
@@ -265,11 +427,50 @@ const CONFIG = {
   storageKey: 'generationCalculator.minYear'
 };
 
-/* Built-in fallback figure (swap via CONFIG.figureImage) */
-const FALLBACK_FIGURE = 'data:image/svg+xml,' + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 40"><circle cx="12" cy="5.5" r="5"/>' +
-  '<path d="M5 13h14a3 3 0 0 1 3 3v11h-3.5V16.5H17V39h-4.5V28h-1v11H7V16.5H5.5V27H2V16a3 3 0 0 1 3-3z"/></svg>'
-);
+/* Dates, events and people shown in the info panel. Add or edit freely.
+   Years are signed (negative = BCE). `to` is optional (events have just `from`);
+   `approx: true` shows "c." in front. Tapping a row uses `from` as the target year. */
+const TIMELINE = {
+  People: [
+    { name: 'Confucius',                    from: -551, to: -479 },
+    { name: 'Socrates',                     from: -470, to: -399, approx: true },
+    { name: 'Alexander the Great',          from: -356, to: -323 },
+    { name: 'Ashoka',                       from: -304, to: -232, approx: true },
+    { name: 'Julius Caesar',                from: -100, to: -44 },
+    { name: 'Cleopatra VII',                from: -69,  to: -30 },
+    { name: 'Aryabhata',                    from: 476,  to: 550,  approx: true },
+    { name: 'Prophet Muhammad',             from: 570,  to: 632,  approx: true },
+    { name: 'Charlemagne',                  from: 748,  to: 814 },
+    { name: 'Genghis Khan',                 from: 1162, to: 1227, approx: true },
+    { name: 'Leonardo da Vinci',            from: 1452, to: 1519 },
+    { name: 'Akbar',                        from: 1542, to: 1605 },
+    { name: 'William Shakespeare',          from: 1564, to: 1616 },
+    { name: 'Chhatrapati Shivaji Maharaj',  from: 1630, to: 1680 },
+    { name: 'Isaac Newton',                 from: 1643, to: 1727 },
+    { name: 'Rani Lakshmibai',              from: 1828, to: 1858, approx: true },
+    { name: 'Swami Vivekananda',            from: 1863, to: 1902 },
+    { name: 'Mahatma Gandhi',               from: 1869, to: 1948 },
+    { name: 'Albert Einstein',              from: 1879, to: 1955 }
+  ],
+  Events: [
+    { name: 'First Olympic Games',                    from: -776, approx: true },
+    { name: 'Rome founded (traditional date)',        from: -753 },
+    { name: 'Birth of Jesus (traditional dating)',    from: 0 },
+    { name: 'Fall of the Western Roman Empire',       from: 476 },
+    { name: 'Spread of Islam begins (7th century)',   from: 610 },
+    { name: 'Magna Carta',                            from: 1215 },
+    { name: 'Gutenberg printing press',               from: 1440, approx: true },
+    { name: 'Fall of Constantinople',                 from: 1453 },
+    { name: 'Columbus reaches the Americas',          from: 1492 },
+    { name: 'Mughal Empire founded',                  from: 1526 },
+    { name: 'Shivaji crowned Chhatrapati',            from: 1674 },
+    { name: 'Battle of Plassey',                      from: 1757 },
+    { name: 'American Declaration of Independence',   from: 1776 },
+    { name: 'French Revolution begins',               from: 1789 },
+    { name: 'Indian independence',                    from: 1947 },
+    { name: 'First Moon landing',                     from: 1969 }
+  ]
+};
 
 /* ---------- 4b. PURE LOGIC (no DOM) ---------- */
 // LOGIC-START
@@ -277,6 +478,20 @@ const FALLBACK_FIGURE = 'data:image/svg+xml,' + encodeURIComponent(
 function formatYear(y, withSuffix = true) {
   if (y < 0) return `${-y} BCE`;
   return withSuffix ? `${y} CE` : String(y);
+}
+// "1630 – 1680 CE", "c. 470 – 399 BCE", "4 BCE – 30 CE", or a single year for events.
+function formatSpan(e) {
+  const c = e.approx ? 'c. ' : '';
+  if (e.to === undefined) return c + formatYear(e.from);
+  const a = e.from, b = e.to;
+  if (a < 0 && b < 0) return `${c}${-a} – ${-b} BCE`;
+  if (a < 0)          return `${c}${-a} BCE – ${b} CE`;
+  return `${c}${a} – ${b} CE`;
+}
+// The closest "slider starts at" band that reaches back to `year` (or null if none does).
+function bandFor(year, bandYears) {
+  const ok = bandYears.filter(y => y <= year);
+  return ok.length ? Math.max(...ok) : null;
 }
 function ordinalSuffix(n) {
   const r100 = n % 100;
@@ -343,12 +558,13 @@ const el = {
   eraToggle: $('eraToggle'), yearGroup: $('yearGroup'), zeroTick: $('zeroTick'),
   minLabel: $('minLabel'), maxLabel: $('maxLabel'),
   calc: $('calcBtn'), reset: $('resetBtn'), result: $('result'),
-  settingsBtn: $('settingsBtn'), settingsPanel: $('settingsPanel'), minSelect: $('minSelect')
+  settingsBtn: $('settingsBtn'), settingsPanel: $('settingsPanel'), bandList: $('bandList'),
+  infoBtn: $('infoBtn'), infoPanel: $('infoPanel'), timelineList: $('timelineList'), timelineSearch: $('timelineSearch'), scrim: $('scrim')
 };
 const state = { minYear: CONFIG.defaultMinYear, target: CONFIG.defaultTarget };
 
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-const THUMB_PX = 18; // keep in sync with --thumb-size
+const THUMB_PX = 20; // keep in sync with --thumb-size
 
 function loadMinYear() {
   try {
@@ -376,12 +592,21 @@ function applyRange() {
     const pct = (0 - minYear) / (max - minYear);
     el.zeroTick.style.left = `calc(${pct * 100}% + ${(0.5 - pct) * THUMB_PX}px)`;
   }
+  syncSliderFill();
+}
+
+/* Tells the CSS where the thumb is (0..1) so the filled part of the track follows it */
+function syncSliderFill() {
+  const min = +el.slider.min, max = +el.slider.max;
+  const p = max > min ? (+el.slider.value - min) / (max - min) : 0;
+  el.slider.style.setProperty('--p', clamp(p, 0, 1));
 }
 
 /* Single place that changes the target year and syncs every control */
 function setTarget(y) {
   state.target = clamp(Math.round(y), state.minYear, CONFIG.currentYear);
   el.slider.value = state.target;
+  syncSliderFill();
   el.yearInput.value = Math.abs(state.target);
   const era = state.target < 0 ? 'BCE' : 'CE';
   el.eraToggle.querySelectorAll('button').forEach(b => {
@@ -405,11 +630,21 @@ function currentAge() {
 function commitAge() { el.ageInput.value = currentAge(); }
 
 /* ---------- Rendering ---------- */
+// A figure is a small round "node" holding either your own image (CONFIG.figureImage)
+// or the built-in icon (a CSS mask: see --figure-mask in the theme tokens).
 function makeFigure() {
-  const img = document.createElement('img');
-  img.className = 'figure'; img.alt = '';
-  img.src = CONFIG.figureImage || FALLBACK_FIGURE;
-  return img;
+  const node = document.createElement('span');
+  node.className = 'figure';
+  if (CONFIG.figureImage) {
+    const img = document.createElement('img');
+    img.alt = ''; img.src = CONFIG.figureImage;
+    node.append(img);
+  } else {
+    const icon = document.createElement('span');
+    icon.className = 'figure-icon';
+    node.append(icon);
+  }
+  return node;
 }
 function ordinalNode(n, tag = 'span') {
   const node = document.createElement(tag);
@@ -431,7 +666,7 @@ function genRow(n, { top, target, age }) {
     text.append(num, `born / alive in ${formatYear(target)}`);
     const sub = document.createElement('span');
     sub.className = 'gen-sub';
-    sub.textContent = `${relationLabel(n)} \u00B7 born \u2248 ${formatYear(birthYearOf(n, CONFIG.currentYear, age))}`;
+    sub.textContent = `${relationLabel(n)}, born around ${formatYear(birthYearOf(n, CONFIG.currentYear, age))}`;
     text.append(sub);
   } else {
     const strong = ordinalNode(n, 'strong');
@@ -456,12 +691,13 @@ function render() {
 
   // Fit the stack to the height we have: full-size rows if there's room,
   // otherwise shrink the rows a little (never below minRowHeight).
-  const avail = el.result.clientHeight;
-  if (!avail) return;                                   // not laid out yet
+  const cs = getComputedStyle(el.result);
+  const avail = el.result.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+  if (!(avail > 0)) return;                             // not laid out yet
   const need = minUnits(n, CONFIG.minVisibleBelow);
   const rowH = Math.floor(clamp(avail / need, CONFIG.minRowHeight, CONFIG.rowHeight));
   el.result.style.setProperty('--row-height', rowH + 'px');
-  el.result.style.setProperty('--figure-size', Math.round(rowH * 0.67) + 'px');
+  el.result.style.setProperty('--figure-size', Math.round(rowH * 0.78) + 'px');
 
   const rows = planRows(n, avail / rowH);
   const out = [];
@@ -472,23 +708,33 @@ function render() {
     note.textContent = `${formatYear(target)} is the present \u2014 no generations to go back.`;
     out.push(note);
   }
-  rows.forEach((r, i) => {
+  // The figures sit on a connector line. The oldest (top) is the answer, shown in
+  // full; the ones below fade the further back they are, so "You" is the strongest.
+  const last = rows.length - 1;
+  const nodes = rows.map((r, i) => {
     if (r.type === 'dots') {
       const d = document.createElement('div');
       d.className = 'dots';
       d.append(...[0, 1, 2].map(() => document.createElement('i')));
-      out.push(d);
-    } else if (r.type === 'you') {
-      const row = document.createElement('div');
-      row.className = 'gen';
+      return d;
+    }
+    let row;
+    if (r.type === 'you') {
+      row = document.createElement('div');
+      row.className = 'gen gen--you';
       const t = document.createElement('div');
       t.className = 'gen-text'; t.textContent = 'You';
       row.append(makeFigure(), t);
-      out.push(row);
     } else {
-      out.push(genRow(r.n, { top: i === 0, target, age }));
+      row = genRow(r.n, { top: i === 0, target, age });
     }
+    if (i > 0) row.style.setProperty('--fade', (0.5 + 0.5 * (i / last)).toFixed(2));
+    return row;
   });
+  const stack = document.createElement('div');
+  stack.className = 'stack' + (rows.length < 2 ? ' is-single' : '');
+  stack.append(...nodes);
+  out.push(stack);
   el.result.replaceChildren(...out);
 }
 
@@ -516,6 +762,7 @@ el.yearInput.addEventListener('input', () => {
   if (t !== null && t >= state.minYear && t <= CONFIG.currentYear) {
     state.target = t;
     el.slider.value = t;
+    syncSliderFill();
     render();
   }
 });
@@ -561,28 +808,143 @@ if ('ResizeObserver' in window) {
   window.addEventListener('resize', render);
 }
 
-el.settingsBtn.addEventListener('click', () => {
-  const open = el.settingsPanel.hidden;
-  el.settingsPanel.hidden = !open;
-  el.settingsBtn.setAttribute('aria-expanded', String(open));
+/* ---------- Sheets: settings + info ---------- */
+const SHEETS = {
+  settings: { panel: el.settingsPanel, button: el.settingsBtn },
+  info:     { panel: el.infoPanel,     button: el.infoBtn }
+};
+// Opens one sheet (closing the other); passing nothing closes everything.
+function showSheet(name) {
+  Object.entries(SHEETS).forEach(([key, s]) => {
+    const open = key === name;
+    s.panel.hidden = !open;
+    s.button.setAttribute('aria-expanded', String(open));
+  });
+  el.scrim.hidden = !name;
+  if (name) SHEETS[name].panel.scrollTop = 0;
+  if (name === 'info' && el.timelineSearch.value) {   // fresh start each time it opens
+    el.timelineSearch.value = '';
+    buildTimeline();
+  }
+}
+const openSheet = () => Object.keys(SHEETS).find(k => !SHEETS[k].panel.hidden);
+Object.entries(SHEETS).forEach(([key, s]) =>
+  s.button.addEventListener('click', () => showSheet(openSheet() === key ? null : key)));
+el.scrim.addEventListener('click', () => showSheet(null));
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && openSheet()) {
+    const btn = SHEETS[openSheet()].button;
+    showSheet(null);
+    btn.focus();
+  }
 });
-el.minSelect.addEventListener('change', () => {
-  state.minYear = parseInt(el.minSelect.value, 10);
-  saveMinYear(state.minYear);
+
+/* ---- Settings: all the "slider starts at" options, visible at once ---- */
+function buildBandList() {
+  el.bandList.replaceChildren(...CONFIG.bands.map(b => {
+    const opt = document.createElement('button');
+    opt.type = 'button'; opt.className = 'option';
+    opt.setAttribute('role', 'radio');
+    opt.dataset.year = b.year;
+    opt.textContent = b.label;
+    return opt;
+  }));
+}
+function markBand() {
+  el.bandList.querySelectorAll('.option').forEach(o =>
+    o.setAttribute('aria-checked', String(+o.dataset.year === state.minYear)));
+}
+// Changes where the slider starts. `persist: false` is for automatic widening
+// (jumping to an older person), so it doesn't overwrite the user's saved choice.
+function setMinYear(y, { persist = true } = {}) {
+  state.minYear = y;
+  if (persist) saveMinYear(y);
   applyRange();
   setTarget(state.target);     // re-clamp into the new range
+  markBand();
   render();
+}
+el.bandList.addEventListener('click', e => {
+  const opt = e.target.closest('.option');
+  if (!opt) return;
+  setMinYear(+opt.dataset.year);
+  showSheet(null);                              // picking an option closes the panel
+  el.settingsBtn.focus();
+});
+
+/* ---- Info: dates, events and people ---- */
+const tlOpen = {};   // group name -> expanded? (default: expanded)
+function buildTimeline() {
+  const bandYears = CONFIG.bands.map(b => b.year);
+  const q = (el.timelineSearch.value || '').trim().toLowerCase();
+  const searching = q !== '';
+  let shown = 0;
+  const groups = Object.entries(TIMELINE).map(([group, all]) => {
+    // match on name or on the displayed years, e.g. "1630" or "bce"
+    const items = searching
+      ? all.filter(i => (i.name + ' ' + formatSpan(i)).toLowerCase().includes(q))
+      : all;
+    if (searching && !items.length) return null;
+    shown += items.length;
+    const open = searching || tlOpen[group] !== false;   // searching reveals every match
+    const wrap = document.createElement('div');
+    wrap.className = 'tl-group';
+    const head = document.createElement('button');
+    head.type = 'button'; head.className = 'tl-head'; head.dataset.group = group;
+    head.setAttribute('aria-expanded', String(open));
+    head.append(group + ' ');
+    const count = document.createElement('span'); count.className = 'tl-count'; count.textContent = items.length;
+    head.append(count);
+    const list = document.createElement('div');
+    list.className = 'tl-items'; list.hidden = !open;
+    list.append(...items.map(item => {
+      const row = document.createElement('button');
+      row.type = 'button'; row.className = 'tl-row';
+      row.dataset.year = item.from;
+      const name = document.createElement('span'); name.className = 'tl-name'; name.textContent = item.name;
+      const years = document.createElement('span'); years.className = 'tl-years'; years.textContent = formatSpan(item);
+      row.append(name, years);
+      if (bandFor(item.from, bandYears) === null) {          // older than the oldest slider band
+        row.disabled = true;
+        row.title = 'Earlier than the slider can reach';
+      }
+      return row;
+    }));
+    wrap.append(head, list);
+    return wrap;
+  }).filter(Boolean);
+  if (!shown) {
+    const none = document.createElement('p');
+    none.className = 'tl-empty'; none.textContent = 'No matches.';
+    groups.push(none);
+  }
+  el.timelineList.replaceChildren(...groups);
+}
+el.timelineSearch.addEventListener('input', buildTimeline);
+el.timelineList.addEventListener('click', e => {
+  const head = e.target.closest('.tl-head');
+  if (head) {                                   // expand / collapse a section
+    const open = head.getAttribute('aria-expanded') !== 'true';
+    if (!el.timelineSearch.value.trim()) tlOpen[head.dataset.group] = open;
+    head.setAttribute('aria-expanded', String(open));
+    head.nextElementSibling.hidden = !open;
+    return;
+  }
+  const row = e.target.closest('.tl-row');
+  if (!row || row.disabled) return;
+  const year = +row.dataset.year;
+  if (year < state.minYear) setMinYear(bandFor(year, CONFIG.bands.map(b => b.year)), { persist: false });
+  setTarget(year);
+  render();
+  showSheet(null);
 });
 
 /* ---------- Init ---------- */
 (function init() {
-  CONFIG.bands.forEach(b => {
-    const o = document.createElement('option');
-    o.value = b.year; o.textContent = b.label;
-    el.minSelect.append(o);
-  });
+  buildBandList();
+  buildTimeline();
   state.minYear = loadMinYear();
-  el.minSelect.value = state.minYear;
+  markBand();
   el.ageInput.value = CONFIG.defaultGenAge;
   applyRange();
   setTarget(CONFIG.defaultTarget);
