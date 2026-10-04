@@ -14,13 +14,13 @@
    data lives, by design — see the README for why this stays a small
    hardcoded list rather than a full computed panchang). ---------- */
 
-// 12 lunar months, in order. NOTE: does not yet handle adhik maas
-// (leap month) — month naming will drift by one after the next
-// adhik maas occurs (not for a few years as of writing). Revisit
-// this when that approaches; see README "Known limitations".
-const MONTH_NAMES = [
-    "Chaitra", "Vaishakh", "Jyeshta", "Ashadh", "Shravan", "Bhadarvo",
-    "Ashwin", "Kartik", "Magshar", "Posh", "Maha", "Fagan"
+// 12 lunar months, in order. These are lookup KEYS into the active
+// locale file (locales/<lang>.json, under "months") — not display
+// text themselves. Display text (English, Gujarati, Hindi, Marathi
+// so far) lives entirely in the locale files; see js/i18n.js.
+const MONTH_KEYS = [
+    "chaitra", "vaishakh", "jyeshta", "ashadh", "shravan", "bhadarvo",
+    "ashwin", "kartik", "magshar", "posh", "maha", "fagan"
 ];
 
 // Adhik maas (leap month) occurrences: each one is a real extra lunar
@@ -28,7 +28,7 @@ const MONTH_NAMES = [
 // named month — e.g. {year:2026, month:2} means an "Adhik Jyeshta"
 // (index 2) appeared in 2026, directly preceding that year's regular
 // Jyeshta. `year` is the Gregorian/IST year the adhik month's own
-// Sud Ekam falls in. `month` is a MONTH_NAMES index (same convention
+// Sud Ekam falls in. `month` is a MONTH_KEYS index (same convention
 // used everywhere else in this file).
 //
 // This needs ~1 new entry roughly every 2-3 years to stay correct —
@@ -42,12 +42,16 @@ const ADHIK_MAAS = [
     { year: 2026, month: 2 }  // Adhik Jyeshta
 ];
 
-const TITHI_NAMES = [
-    "Ekam", "Beej", "Trij", "Choth", "Pancham",
-    "Chhath", "Satam", "Aatham", "Nom", "Dasham",
-    "Ekadashi", "Baras", "Teras", "Chaudas", "Jam"
+// 14 tithi lookup keys (same idea as MONTH_KEYS above). Purnima/Amas
+// (the 15th tithi of each paksha) are handled separately — they're
+// scalar keys ("purnima"/"amas" in the locale file), not part of this
+// array — since they replace the counted name entirely rather than
+// just translating it.
+const TITHI_KEYS = [
+    "ekam", "beej", "trij", "choth", "pancham",
+    "chhath", "satam", "aatham", "nom", "dasham",
+    "ekadashi", "baras", "teras", "chaudas"
 ];
-const PURNIMA_AMAS = ["Purnima", "Amas"];
 
 // Anchor: a known Sud Ekam (tithi index 0) instant, and which of the
 // 12 month names it corresponds to — the one fixed point the whole
@@ -72,6 +76,14 @@ const LOCATION = { lat: 19.0760, lng: 72.8777 };
 
 const TITHI_MODE_KEY = 'moonPhaseViewer.tithiMode';
 const SPLASH_HIDE_KEY = 'moonPhaseViewer.hideSplash';
+const LANGUAGE_KEY = 'moonPhaseViewer.language';
+
+// BCP-47 locale tag per supported language, used ONLY for display
+// formatting (Gregorian weekday/month names via Intl) — never for the
+// machine-readable <input type="date"> value, which always stays
+// 'en-CA' regardless of language (see toISTDateInputValue).
+const LOCALE_MAP = { en: 'en-US', gu: 'gu-IN', hi: 'hi-IN', mr: 'mr-IN' };
+function displayLocale() { return LOCALE_MAP[I18n.getLanguage()] || 'en-US'; }
 
 // Background photo prefetch: a bounded sliding window around whatever
 // day is currently shown, not an unbounded chain. Every render call
@@ -93,13 +105,13 @@ function istMidnightUtcMs(refDate) {
 }
 
 function formatClockTimeIST(date) {
-    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: IST_TZ, hour: 'numeric', minute: '2-digit', hour12: true });
+    const fmt = new Intl.DateTimeFormat(displayLocale(), { timeZone: IST_TZ, hour: 'numeric', minute: '2-digit', hour12: true });
     return fmt.format(date).replace(' ', '').toLowerCase();
 }
 
 // "Thursday, 24-Sep-2026"
 function formatGregorianIST(date) {
-    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: IST_TZ, weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+    const fmt = new Intl.DateTimeFormat(displayLocale(), { timeZone: IST_TZ, weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
     const map = {};
     fmt.formatToParts(date).forEach(p => { map[p.type] = p.value; });
     return `${map.weekday}, ${map.day}-${map.month}-${map.year}`;
@@ -123,14 +135,14 @@ function parseISTDateInputValue(value) {
 // "Wed 07-Oct-2026" — used to disambiguate which day a clock time
 // belongs to (a tithi ending "12:43am" could be today or tomorrow).
 function formatCompactDateIST(date) {
-    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: IST_TZ, weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    const fmt = new Intl.DateTimeFormat(displayLocale(), { timeZone: IST_TZ, weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
     const map = {};
     fmt.formatToParts(date).forEach(p => { map[p.type] = p.value; });
     return `${map.weekday} ${map.day}-${map.month}-${map.year}`;
 }
 
 function formatLongDateIST(date) {
-    return date.toLocaleDateString('en-US', { timeZone: IST_TZ, month: 'long', day: 'numeric', weekday: 'long' });
+    return date.toLocaleDateString(displayLocale(), { timeZone: IST_TZ, month: 'long', day: 'numeric', weekday: 'long' });
 }
 
 function istYearOf(date) {
@@ -150,6 +162,14 @@ let tithiMode = (function () {
 let currentMainTithiInfo = null; // the tithi shown for currentDayStartMs (see getMainTithiForDay)
 let currentUpcoming = null; // { nextFullMoon, nextNewMoon } for currentDayStartMs — see renderAll
 let renderToken = 0;
+
+function storedLanguage() {
+    try {
+        const stored = localStorage.getItem(LANGUAGE_KEY);
+        if (stored && LOCALE_MAP[stored]) return stored;
+    } catch (e) { /* localStorage unavailable */ }
+    return 'en';
+}
 
 // Precomputed, adhik-maas-aware month sequence — one entry per new
 // moon in the loaded data file, built once by buildMonthSequence()
@@ -270,25 +290,29 @@ function monthNameFor(date) {
     const ms = date.getTime();
     if (range && ms >= range.start && ms <= range.end && monthSequence.length > 0) {
         const entry = monthSequenceEntryAt(ms);
-        if (entry) return entry.isAdhik ? `Adhik ${MONTH_NAMES[entry.index]}` : MONTH_NAMES[entry.index];
+        if (entry) {
+            const name = I18n.t('months.' + MONTH_KEYS[entry.index]);
+            return entry.isAdhik ? `${I18n.t('adhik')} ${name}` : name;
+        }
     }
     // Outside the generated data range (or sequence not built yet):
     // plain modular counting, same as before adhik-maas support was
     // added. Not adhik-aware — regenerate data/tithi-data.json with a
     // wider range (see generator/) for full correctness further out.
     const offset = TithiEngine.getMonthOffset(date, ANCHOR_MS);
-    return MONTH_NAMES[mod(ANCHOR_MONTH_INDEX + offset, 12)];
+    return I18n.t('months.' + MONTH_KEYS[mod(ANCHOR_MONTH_INDEX + offset, 12)]);
 }
 
 function tithiLabel(tithiIndex, monthName) {
     const isShukla = tithiIndex < 15;
     const nameIdx = tithiIndex % 15;
     if (nameIdx === 14) {
-        const special = isShukla ? PURNIMA_AMAS[0] : PURNIMA_AMAS[1];
+        const special = I18n.t(isShukla ? 'purnima' : 'amas');
         return { isShukla, short: special, full: `${monthName} ${special}` };
     }
-    const name = TITHI_NAMES[nameIdx];
-    return { isShukla, short: `${isShukla ? 'Sud' : 'Vad'} ${name}`, full: `${monthName} ${isShukla ? 'Sud' : 'Vad'} ${name}` };
+    const name = I18n.t('tithis.' + TITHI_KEYS[nameIdx]);
+    const paksha = I18n.t(isShukla ? 'sud' : 'vad');
+    return { isShukla, short: `${paksha} ${name}`, full: `${monthName} ${paksha} ${name}` };
 }
 
 /* ---------- phase naming ----------
@@ -301,10 +325,10 @@ function tithiLabel(tithiIndex, monthName) {
    waxing/waning descriptions. */
 
 function continuousPhaseName(elong) {
-    if (elong < 90) return "Waxing Crescent";
-    if (elong < 180) return "Waxing Gibbous";
-    if (elong < 270) return "Waning Gibbous";
-    return "Waning Crescent";
+    if (elong < 90) return I18n.t('phases.waxingCrescent');
+    if (elong < 180) return I18n.t('phases.waxingGibbous');
+    if (elong < 270) return I18n.t('phases.waningGibbous');
+    return I18n.t('phases.waningCrescent');
 }
 
 function crossesAngle(targetDeg, startMs, endMs) {
@@ -331,11 +355,11 @@ function crossesAngle(targetDeg, startMs, endMs) {
     return false;
 }
 
-const SPECIAL_ANGLES = [[0, "New Moon"], [90, "First Quarter"], [180, "Full Moon"], [270, "Last Quarter"]];
+const SPECIAL_ANGLES = [[0, "newMoon"], [90, "firstQuarter"], [180, "fullMoon"], [270, "lastQuarter"]];
 
 function phaseNameForWindow(windowStartMs, windowEndMs, midInstant) {
-    for (const [deg, name] of SPECIAL_ANGLES) {
-        if (crossesAngle(deg, windowStartMs, windowEndMs)) return name;
+    for (const [deg, key] of SPECIAL_ANGLES) {
+        if (crossesAngle(deg, windowStartMs, windowEndMs)) return I18n.t('phases.' + key);
     }
     return continuousPhaseName(MoonEphemeris.elongationDeg(midInstant));
 }
@@ -408,14 +432,21 @@ function computeTillLines(mainTithiInfo, dayEndMs) {
     const lines = { line1: '', line2: '' };
     if (!mainTithiInfo.nextStart) return lines;
 
-    lines.line1 = `till ${formatClockTimeIST(mainTithiInfo.nextStart)}, ${formatCompactDateIST(mainTithiInfo.nextStart)}`;
+    lines.line1 = I18n.t('ui.tillTemplate', {
+        time: formatClockTimeIST(mainTithiInfo.nextStart),
+        date: formatCompactDateIST(mainTithiInfo.nextStart)
+    });
 
     if (mainTithiInfo.nextStart.getTime() < dayEndMs) {
         const nextInfo = TithiEngine.getTithiInfo(mainTithiInfo.nextStart);
         if (nextInfo.nextStart && nextInfo.nextStart.getTime() < dayEndMs) {
             const nextMonthName = monthNameFor(nextInfo.start);
             const nextLabel = tithiLabel(nextInfo.tithi, nextMonthName);
-            lines.line2 = `${nextLabel.short} till ${formatClockTimeIST(nextInfo.nextStart)}, ${formatCompactDateIST(nextInfo.nextStart)}`;
+            const till = I18n.t('ui.tillTemplate', {
+                time: formatClockTimeIST(nextInfo.nextStart),
+                date: formatCompactDateIST(nextInfo.nextStart)
+            });
+            lines.line2 = `${nextLabel.short} ${till}`;
         }
     }
     return lines;
@@ -588,7 +619,7 @@ async function renderAll() {
     document.getElementById('detailDateLine').textContent = gregText;
     document.getElementById('datePickerDetail').value = toISTDateInputValue(new Date(dayStart + 43200000));
     document.getElementById('detailPhaseHeading').textContent = phaseName;
-    document.getElementById('detailSunriseLine').textContent = `at sunrise ${formatClockTimeIST(sunriseInstant)}`;
+    document.getElementById('detailSunriseLine').textContent = I18n.t('ui.atSunriseTemplate', { time: formatClockTimeIST(sunriseInstant) });
     document.getElementById('detailTithiHeading').textContent = label.full;
     const tillLines = computeTillLines(mainTithiInfo, dayEnd);
     document.getElementById('detailTillLine1').textContent = tillLines.line1;
@@ -737,10 +768,31 @@ function closeDetailView() {
 function openSettings() {
     document.getElementById('modeSunrise').checked = (tithiMode === 'sunrise');
     document.getElementById('modeMajority').checked = (tithiMode === 'majority');
+    const langRadio = document.querySelector(`input[name="language"][value="${I18n.getLanguage()}"]`);
+    if (langRadio) langRadio.checked = true;
     document.getElementById('settingsPanel').classList.add('active');
 }
 function closeSettings() {
     document.getElementById('settingsPanel').classList.remove('active');
+}
+
+// Labels that are set once (not per-render, unlike the main tithi/date
+// display) but still need to follow the selected language — applied
+// on boot and again every time the language changes.
+function applyStaticTranslations() {
+    document.getElementById('todayLink').textContent = I18n.t('ui.today');
+    document.getElementById('detailTodayLink').textContent = I18n.t('ui.today');
+    document.getElementById('phase1Label').textContent = I18n.t('ui.nextFullMoon');
+    document.getElementById('phase2Label').textContent = I18n.t('ui.nextNewMoon');
+    document.getElementById('detailPhase1Label').textContent = I18n.t('ui.nextFullMoon');
+    document.getElementById('detailPhase2Label').textContent = I18n.t('ui.nextNewMoon');
+    document.getElementById('settingsTitleTithi').textContent = I18n.t('ui.settingsTitleTithi');
+    document.getElementById('sunriseModeLabel').textContent = I18n.t('ui.sunriseMode');
+    document.getElementById('sunriseModeDesc').textContent = I18n.t('ui.sunriseModeDesc');
+    document.getElementById('majorityModeLabel').textContent = I18n.t('ui.majorityMode');
+    document.getElementById('majorityModeDesc').textContent = I18n.t('ui.majorityModeDesc');
+    document.getElementById('settingsTitleLang').textContent = I18n.t('ui.settingsTitleLang');
+    document.getElementById('settingsDoneBtn').textContent = I18n.t('ui.done');
 }
 
 /* ---------- boot ---------- */
@@ -818,6 +870,18 @@ document.querySelectorAll('input[name="tithiMode"]').forEach(radio => {
     });
 });
 
+document.querySelectorAll('input[name="language"]').forEach(radio => {
+    radio.addEventListener('change', async (e) => {
+        await I18n.setLanguage(e.target.value);
+        try { localStorage.setItem(LANGUAGE_KEY, e.target.value); } catch (e2) { /* ignore */ }
+        // Month/tithi NAMING sequence (buildMonthSequence) is purely
+        // numeric (index + adhik flag) and language-independent, so it
+        // doesn't need rebuilding — only re-displaying.
+        applyStaticTranslations();
+        renderAll();
+    });
+});
+
 /* ---------- first-run splash ---------- */
 
 function shouldShowSplashOnBoot() {
@@ -845,7 +909,11 @@ document.getElementById('showSplashAgainBtn').addEventListener('click', () => {
 
 if (shouldShowSplashOnBoot()) openSplash();
 
-TithiEngine.init(DATA_URL).finally(() => {
+Promise.all([
+    TithiEngine.init(DATA_URL),
+    I18n.init(storedLanguage())
+]).finally(() => {
     buildMonthSequence();
+    applyStaticTranslations();
     renderAll();
 });

@@ -235,15 +235,34 @@
 
     <!-- Settings panel: which tithi "wins" a calendar day. -->
     <div class="settings-panel" id="settingsPanel">
-        <div class="settings-title">Tithi selection</div>
+        <div class="settings-title" id="settingsTitleTithi">Tithi selection</div>
         <label class="settings-option">
             <input type="radio" name="tithiMode" value="sunrise" id="modeSunrise">
-            <span>Tithi at sunrise<br><small>Mumbai — the tithi active at sunrise represents the day</small></span>
+            <span><span id="sunriseModeLabel">Tithi at sunrise</span><br><small id="sunriseModeDesc">Mumbai — the tithi active at sunrise represents the day</small></span>
         </label>
         <label class="settings-option">
             <input type="radio" name="tithiMode" value="majority" id="modeMajority">
-            <span>Tithi with max hours<br><small>whichever tithi occupies the most of the calendar day</small></span>
+            <span><span id="majorityModeLabel">Tithi with max hours</span><br><small id="majorityModeDesc">whichever tithi occupies the most of the calendar day</small></span>
         </label>
+
+        <div class="settings-title" id="settingsTitleLang">Language</div>
+        <label class="settings-option">
+            <input type="radio" name="language" value="en" id="langEn">
+            <span>English</span>
+        </label>
+        <label class="settings-option">
+            <input type="radio" name="language" value="gu" id="langGu">
+            <span>ગુજરાતી (Gujarati)</span>
+        </label>
+        <label class="settings-option">
+            <input type="radio" name="language" value="hi" id="langHi">
+            <span>हिन्दी (Hindi)</span>
+        </label>
+        <label class="settings-option">
+            <input type="radio" name="language" value="mr" id="langMr">
+            <span>मराठी (Marathi)</span>
+        </label>
+
         <button class="settings-done" id="settingsDoneBtn">Done</button>
     </div>
 </div>
@@ -251,6 +270,7 @@
 <script src="js/suncalc.js"></script>
 <script src="js/ephemeris.js"></script>
 <script src="js/tithi-engine.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

@@ -156,6 +156,61 @@ actually based on), and **Explore more** (links out to a few other
 real moon-phase tools). All copy lives directly in `index.html` inside
 `#helpView` — it's static content, not generated, so edit it there.
 
+## Language / i18n
+
+All user-facing calendar vocabulary and core UI labels live in
+`locales/<code>.json` (`en`, `gu`, `hi`, `mr` so far), loaded by
+`js/i18n.js`. `app.js` never has display text hardcoded for this
+content — it looks keys up via `I18n.t('months.chaitra')`,
+`I18n.t('ui.today')`, etc. A missing key in a locale falls back to
+English automatically (never a blank or a crash), so a partial
+translation is always safe to ship. Templated strings (e.g. "till
+{time}, {date}") use `{placeholder}` substitution, and — importantly —
+**each locale controls word order**, not just word choice: Gujarati/
+Hindi/Marathi are postpositional, so e.g. Gujarati's `tillTemplate` is
+`"{time} સુધી, {date}"` (time first, postposition after), not a
+word-for-word reordering of the English template. Gregorian date/time
+formatting (weekday and month names in "Thursday, 24-Sep-2026") also
+switches via `Intl`'s own locale data (`LOCALE_MAP` in `js/app.js`) —
+free, no translation needed for that part. One quirk worth knowing:
+Marathi's ICU locale data defaults to Devanagari digits (२६-સપ્ટેં-૨૦૨૬-
+style) while Hindi and Gujarati default to Western digits for the same
+date — authentic `Intl` behavior, not a bug, but inconsistent across
+languages if that matters to you; forcing `-u-nu-latn` (or `-u-nu-deva`
+everywhere) in `LOCALE_MAP` would standardize it.
+
+The language picker lives in the detail view's settings panel,
+alongside the tithi-mode choice, and persists via `localStorage`
+(`moonPhaseViewer.language`).
+
+**What's translated**: month names, tithi names, Purnima/Amas,
+Sud/Vad/Adhik, the four exact + four continuous Moon phase names, and
+the core dynamic UI (today, next full/new moon, till-lines, sunrise
+line, settings panel). **What's not** (still English-only): the splash
+screen's two tips and the entire info/help overlay — both are static
+prose in `index.html` rather than JS-rendered, and translating
+paragraph-length explanatory text is a bigger, lower-priority task
+than the structured calendar vocabulary. A natural next step if this
+gets revisited.
+
+**Confidence levels, calibrated for validation** (same spirit as the
+adhik maas table — check these against a trusted source before fully
+trusting them):
+- **High confidence**: month and tithi names, Sud/Vad/Adhik/Purnima/
+  Amas. These are standard, ubiquitous panchang vocabulary. One
+  deliberate choice worth knowing: Gujarati uses the vernacular forms
+  this app's English names were already approximating (ભાદરવો, માગશર,
+  પોષ, ફાગણ — matching "Bhadarvo", "Magshar", "Posh", "Fagan"), while
+  Hindi and Marathi use the formal Sanskrit-derived forms those
+  traditions actually use in their own panchangs (भाद्रपद, मार्गशीर्ष,
+  पौष, फाल्गुन) — a direct transliteration of the Gujarati vernacular
+  names into Devanagari would look foreign to Hindi/Marathi readers,
+  since that's not what their own calendars call these months.
+- **Lower confidence**: the four continuous phase names (Waxing/
+  Waning Crescent/Gibbous) are descriptive translations, not
+  standardized vocabulary the way calendar terms are — worth a native
+  speaker's review before relying on them.
+
 ## First-run splash
 
 A one-time overlay (`#splashView`) explains the two non-obvious

@@ -1,0 +1,42 @@
+{
+    "meta": { "code": "mr", "name": "Marathi", "nativeName": "मराठी" },
+    "months": {
+        "chaitra": "चैत्र", "vaishakh": "वैशाख", "jyeshta": "ज्येष्ठ", "ashadh": "आषाढ",
+        "shravan": "श्रावण", "bhadarvo": "भाद्रपद", "ashwin": "आश्विन", "kartik": "कार्तिक",
+        "magshar": "मार्गशीर्ष", "posh": "पौष", "maha": "माघ", "fagan": "फाल्गुन"
+    },
+    "tithis": {
+        "ekam": "प्रतिपदा", "beej": "द्वितीया", "trij": "तृतीया", "choth": "चतुर्थी", "pancham": "पंचमी",
+        "chhath": "षष्ठी", "satam": "सप्तमी", "aatham": "अष्टमी", "nom": "नवमी", "dasham": "दशमी",
+        "ekadashi": "एकादशी", "baras": "द्वादशी", "teras": "त्रयोदशी", "chaudas": "चतुर्दशी"
+    },
+    "purnima": "पौर्णिमा",
+    "amas": "अमावास्या",
+    "sud": "शुक्ल",
+    "vad": "कृष्ण",
+    "adhik": "अधिक",
+    "phases": {
+        "newMoon": "अमावास्या",
+        "waxingCrescent": "वाढता अर्धचंद्र",
+        "firstQuarter": "प्रथम चरण",
+        "waxingGibbous": "वाढता गोल चंद्र",
+        "fullMoon": "पौर्णिमा",
+        "waningGibbous": "घटता गोल चंद्र",
+        "lastQuarter": "अंतिम चरण",
+        "waningCrescent": "घटता अर्धचंद्र"
+    },
+    "ui": {
+        "today": "आज",
+        "nextFullMoon": "पुढील पौर्णिमा",
+        "nextNewMoon": "पुढील अमावास्या",
+        "tillTemplate": "{time} पर्यंत, {date}",
+        "atSunriseTemplate": "सूर्योदय: {time}",
+        "settingsTitleTithi": "तिथी निवड",
+        "sunriseMode": "सूर्योदयाची तिथी",
+        "sunriseModeDesc": "मुंबई — सूर्योदयाच्या वेळी असलेली तिथी संपूर्ण दिवसासाठी धरली जाते",
+        "majorityMode": "सर्वाधिक तास असलेली तिथी",
+        "majorityModeDesc": "जी तिथी दिवसाचे सर्वाधिक तास व्यापते",
+        "settingsTitleLang": "भाषा",
+        "done": "पूर्ण"
+    }
+}

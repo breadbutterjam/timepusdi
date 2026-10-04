@@ -1,0 +1,42 @@
+{
+    "meta": { "code": "hi", "name": "Hindi", "nativeName": "हिन्दी" },
+    "months": {
+        "chaitra": "चैत्र", "vaishakh": "वैशाख", "jyeshta": "ज्येष्ठ", "ashadh": "आषाढ़",
+        "shravan": "श्रावण", "bhadarvo": "भाद्रपद", "ashwin": "आश्विन", "kartik": "कार्तिक",
+        "magshar": "मार्गशीर्ष", "posh": "पौष", "maha": "माघ", "fagan": "फाल्गुन"
+    },
+    "tithis": {
+        "ekam": "प्रतिपदा", "beej": "द्वितीया", "trij": "तृतीया", "choth": "चतुर्थी", "pancham": "पञ्चमी",
+        "chhath": "षष्ठी", "satam": "सप्तमी", "aatham": "अष्टमी", "nom": "नवमी", "dasham": "दशमी",
+        "ekadashi": "एकादशी", "baras": "द्वादशी", "teras": "त्रयोदशी", "chaudas": "चतुर्दशी"
+    },
+    "purnima": "पूर्णिमा",
+    "amas": "अमावस्या",
+    "sud": "शुक्ल",
+    "vad": "कृष्ण",
+    "adhik": "अधिक",
+    "phases": {
+        "newMoon": "अमावस्या",
+        "waxingCrescent": "बढ़ता अर्धचंद्र",
+        "firstQuarter": "प्रथम चरण",
+        "waxingGibbous": "बढ़ता गोल चाँद",
+        "fullMoon": "पूर्णिमा",
+        "waningGibbous": "घटता गोल चाँद",
+        "lastQuarter": "अंतिम चरण",
+        "waningCrescent": "घटता अर्धचंद्र"
+    },
+    "ui": {
+        "today": "आज",
+        "nextFullMoon": "अगली पूर्णिमा",
+        "nextNewMoon": "अगली अमावस्या",
+        "tillTemplate": "{time} तक, {date}",
+        "atSunriseTemplate": "सूर्योदय: {time}",
+        "settingsTitleTithi": "तिथि चयन",
+        "sunriseMode": "सूर्योदय की तिथि",
+        "sunriseModeDesc": "मुंबई — सूर्योदय के समय जो तिथि हो वही पूरे दिन मानी जाएगी",
+        "majorityMode": "सर्वाधिक घंटों वाली तिथि",
+        "majorityModeDesc": "जो तिथि दिन के सबसे अधिक घंटे रहती है",
+        "settingsTitleLang": "भाषा",
+        "done": "पूर्ण"
+    }
+}
