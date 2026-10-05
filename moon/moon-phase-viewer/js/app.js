@@ -109,12 +109,31 @@ function formatClockTimeIST(date) {
     return fmt.format(date).replace(' ', '').toLowerCase();
 }
 
-// "Thursday, 24-Sep-2026"
+// 0-11, IST calendar month.
+function istMonthIndexOf(date) {
+    return +new Intl.DateTimeFormat('en-CA', { timeZone: IST_TZ, month: 'numeric' }).format(date) - 1;
+}
+
+// Gregorian month name from the locale file (gregorianMonths, a plain
+// 12-entry array indexed Jan=0..Dec=11) rather than Intl's own
+// abbreviated-month data — Intl's SHORT form for these three
+// languages turns out to be an awkward phonetic shortening (e.g.
+// gu-IN gives "ઑક્ટો" for October) with no real native-language
+// convention behind it, unlike weekday abbreviations, which Hindu
+// calendars already have well-established native short forms for
+// (tied to the days' planetary associations). The LONG form reads
+// naturally in all of them, so that's what's used here — full month
+// names, user-editable per language directly in locales/<lang>.json.
+function gregorianMonthName(date) {
+    return I18n.t('gregorianMonths.' + istMonthIndexOf(date));
+}
+
+// "Thursday, 24-October-2026"
 function formatGregorianIST(date) {
-    const fmt = new Intl.DateTimeFormat(displayLocale(), { timeZone: IST_TZ, weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' });
+    const fmt = new Intl.DateTimeFormat(displayLocale(), { timeZone: IST_TZ, weekday: 'long', day: '2-digit', year: 'numeric' });
     const map = {};
     fmt.formatToParts(date).forEach(p => { map[p.type] = p.value; });
-    return `${map.weekday}, ${map.day}-${map.month}-${map.year}`;
+    return `${map.weekday}, ${map.day}-${gregorianMonthName(date)}-${map.year}`;
 }
 
 // "2026-09-24" — the exact string format <input type="date"> uses,
@@ -132,13 +151,13 @@ function parseISTDateInputValue(value) {
     return Date.UTC(y, m - 1, d, 0, 0, 0) - 5.5 * 3600000;
 }
 
-// "Wed 07-Oct-2026" — used to disambiguate which day a clock time
+// "Wed 07-October-2026" — used to disambiguate which day a clock time
 // belongs to (a tithi ending "12:43am" could be today or tomorrow).
 function formatCompactDateIST(date) {
-    const fmt = new Intl.DateTimeFormat(displayLocale(), { timeZone: IST_TZ, weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+    const fmt = new Intl.DateTimeFormat(displayLocale(), { timeZone: IST_TZ, weekday: 'short', day: '2-digit', year: 'numeric' });
     const map = {};
     fmt.formatToParts(date).forEach(p => { map[p.type] = p.value; });
-    return `${map.weekday} ${map.day}-${map.month}-${map.year}`;
+    return `${map.weekday} ${map.day}-${gregorianMonthName(date)}-${map.year}`;
 }
 
 function formatLongDateIST(date) {
@@ -797,13 +816,17 @@ function applyStaticTranslations() {
 
 /* ---------- boot ---------- */
 
-document.getElementById('moonWrap').addEventListener('click', openDetailView);
+// Detail view is entered via the tithi name only now — tapping the
+// moon photo itself no longer navigates anywhere (it's becoming a
+// content-display area, see README "Known limitations" for what's
+// planned there next).
 document.getElementById('gujaratiDate').addEventListener('click', openDetailView);
 document.getElementById('gujaratiDate').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetailView(); }
 });
 document.getElementById('detailClose').addEventListener('click', closeDetailView);
 document.getElementById('detailSettingsBtn').addEventListener('click', openSettings);
+document.getElementById('mainSettingsBtn').addEventListener('click', openSettings);
 document.getElementById('settingsDoneBtn').addEventListener('click', closeSettings);
 document.getElementById('prevDayBtn').addEventListener('click', () => shiftDate(-1));
 document.getElementById('nextDayBtn').addEventListener('click', () => shiftDate(1));
@@ -848,9 +871,11 @@ bindDatePicker(document.getElementById('detailDateField'), document.getElementBy
 
 /* ---------- help / info overlay ---------- */
 
-document.getElementById('helpBtn').addEventListener('click', () => {
+function openHelp() {
     document.getElementById('helpView').classList.add('active');
-});
+}
+document.getElementById('helpBtn').addEventListener('click', openHelp);
+document.getElementById('detailHelpBtn').addEventListener('click', openHelp);
 document.getElementById('helpClose').addEventListener('click', () => {
     document.getElementById('helpView').classList.remove('active');
 });

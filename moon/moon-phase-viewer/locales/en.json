@@ -1,5 +1,6 @@
 {
     "meta": { "code": "en", "name": "English", "nativeName": "English" },
+    "gregorianMonths": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
     "months": {
         "chaitra": "Chaitra", "vaishakh": "Vaishakh", "jyeshta": "Jyeshta", "ashadh": "Ashadh",
         "shravan": "Shravan", "bhadarvo": "Bhadarvo", "ashwin": "Ashwin", "kartik": "Kartik",

@@ -67,6 +67,7 @@
 
     <div class="error-note" id="errorNote"></div>
 
+    <button class="detail-settings" id="mainSettingsBtn" aria-label="Settings">&#9881;</button>
     <button class="help-btn" id="helpBtn" aria-label="Help and info">&#9432;</button>
 </div>
 
@@ -197,6 +198,7 @@
 <div class="detail-view" id="detailView">
     <button class="detail-close" id="detailClose" aria-label="Close">&times;</button>
     <button class="detail-settings" id="detailSettingsBtn" aria-label="Settings">&#9881;</button>
+    <button class="help-btn" id="detailHelpBtn" aria-label="Help and info">&#9432;</button>
 
     <div class="detail-header">
         <div class="today-link" id="detailTodayLink" role="button" tabindex="0">today</div>
@@ -232,39 +234,41 @@
             <div class="upcoming-date" id="detailPhase2Date">Loading…</div>
         </div>
     </div>
+</div>
 
-    <!-- Settings panel: which tithi "wins" a calendar day. -->
-    <div class="settings-panel" id="settingsPanel">
-        <div class="settings-title" id="settingsTitleTithi">Tithi selection</div>
-        <label class="settings-option">
-            <input type="radio" name="tithiMode" value="sunrise" id="modeSunrise">
-            <span><span id="sunriseModeLabel">Tithi at sunrise</span><br><small id="sunriseModeDesc">Mumbai — the tithi active at sunrise represents the day</small></span>
-        </label>
-        <label class="settings-option">
-            <input type="radio" name="tithiMode" value="majority" id="modeMajority">
-            <span><span id="majorityModeLabel">Tithi with max hours</span><br><small id="majorityModeDesc">whichever tithi occupies the most of the calendar day</small></span>
-        </label>
+<!-- Settings panel: which tithi "wins" a calendar day, and language.
+     Lives at the body level (not nested in detail-view) so it can be
+     opened from either screen — the gear icon now appears on both. -->
+<div class="settings-panel" id="settingsPanel">
+    <div class="settings-title" id="settingsTitleTithi">Tithi selection</div>
+    <label class="settings-option">
+        <input type="radio" name="tithiMode" value="sunrise" id="modeSunrise">
+        <span><span id="sunriseModeLabel">Tithi at sunrise</span><br><small id="sunriseModeDesc">Mumbai — the tithi active at sunrise represents the day</small></span>
+    </label>
+    <label class="settings-option">
+        <input type="radio" name="tithiMode" value="majority" id="modeMajority">
+        <span><span id="majorityModeLabel">Tithi with max hours</span><br><small id="majorityModeDesc">whichever tithi occupies the most of the calendar day</small></span>
+    </label>
 
-        <div class="settings-title" id="settingsTitleLang">Language</div>
-        <label class="settings-option">
-            <input type="radio" name="language" value="en" id="langEn">
-            <span>English</span>
-        </label>
-        <label class="settings-option">
-            <input type="radio" name="language" value="gu" id="langGu">
-            <span>ગુજરાતી (Gujarati)</span>
-        </label>
-        <label class="settings-option">
-            <input type="radio" name="language" value="hi" id="langHi">
-            <span>हिन्दी (Hindi)</span>
-        </label>
-        <label class="settings-option">
-            <input type="radio" name="language" value="mr" id="langMr">
-            <span>मराठी (Marathi)</span>
-        </label>
+    <div class="settings-title" id="settingsTitleLang">Language</div>
+    <label class="settings-option">
+        <input type="radio" name="language" value="en" id="langEn">
+        <span>English</span>
+    </label>
+    <label class="settings-option">
+        <input type="radio" name="language" value="gu" id="langGu">
+        <span>ગુજરાતી (Gujarati)</span>
+    </label>
+    <label class="settings-option">
+        <input type="radio" name="language" value="hi" id="langHi">
+        <span>हिन्दी (Hindi)</span>
+    </label>
+    <label class="settings-option">
+        <input type="radio" name="language" value="mr" id="langMr">
+        <span>मराठी (Marathi)</span>
+    </label>
 
-        <button class="settings-done" id="settingsDoneBtn">Done</button>
-    </div>
+    <button class="settings-done" id="settingsDoneBtn">Done</button>
 </div>
 
 <script src="js/suncalc.js"></script>

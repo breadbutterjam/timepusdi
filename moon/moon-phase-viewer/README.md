@@ -116,8 +116,8 @@ you either way — but regenerating keeps every date on the fast path.
 
 ## The detail view
 
-Tapping the moon photo opens a full-screen view of the **same day**
-shown on the main screen — the ‹ › buttons there shift the day exactly
+Tapping the **tithi name** opens a full-screen view of the **same
+day** shown on the main screen — the ‹ › buttons there shift the day exactly
 like the main screen's do (both are backed by one shared day pointer),
 not a separate tithi-by-tithi browsing mode. It adds what the compact
 main screen leaves out: the exact end time of the shown tithi, and
@@ -144,17 +144,39 @@ The choice is saved (`localStorage`) and applies to both the main
 screen and the detail view — there's one "tithi for today" per day,
 not a different one per screen.
 
-## Help / info overlay
+## Full-screen overlays stay within the 420px column
 
-The ⓘ icon in the bottom-right corner of the main screen opens a
-full-screen overlay with four collapsible sections: **Quick tips**
-(the same two orientation points as the first-run splash, plus a
-button to re-show it), **How this works** (a plain-language
-explanation of the calculation and the two tithi-selection modes),
-**Sources** (what the astronomy, sunrise, and Moon-photo data are
-actually based on), and **Explore more** (links out to a few other
-real moon-phase tools). All copy lives directly in `index.html` inside
-`#helpView` — it's static content, not generated, so edit it there.
+`.detail-view`, `.help-view`, `.splash-view`, and `.settings-panel`
+are all width-constrained and centered the same way `.card` is,
+rather than plain `position:fixed; inset:0` (full viewport). On
+anything wider than 420px, an element spanning the whole viewport
+puts a `right:16px`-style icon offset at the true screen edge, while
+`.card`'s icons sit 16px from the edge of its own centered 420px
+column — same CSS rule, visibly different screen position. Keep this
+in mind if you add another full-screen overlay later: match this
+pattern (`position:fixed; top:0; bottom:0; left:50%;
+transform:translateX(-50%); width:100%; max-width:420px;`) rather than
+`inset:0`, or icons inside it will appear to "jump" relative to
+everything else when opened.
+
+## Settings and help icons
+
+Both the ⚙ (settings) and ⓘ (info) icons appear on **both** the main
+screen and the detail view now — same two actions, reachable from
+wherever you happen to be, rather than split one-per-screen. The
+settings panel (`#settingsPanel`) lives at the body level in
+`index.html`, not nested inside the detail view, specifically so it
+can be opened independently from either screen.
+
+The ⓘ icon opens a full-screen overlay with four collapsible sections:
+**Quick tips** (the same two orientation points as the first-run
+splash, plus a button to re-show it), **How this works** (a
+plain-language explanation of the calculation and the two
+tithi-selection modes), **Sources** (what the astronomy, sunrise, and
+Moon-photo data are actually based on), and **Explore more** (links
+out to a few other real moon-phase tools). All copy lives directly in
+`index.html` inside `#helpView` — it's static content, not generated,
+so edit it there.
 
 ## Language / i18n
 
@@ -169,18 +191,34 @@ translation is always safe to ship. Templated strings (e.g. "till
 **each locale controls word order**, not just word choice: Gujarati/
 Hindi/Marathi are postpositional, so e.g. Gujarati's `tillTemplate` is
 `"{time} સુધી, {date}"` (time first, postposition after), not a
-word-for-word reordering of the English template. Gregorian date/time
-formatting (weekday and month names in "Thursday, 24-Sep-2026") also
-switches via `Intl`'s own locale data (`LOCALE_MAP` in `js/app.js`) —
-free, no translation needed for that part. One quirk worth knowing:
-Marathi's ICU locale data defaults to Devanagari digits (२६-સપ્ટેં-૨૦૨૬-
-style) while Hindi and Gujarati default to Western digits for the same
-date — authentic `Intl` behavior, not a bug, but inconsistent across
-languages if that matters to you; forcing `-u-nu-latn` (or `-u-nu-deva`
-everywhere) in `LOCALE_MAP` would standardize it.
+word-for-word reordering of the English template.
 
-The language picker lives in the detail view's settings panel,
-alongside the tithi-mode choice, and persists via `localStorage`
+Gregorian weekday names (and the digits/year) come from `Intl`'s own
+locale data via `LOCALE_MAP` in `js/app.js` — free, no translation
+needed there, and it reads naturally as-is. **Gregorian month names
+are different**: they're a plain 12-entry `gregorianMonths` array in
+each locale file (full names — "ઑક્ટોબર", not an abbreviation),
+looked up directly rather than asking `Intl` for them. That's
+deliberate: `Intl`'s *abbreviated* month form for these three
+languages turns out to be an awkward phonetic shortening with no real
+native convention behind it (unlike weekdays, which Hindu calendars
+already have well-established native short forms for), so this sidesteps
+that entirely by using the long form, which does read naturally, and
+keeps it in a plain editable array rather than at the mercy of
+whatever a given browser's ICU data happens to produce. Edit
+`gregorianMonths` directly in the locale file to change it — no code
+changes needed.
+
+One quirk worth knowing: Marathi's ICU locale data defaults to
+Devanagari digits (२६-ऑक्टोबर-२०२६-style) while Hindi and Gujarati
+default to Western digits for the same date — authentic `Intl`
+behavior, not a bug, but inconsistent across languages if that matters
+to you; forcing `-u-nu-latn` (or `-u-nu-deva` everywhere) in
+`LOCALE_MAP` would standardize it.
+
+The language picker lives in the settings panel, alongside the
+tithi-mode choice, reachable from either screen (see "Settings and
+help icons" above), and persists via `localStorage`
 (`moonPhaseViewer.language`).
 
 **What's translated**: month names, tithi names, Purnima/Amas,

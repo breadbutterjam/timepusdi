@@ -1,14 +1,52 @@
 {
-    "meta": { "code": "mr", "name": "Marathi", "nativeName": "मराठी" },
+    "meta": {
+        "code": "mr",
+        "name": "Marathi",
+        "nativeName": "मराठी"
+    },
+    "gregorianMonths": [
+        "जानेवारी",
+        "फेब्रुवारी",
+        "मार्च",
+        "एप्रिल",
+        "मे",
+        "जून",
+        "जुलै",
+        "ऑगस्ट",
+        "सप्टेंबर",
+        "ऑक्टोबर",
+        "नोव्हेंबर",
+        "डिसेंबर"
+    ],
     "months": {
-        "chaitra": "चैत्र", "vaishakh": "वैशाख", "jyeshta": "ज्येष्ठ", "ashadh": "आषाढ",
-        "shravan": "श्रावण", "bhadarvo": "भाद्रपद", "ashwin": "आश्विन", "kartik": "कार्तिक",
-        "magshar": "मार्गशीर्ष", "posh": "पौष", "maha": "माघ", "fagan": "फाल्गुन"
+        "chaitra": "चैत्र",
+        "vaishakh": "वैशाख",
+        "jyeshta": "ज्येष्ठ",
+        "ashadh": "आषाढ",
+        "shravan": "श्रावण",
+        "bhadarvo": "भाद्रपद",
+        "ashwin": "आश्विन",
+        "kartik": "कार्तिक",
+        "magshar": "मार्गशीर्ष",
+        "posh": "पौष",
+        "maha": "माघ",
+        "fagan": "फाल्गुन"
     },
     "tithis": {
-        "ekam": "प्रतिपदा", "beej": "द्वितीया", "trij": "तृतीया", "choth": "चतुर्थी", "pancham": "पंचमी",
-        "chhath": "षष्ठी", "satam": "सप्तमी", "aatham": "अष्टमी", "nom": "नवमी", "dasham": "दशमी",
-        "ekadashi": "एकादशी", "baras": "द्वादशी", "teras": "त्रयोदशी", "chaudas": "चतुर्दशी"
+        "ekam": "प्रतिपदा",
+        "beej": "द्वितीया",
+        "trij": "तृतीया",
+        "choth": "चतुर्थी",
+        "pancham": "पंचमी",
+        "chhath": "षष्ठी",
+        "satam": "सप्तमी",
+        "aatham": "अष्टमी",
+        "nom": "नवमी",
+        "dasham": "दशमी",
+        "ekadashi": "एकादशी",
+        "baras": "द्वादशी",
+        "teras": "त्रयोदशी",
+        "chaudas": "चतुर्दशी"
     },
     "purnima": "पौर्णिमा",
     "amas": "अमावास्या",

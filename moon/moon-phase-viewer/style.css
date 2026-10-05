@@ -60,7 +60,7 @@ body{
     width:100%; max-width:396px; aspect-ratio:1/1; border-radius:50%;
     position:relative; display:flex; align-items:center; justify-content:center;
     overflow:hidden; background:radial-gradient(circle at 38% 35%, #2a2a2a 0%, #050505 72%);
-    box-shadow:0 0 60px rgba(255,255,255,0.05) inset; cursor:pointer;
+    box-shadow:0 0 60px rgba(255,255,255,0.05) inset;
 }
 .moon-img{ width:100%; height:100%; object-fit:cover; display:none; transition:opacity 0.25s ease; }
 .moon-css{ width:88%; height:88%; border-radius:50%; background:#1c1c1c; position:relative; overflow:hidden; display:none; }
@@ -90,9 +90,18 @@ body{
 }
 .help-btn:hover, .help-btn:focus-visible{ color:rgba(255,255,255,0.8); outline:none; }
 
+/* .help-view / .detail-view / .splash-view are all width-constrained
+   and centered the same way .card is (not plain inset:0 = full
+   viewport) — on anything wider than 420px, a fixed-position element
+   spanning the whole viewport puts "right:16px"-style icon offsets at
+   the true screen edge, while .card's icons sit 16px from the edge of
+   its own centered 420px column. Same CSS rule, visibly different
+   screen position, which read as the icons "jumping" between screens.
+   Matching the width/centering here is the actual fix for that. */
 .help-view{
     display:none;
-    position:fixed; inset:0; background:#000; z-index:1000;
+    position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:420px; background:#000; z-index:1000;
     overflow-y:auto; -webkit-overflow-scrolling:touch;
     padding:20px 20px calc(28px + env(safe-area-inset-bottom,0px));
     padding-top:calc(64px + env(safe-area-inset-top,0px));
@@ -127,10 +136,11 @@ body{
 .accordion-body-inner a{ color:#9ecbff; text-decoration:underline; }
 .accordion-body-inner a:hover{ color:#c3ddff; }
 
-/* ----- detail view (tithi-by-tithi browser, opened by tapping the moon) ----- */
+/* ----- detail view (opened by tapping the tithi name) ----- */
 .detail-view{
     display:none;
-    position:fixed; inset:0; background:#000; z-index:999;
+    position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:420px; background:#000; z-index:999;
     flex-direction:column; align-items:center; justify-content:space-between;
     padding:28px 20px; padding-top:calc(28px + env(safe-area-inset-top,0px));
     padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
@@ -169,10 +179,14 @@ body{
 
 .detail-footer{ width:100%; text-align:center; color:#fff; }
 
-/* ----- settings panel ----- */
+/* ----- settings panel -----
+   Fixed to the viewport (not nested in .detail-view) so it can be
+   opened from either screen — z-index above both .card (no stacking
+   context of its own) and .detail-view (999). */
 .settings-panel{
     display:none;
-    position:absolute; inset:0; background:rgba(0,0,0,0.94); z-index:3;
+    position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:420px; background:rgba(0,0,0,0.94); z-index:1100;
     flex-direction:column; justify-content:center; gap:18px;
     padding:28px 28px; text-align:left;
 }
@@ -200,7 +214,8 @@ body{
 /* ----- first-run splash ----- */
 .splash-view{
     display:none;
-    position:fixed; inset:0; background:#000; z-index:2000;
+    position:fixed; top:0; bottom:0; left:50%; transform:translateX(-50%);
+    width:100%; max-width:420px; background:#000; z-index:2000;
     align-items:center; justify-content:center;
     padding:28px 24px;
 }

@@ -1,14 +1,52 @@
 {
-    "meta": { "code": "gu", "name": "Gujarati", "nativeName": "ગુજરાતી" },
+    "meta": {
+        "code": "gu",
+        "name": "Gujarati",
+        "nativeName": "ગુજરાતી"
+    },
+    "gregorianMonths": [
+        "જાન્યુઆરી",
+        "ફેબ્રુઆરી",
+        "માર્ચ",
+        "એપ્રિલ",
+        "મે",
+        "જૂન",
+        "જુલાઈ",
+        "ઑગસ્ટ",
+        "સપ્ટેમ્બર",
+        "ઑક્ટોબર",
+        "નવેમ્બર",
+        "ડિસેમ્બર"
+    ],
     "months": {
-        "chaitra": "ચૈત્ર", "vaishakh": "વૈશાખ", "jyeshta": "જેઠ", "ashadh": "અષાઢ",
-        "shravan": "શ્રાવણ", "bhadarvo": "ભાદરવો", "ashwin": "આસો", "kartik": "કારતક",
-        "magshar": "માગશર", "posh": "પોષ", "maha": "મહા", "fagan": "ફાગણ"
+        "chaitra": "ચૈત્ર",
+        "vaishakh": "વૈશાખ",
+        "jyeshta": "જેઠ",
+        "ashadh": "અષાઢ",
+        "shravan": "શ્રાવણ",
+        "bhadarvo": "ભાદરવો",
+        "ashwin": "આસો",
+        "kartik": "કારતક",
+        "magshar": "માગશર",
+        "posh": "પોષ",
+        "maha": "મહા",
+        "fagan": "ફાગણ"
     },
     "tithis": {
-        "ekam": "એકમ", "beej": "બીજ", "trij": "ત્રીજ", "choth": "ચોથ", "pancham": "પાંચમ",
-        "chhath": "છઠ", "satam": "સાતમ", "aatham": "આઠમ", "nom": "નોમ", "dasham": "દશમ",
-        "ekadashi": "અગિયારસ", "baras": "બારસ", "teras": "તેરસ", "chaudas": "ચૌદસ"
+        "ekam": "એકમ",
+        "beej": "બીજ",
+        "trij": "ત્રીજ",
+        "choth": "ચોથ",
+        "pancham": "પાંચમ",
+        "chhath": "છઠ",
+        "satam": "સાતમ",
+        "aatham": "આઠમ",
+        "nom": "નોમ",
+        "dasham": "દશમ",
+        "ekadashi": "અગિયારસ",
+        "baras": "બારસ",
+        "teras": "તેરસ",
+        "chaudas": "ચૌદસ"
     },
     "purnima": "પૂનમ",
     "amas": "અમાસ",
@@ -27,8 +65,8 @@
     },
     "ui": {
         "today": "આજે",
-        "nextFullMoon": "આગલી પૂનમ",
-        "nextNewMoon": "આગલી અમાસ",
+        "nextFullMoon": "પછીની પૂનમ",
+        "nextNewMoon": "પછીની અમાસ",
         "tillTemplate": "{time} સુધી, {date}",
         "atSunriseTemplate": "સૂર્યોદય: {time}",
         "settingsTitleTithi": "તિથિ પસંદગી",
