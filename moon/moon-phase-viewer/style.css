@@ -155,7 +155,7 @@ body{
 .detail-close:hover{ color:#fff; }
 
 .detail-settings{
-    position:absolute; top:calc(20px + env(safe-area-inset-top,0px)); left:20px;
+    position:absolute; bottom:calc(20px + env(safe-area-inset-top,0px)); left:20px;
     font-size:19px; color:rgba(255,255,255,0.5); cursor:pointer; z-index:2;
     background:none; border:none;
 }
