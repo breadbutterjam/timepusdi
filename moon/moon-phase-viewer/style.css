@@ -155,7 +155,7 @@ body{
 .detail-close:hover{ color:#fff; }
 
 .detail-settings{
-    position:absolute; bottom:calc(20px + env(safe-area-inset-top,0px)); left:20px;
+    position:absolute; top:calc(20px + env(safe-area-inset-top,0px)); left:20px;
     font-size:19px; color:rgba(255,255,255,0.5); cursor:pointer; z-index:2;
     background:none; border:none;
 }
@@ -176,6 +176,26 @@ body{
     min-height:0; padding:16px 0;
 }
 .detail-photo-wrap img{ max-width:100%; max-height:100%; object-fit:contain; border-radius:12px; }
+
+/* ----- "show upcoming festivals" toggle + list, swaps in place of
+   the moon photo (see detailPhotoWrap / festivalList in app.js) ----- */
+.festival-toggle-link{
+    margin-top:14px; text-align:center; font-size:0.85rem;
+    color:rgba(255,255,255,0.5); text-decoration:underline; cursor:pointer;
+}
+.festival-toggle-link:hover, .festival-toggle-link:focus-visible{ color:#fff; outline:none; }
+
+.festival-list{
+    display:none;
+    width:100%; max-width:420px; flex:1; flex-direction:column;
+    min-height:0; padding:12px 4px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+}
+.festival-list.active{ display:flex; }
+.festival-nav{ display:flex; align-items:center; justify-content:center; gap:40px; margin-bottom:8px; flex-shrink:0; }
+.festival-rows{ display:flex; flex-direction:column; gap:16px; }
+.festival-row{ text-align:center; }
+.festival-name-tithi{ color:#fff; font-size:1rem; font-weight:600; }
+.festival-date-sub{ margin-top:2px; font-size:0.8rem; color:rgba(255,255,255,0.45); }
 
 .detail-footer{ width:100%; text-align:center; color:#fff; }
 

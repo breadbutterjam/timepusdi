@@ -1,15 +1,52 @@
 {
-    "meta": { "code": "en", "name": "English", "nativeName": "English" },
-    "gregorianMonths": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+    "meta": {
+        "code": "en",
+        "name": "English",
+        "nativeName": "English"
+    },
+    "gregorianMonths": [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December"
+    ],
     "months": {
-        "chaitra": "Chaitra", "vaishakh": "Vaishakh", "jyeshta": "Jyeshta", "ashadh": "Ashadh",
-        "shravan": "Shravan", "bhadarvo": "Bhadarvo", "ashwin": "Ashwin", "kartik": "Kartik",
-        "magshar": "Magshar", "posh": "Posh", "maha": "Maha", "fagan": "Fagan"
+        "chaitra": "Chaitra",
+        "vaishakh": "Vaishakh",
+        "jyeshta": "Jyeshta",
+        "ashadh": "Ashadh",
+        "shravan": "Shravan",
+        "bhadarvo": "Bhadarvo",
+        "ashwin": "Ashwin",
+        "kartik": "Kartik",
+        "magshar": "Magshar",
+        "posh": "Posh",
+        "maha": "Maha",
+        "fagan": "Fagan"
     },
     "tithis": {
-        "ekam": "Ekam", "beej": "Beej", "trij": "Trij", "choth": "Choth", "pancham": "Pancham",
-        "chhath": "Chhath", "satam": "Satam", "aatham": "Aatham", "nom": "Nom", "dasham": "Dasham",
-        "ekadashi": "Ekadashi", "baras": "Baras", "teras": "Teras", "chaudas": "Chaudas"
+        "ekam": "Ekam",
+        "beej": "Beej",
+        "trij": "Trij",
+        "choth": "Choth",
+        "pancham": "Pancham",
+        "chhath": "Chhath",
+        "satam": "Satam",
+        "aatham": "Aatham",
+        "nom": "Nom",
+        "dasham": "Dasham",
+        "ekadashi": "Ekadashi",
+        "baras": "Baras",
+        "teras": "Teras",
+        "chaudas": "Chaudas"
     },
     "purnima": "Purnima",
     "amas": "Amas",
@@ -17,9 +54,14 @@
     "vad": "Vad",
     "adhik": "Adhik",
     "phases": {
-        "newMoon": "New Moon", "waxingCrescent": "Waxing Crescent", "firstQuarter": "First Quarter",
-        "waxingGibbous": "Waxing Gibbous", "fullMoon": "Full Moon", "waningGibbous": "Waning Gibbous",
-        "lastQuarter": "Last Quarter", "waningCrescent": "Waning Crescent"
+        "newMoon": "New Moon",
+        "waxingCrescent": "Waxing Crescent",
+        "firstQuarter": "First Quarter",
+        "waxingGibbous": "Waxing Gibbous",
+        "fullMoon": "Full Moon",
+        "waningGibbous": "Waning Gibbous",
+        "lastQuarter": "Last Quarter",
+        "waningCrescent": "Waning Crescent"
     },
     "ui": {
         "today": "today",
@@ -29,10 +71,31 @@
         "atSunriseTemplate": "at sunrise {time}",
         "settingsTitleTithi": "Tithi selection",
         "sunriseMode": "Tithi at sunrise",
-        "sunriseModeDesc": "Mumbai \u2014 the tithi active at sunrise represents the day",
+        "sunriseModeDesc": "Mumbai — the tithi active at sunrise represents the day",
         "majorityMode": "Tithi with max hours",
         "majorityModeDesc": "whichever tithi occupies the most of the calendar day",
         "settingsTitleLang": "Language",
-        "done": "Done"
+        "done": "Done",
+        "showFestivals": "Show upcoming festivals",
+        "showMoon": "Show moon"
+    },
+    "festivals": {
+        "makarSankranti": "Makar Sankranti",
+        "vasantPanchami": "Vasant Panchami",
+        "mahaShivratri": "Maha Shivratri",
+        "holi": "Holi",
+        "ramNavami": "Ram Navami",
+        "akshayaTritiya": "Akshaya Tritiya",
+        "guruPurnima": "Guru Purnima",
+        "rakshaBandhan": "Raksha Bandhan",
+        "janmashtami": "Janmashtami",
+        "ganeshChaturthi": "Ganesh Chaturthi",
+        "navratriBegins": "Navratri Begins",
+        "dussehra": "Dussehra",
+        "sharadPurnima": "Sharad Purnima",
+        "diwali": "Diwali",
+        "bestuVaras": "Bestu Varas",
+        "bhaiBeej": "Bhai Beej",
+        "devDiwali": "Dev Diwali"
     }
 }

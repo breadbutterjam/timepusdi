@@ -75,6 +75,27 @@
         "majorityMode": "સૌથી વધુ કલાકોવાળી તિથિ",
         "majorityModeDesc": "જે તિથિ દિવસના સૌથી વધુ કલાકો રોકે છે",
         "settingsTitleLang": "ભાષા",
-        "done": "પૂર્ણ"
+        "done": "પૂર્ણ",
+        "showFestivals": "આવનારા તહેવારો બતાવો",
+        "showMoon": "ચંદ્ર બતાવો"
+    },
+    "festivals": {
+        "makarSankranti": "મકર સંક્રાંતિ",
+        "vasantPanchami": "વસંત પંચમી",
+        "mahaShivratri": "મહા શિવરાત્રિ",
+        "holi": "હોળી",
+        "ramNavami": "રામ નવમી",
+        "akshayaTritiya": "અક્ષય તૃતીયા",
+        "guruPurnima": "ગુરુ પૂર્ણિમા",
+        "rakshaBandhan": "રક્ષાબંધન",
+        "janmashtami": "જન્માષ્ટમી",
+        "ganeshChaturthi": "ગણેશ ચતુર્થી",
+        "navratriBegins": "નવરાત્રિ પ્રારંભ",
+        "dussehra": "દશેરા",
+        "sharadPurnima": "શરદ પૂર્ણિમા",
+        "diwali": "દિવાળી",
+        "bestuVaras": "બેસતું વર્ષ",
+        "bhaiBeej": "ભાઈબીજ",
+        "devDiwali": "દેવ દિવાળી"
     }
 }

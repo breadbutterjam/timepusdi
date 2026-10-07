@@ -144,6 +144,46 @@ The choice is saved (`localStorage`) and applies to both the main
 screen and the detail view — there's one "tithi for today" per day,
 not a different one per screen.
 
+## Upcoming festivals
+
+The "Show upcoming festivals" link in the detail view swaps the moon
+photo for a paginated list of 5 — festival name + tithi on one line,
+Gregorian date as subtext below, `‹ ›` to page further forward or
+back. Two independent data sources, merged and sorted by date:
+
+- `TITHI_FESTIVALS` (`js/app.js`) — most festivals; each is a
+  `{month, tithi}` rule (reuses the exact same `monthSequence` /
+  tithi-engine machinery everything else here is built on). A
+  festival only matches the **regular** occurrence of a month, never
+  an adhik one.
+- `GREGORIAN_EVENTS` — purely solar/calendar-fixed events, kept as a
+  deliberately separate array so it's easy to add to independently
+  (national holidays, etc. — anything with no lunar component at
+  all). Currently just Makar Sankranti, hardcoded to Jan 14 rather
+  than calculated (it drifts about a day every ~70 years from
+  precession, so this is fine for a long time, but isn't a live
+  computation the way everything else here is).
+
+Verified before shipping: the computed Diwali date for 2026
+independently resolves back to "Ashwin Amas" through the *main*
+calendar's own tithi engine (not just the festival-search code path),
+confirming both stay in agreement; and paging forward then back
+reproduces the exact original list with no gaps or duplicates.
+
+**Festival names need validation, more so than months/tithis did** —
+regional naming varies more here. A few deliberate calls worth
+knowing: Hindi/Marathi use their own traditional names rather than a
+transliteration of the Gujarati ones (भाई दूज / भाऊबीज for Bhai Beej,
+same logic as the month-name decision earlier). Bestu Varas
+(Gujarati New Year) is translated descriptively ("Gujarati New Year")
+for Hindi/Marathi rather than invented — it is **not** the same date
+as Marathi's own Gudi Padwa, which falls on Chaitra Sud Ekam, a
+different tithi entirely, so these aren't interchangeable. A few
+festivals also have regional alternate names not currently included
+(Raksha Bandhan / Narali Purnima, Janmashtami / Gokulashtami, Sharad
+Purnima / Kojagiri Purnima in Marathi tradition) — flagging so none of
+this reads as an oversight.
+
 ## Full-screen overlays stay within the 420px column
 
 `.detail-view`, `.help-view`, `.splash-view`, and `.settings-panel`

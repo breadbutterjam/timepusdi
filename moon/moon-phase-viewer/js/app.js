@@ -53,6 +53,46 @@ const TITHI_KEYS = [
     "ekadashi", "baras", "teras", "chaudas"
 ];
 
+// Tithi-based festivals: month is a MONTH_KEYS index, tithi is the
+// usual 0-29 combined index (0-14 Shukla, 15-29 Krishna). `key` looks
+// up the display name in locales/<lang>.json under "festivals". Only
+// matches the REGULAR occurrence of a month (never an adhik one) —
+// see nextOccurrenceOfFestival. Draft list, flagged for validation
+// against a trusted panchang the same way ADHIK_MAAS was — regional
+// naming/date variation is real here too; see README.
+const TITHI_FESTIVALS = [
+    { key: "vasantPanchami", month: 10, tithi: 4 },   // Maha Sud Pancham
+    { key: "mahaShivratri", month: 10, tithi: 28 },   // Maha Vad Chaudas
+    { key: "holi", month: 11, tithi: 14 },            // Fagan Purnima
+    { key: "ramNavami", month: 0, tithi: 8 },         // Chaitra Sud Nom
+    { key: "akshayaTritiya", month: 1, tithi: 2 },    // Vaishakh Sud Trij
+    { key: "guruPurnima", month: 3, tithi: 14 },      // Ashadh Purnima
+    { key: "rakshaBandhan", month: 4, tithi: 14 },    // Shravan Purnima
+    { key: "janmashtami", month: 4, tithi: 22 },      // Shravan Vad Aatham
+    { key: "ganeshChaturthi", month: 5, tithi: 3 },   // Bhadarvo Sud Choth
+    { key: "navratriBegins", month: 6, tithi: 0 },    // Ashwin Sud Ekam
+    { key: "dussehra", month: 6, tithi: 9 },          // Ashwin Sud Dasham
+    { key: "sharadPurnima", month: 6, tithi: 14 },    // Ashwin Purnima
+    { key: "diwali", month: 6, tithi: 29 },           // Ashwin Amas
+    { key: "bestuVaras", month: 7, tithi: 0 },        // Kartik Sud Ekam
+    { key: "bhaiBeej", month: 7, tithi: 1 },          // Kartik Sud Beej
+    { key: "devDiwali", month: 7, tithi: 14 }         // Kartik Purnima
+];
+
+// Purely Gregorian-calendar events — solar festivals (Makar Sankranti)
+// and, if you want to add them later, things like national holidays
+// that have nothing to do with the lunar calendar at all. Kept as its
+// own array specifically so it's easy to add/remove independently of
+// TITHI_FESTIVALS. `month` is 0-11 (Gregorian, Jan=0), `day` is the
+// IST calendar day. Hardcoded to a fixed date for now rather than
+// calculated — Makar Sankranti is a real solar/sidereal event (the
+// Sun's sidereal entry into Capricorn) that does drift by roughly a
+// day every ~70 years, but Jan 14 is correct for the foreseeable
+// future and a live calculation wasn't asked for yet.
+const GREGORIAN_EVENTS = [
+    { key: "makarSankranti", month: 0, day: 14 }
+];
+
 // Anchor: a known Sud Ekam (tithi index 0) instant, and which of the
 // 12 month names it corresponds to — the one fixed point the whole
 // month sequence (see buildMonthSequence()) is built outward from in
@@ -179,6 +219,7 @@ let tithiMode = (function () {
     return 'sunrise'; // default
 })();
 let currentMainTithiInfo = null; // the tithi shown for currentDayStartMs (see getMainTithiForDay)
+let currentFestivalBatch = []; // the 5 (or fewer) festivals currently shown in the detail view's festival list
 let currentUpcoming = null; // { nextFullMoon, nextNewMoon } for currentDayStartMs — see renderAll
 let renderToken = 0;
 
@@ -302,6 +343,83 @@ function monthSequenceEntryAt(ms) {
         if (monthSequence[mid].ms <= ms) { ans = mid; lo = mid + 1; } else { hi = mid - 1; }
     }
     return ans === -1 ? null : monthSequence[ans];
+}
+
+/* ---------- festival occurrence search ----------
+   Tithi-based festivals reuse monthSequence (built once, see
+   buildMonthSequence above) — for a given {month, tithi}, find the
+   lunar month entry with that index (skipping adhik ones: a festival
+   is tied to the regular occurrence, never the leap one), then walk
+   tithi-by-tithi from that month's own start (which is exactly its
+   tithi-0 instant, by construction) forward to the target tithi. */
+
+function tithiStartDateInMonth(monthSeqIndex, targetTithi) {
+    let info = TithiEngine.getTithiInfo(new Date(monthSequence[monthSeqIndex].ms));
+    for (let step = 0; step < targetTithi; step++) {
+        if (!info.nextStart) return null; // ran off the edge of loaded data
+        info = TithiEngine.getTithiInfo(info.nextStart);
+    }
+    return info.start;
+}
+
+function nextOccurrenceOfFestival(fromMs, monthIdx, tithiIdx) {
+    for (let i = 0; i < monthSequence.length; i++) {
+        if (monthSequence[i].index !== monthIdx || monthSequence[i].isAdhik) continue;
+        const d = tithiStartDateInMonth(i, tithiIdx);
+        if (d && d.getTime() > fromMs) return d;
+    }
+    return null; // none found within the loaded data range
+}
+
+function prevOccurrenceOfFestival(beforeMs, monthIdx, tithiIdx) {
+    for (let i = monthSequence.length - 1; i >= 0; i--) {
+        if (monthSequence[i].index !== monthIdx || monthSequence[i].isAdhik) continue;
+        const d = tithiStartDateInMonth(i, tithiIdx);
+        if (d && d.getTime() < beforeMs) return d;
+    }
+    return null;
+}
+
+// Gregorian-only events: a fixed {month, day} every year, so unlike
+// tithi festivals these aren't bounded by the loaded data range at all.
+function nextOccurrenceOfGregorianEvent(fromMs, month, day) {
+    let year = istYearOf(new Date(fromMs));
+    let candidateMs = Date.UTC(year, month, day, 0, 0, 0) - 5.5 * 3600000;
+    if (candidateMs <= fromMs) {
+        year += 1;
+        candidateMs = Date.UTC(year, month, day, 0, 0, 0) - 5.5 * 3600000;
+    }
+    return new Date(candidateMs);
+}
+function prevOccurrenceOfGregorianEvent(beforeMs, month, day) {
+    let year = istYearOf(new Date(beforeMs));
+    let candidateMs = Date.UTC(year, month, day, 0, 0, 0) - 5.5 * 3600000;
+    if (candidateMs >= beforeMs) {
+        year -= 1;
+        candidateMs = Date.UTC(year, month, day, 0, 0, 0) - 5.5 * 3600000;
+    }
+    return new Date(candidateMs);
+}
+
+// Merges TITHI_FESTIVALS + GREGORIAN_EVENTS and returns up to `count`
+// occurrences strictly after (direction='next') or strictly before
+// (direction='prev') `anchorMs`, always in chronological order.
+function getFestivalBatch(anchorMs, count, direction) {
+    const occurrences = [];
+    for (const f of TITHI_FESTIVALS) {
+        const d = direction === 'next'
+            ? nextOccurrenceOfFestival(anchorMs, f.month, f.tithi)
+            : prevOccurrenceOfFestival(anchorMs, f.month, f.tithi);
+        if (d) occurrences.push({ key: f.key, date: d, monthIdx: f.month, tithiIdx: f.tithi, isGregorian: false });
+    }
+    for (const e of GREGORIAN_EVENTS) {
+        const d = direction === 'next'
+            ? nextOccurrenceOfGregorianEvent(anchorMs, e.month, e.day)
+            : prevOccurrenceOfGregorianEvent(anchorMs, e.month, e.day);
+        occurrences.push({ key: e.key, date: d, isGregorian: true });
+    }
+    occurrences.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return direction === 'next' ? occurrences.slice(0, count) : occurrences.slice(-count);
 }
 
 function monthNameFor(date) {
@@ -783,6 +901,64 @@ function openDetailView() {
 function closeDetailView() {
     document.getElementById('detailView').classList.remove('active');
     closeSettings();
+    showFestivalList(false); // reset to the photo view for next time it's opened
+}
+
+/* ---------- "show upcoming festivals" (swaps in place of the photo) ---------- */
+
+const FESTIVAL_BATCH_SIZE = 5;
+
+function renderFestivalBatch(batch) {
+    currentFestivalBatch = batch;
+    const rowsEl = document.getElementById('festivalRows');
+    rowsEl.innerHTML = '';
+    for (const occ of batch) {
+        const row = document.createElement('div');
+        row.className = 'festival-row';
+
+        const nameTithi = document.createElement('div');
+        nameTithi.className = 'festival-name-tithi';
+        const name = I18n.t('festivals.' + occ.key);
+        if (occ.isGregorian) {
+            nameTithi.textContent = name;
+        } else {
+            const monthName = I18n.t('months.' + MONTH_KEYS[occ.monthIdx]);
+            const label = tithiLabel(occ.tithiIdx, monthName);
+            nameTithi.textContent = `${name} — ${label.full}`;
+        }
+
+        const dateSub = document.createElement('div');
+        dateSub.className = 'festival-date-sub';
+        dateSub.textContent = formatGregorianIST(occ.date);
+
+        row.appendChild(nameTithi);
+        row.appendChild(dateSub);
+        rowsEl.appendChild(row);
+    }
+    document.getElementById('festivalPrevBtn').disabled = (batch.length === 0);
+    document.getElementById('festivalNextBtn').disabled = (batch.length === 0);
+}
+
+function showFestivalList(show) {
+    document.getElementById('detailPhotoWrap').style.display = show ? 'none' : '';
+    document.getElementById('festivalList').classList.toggle('active', show);
+    document.getElementById('festivalToggleLink').textContent = show ? I18n.t('ui.showMoon') : I18n.t('ui.showFestivals');
+    if (show && currentFestivalBatch.length === 0) {
+        renderFestivalBatch(getFestivalBatch(currentDayStartMs, FESTIVAL_BATCH_SIZE, 'next'));
+    }
+}
+
+function festivalPageNext() {
+    if (currentFestivalBatch.length === 0) return;
+    const anchor = currentFestivalBatch[currentFestivalBatch.length - 1].date.getTime();
+    const batch = getFestivalBatch(anchor, FESTIVAL_BATCH_SIZE, 'next');
+    if (batch.length > 0) renderFestivalBatch(batch);
+}
+function festivalPagePrev() {
+    if (currentFestivalBatch.length === 0) return;
+    const anchor = currentFestivalBatch[0].date.getTime();
+    const batch = getFestivalBatch(anchor, FESTIVAL_BATCH_SIZE, 'prev');
+    if (batch.length > 0) renderFestivalBatch(batch);
 }
 function openSettings() {
     document.getElementById('modeSunrise').checked = (tithiMode === 'sunrise');
@@ -812,6 +988,8 @@ function applyStaticTranslations() {
     document.getElementById('majorityModeDesc').textContent = I18n.t('ui.majorityModeDesc');
     document.getElementById('settingsTitleLang').textContent = I18n.t('ui.settingsTitleLang');
     document.getElementById('settingsDoneBtn').textContent = I18n.t('ui.done');
+    const festivalsShowing = document.getElementById('festivalList').classList.contains('active');
+    document.getElementById('festivalToggleLink').textContent = I18n.t(festivalsShowing ? 'ui.showMoon' : 'ui.showFestivals');
 }
 
 /* ---------- boot ---------- */
@@ -825,6 +1003,18 @@ document.getElementById('gujaratiDate').addEventListener('keydown', (e) => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openDetailView(); }
 });
 document.getElementById('detailClose').addEventListener('click', closeDetailView);
+
+document.getElementById('festivalToggleLink').addEventListener('click', () => {
+    showFestivalList(!document.getElementById('festivalList').classList.contains('active'));
+});
+document.getElementById('festivalToggleLink').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        showFestivalList(!document.getElementById('festivalList').classList.contains('active'));
+    }
+});
+document.getElementById('festivalPrevBtn').addEventListener('click', festivalPagePrev);
+document.getElementById('festivalNextBtn').addEventListener('click', festivalPageNext);
 document.getElementById('detailSettingsBtn').addEventListener('click', openSettings);
 document.getElementById('mainSettingsBtn').addEventListener('click', openSettings);
 document.getElementById('settingsDoneBtn').addEventListener('click', closeSettings);

@@ -75,6 +75,27 @@
         "majorityMode": "सर्वाधिक घंटों वाली तिथि",
         "majorityModeDesc": "जो तिथि दिन के सबसे अधिक घंटे रहती है",
         "settingsTitleLang": "भाषा",
-        "done": "पूर्ण"
+        "done": "पूर्ण",
+        "showFestivals": "आगामी त्योहार दिखाएं",
+        "showMoon": "चाँद दिखाएं"
+    },
+    "festivals": {
+        "makarSankranti": "मकर संक्रांति",
+        "vasantPanchami": "वसंत पंचमी",
+        "mahaShivratri": "महा शिवरात्रि",
+        "holi": "होली",
+        "ramNavami": "राम नवमी",
+        "akshayaTritiya": "अक्षय तृतीया",
+        "guruPurnima": "गुरु पूर्णिमा",
+        "rakshaBandhan": "रक्षाबंधन",
+        "janmashtami": "जन्माष्टमी",
+        "ganeshChaturthi": "गणेश चतुर्थी",
+        "navratriBegins": "नवरात्रि प्रारंभ",
+        "dussehra": "दशहरा",
+        "sharadPurnima": "शरद पूर्णिमा",
+        "diwali": "दिवाली",
+        "bestuVaras": "गुजराती नववर्ष",
+        "bhaiBeej": "भाई दूज",
+        "devDiwali": "देव दिवाली"
     }
 }

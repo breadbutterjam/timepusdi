@@ -75,6 +75,27 @@
         "majorityMode": "सर्वाधिक तास असलेली तिथी",
         "majorityModeDesc": "जी तिथी दिवसाचे सर्वाधिक तास व्यापते",
         "settingsTitleLang": "भाषा",
-        "done": "पूर्ण"
+        "done": "पूर्ण",
+        "showFestivals": "आगामी सण दाखवा",
+        "showMoon": "चंद्र दाखवा"
+    },
+    "festivals": {
+        "makarSankranti": "मकर संक्रांत",
+        "vasantPanchami": "वसंत पंचमी",
+        "mahaShivratri": "महाशिवरात्री",
+        "holi": "होळी",
+        "ramNavami": "राम नवमी",
+        "akshayaTritiya": "अक्षय्य तृतीया",
+        "guruPurnima": "गुरुपौर्णिमा",
+        "rakshaBandhan": "रक्षाबंधन",
+        "janmashtami": "जन्माष्टमी",
+        "ganeshChaturthi": "गणेश चतुर्थी",
+        "navratriBegins": "नवरात्र प्रारंभ",
+        "dussehra": "दसरा",
+        "sharadPurnima": "शरद पौर्णिमा",
+        "diwali": "दिवाळी",
+        "bestuVaras": "गुजराती नववर्ष",
+        "bhaiBeej": "भाऊबीज",
+        "devDiwali": "देव दिवाळी"
     }
 }
