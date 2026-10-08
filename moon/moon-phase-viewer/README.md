@@ -289,6 +289,7 @@ trusting them):
   पौष, फाल्गुन) — a direct transliteration of the Gujarati vernacular
   names into Devanagari would look foreign to Hindi/Marathi readers,
   since that's not what their own calendars call these months.
+  
 - **Lower confidence**: the four continuous phase names (Waxing/
   Waning Crescent/Gibbous) are descriptive translations, not
   standardized vocabulary the way calendar terms are — worth a native
