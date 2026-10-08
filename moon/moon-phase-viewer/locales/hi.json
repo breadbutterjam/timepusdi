@@ -77,7 +77,8 @@
         "settingsTitleLang": "भाषा",
         "done": "पूर्ण",
         "showFestivals": "आगामी त्योहार दिखाएं",
-        "showMoon": "चाँद दिखाएं"
+        "showMoon": "चाँद दिखाएं",
+        "festivalsHeader": "त्योहार"
     },
     "festivals": {
         "makarSankranti": "मकर संक्रांति",

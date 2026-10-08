@@ -77,7 +77,8 @@
         "settingsTitleLang": "ભાષા",
         "done": "પૂર્ણ",
         "showFestivals": "આવનારા તહેવારો બતાવો",
-        "showMoon": "ચંદ્ર બતાવો"
+        "showMoon": "ચંદ્ર બતાવો",
+        "festivalsHeader": "તહેવારો"
     },
     "festivals": {
         "makarSankranti": "મકર સંક્રાંતિ",

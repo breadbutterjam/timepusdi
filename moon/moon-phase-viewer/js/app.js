@@ -64,6 +64,7 @@ const TITHI_FESTIVALS = [
     { key: "vasantPanchami", month: 10, tithi: 4 },   // Maha Sud Pancham
     { key: "mahaShivratri", month: 10, tithi: 28 },   // Maha Vad Chaudas
     { key: "holi", month: 11, tithi: 14 },            // Fagan Purnima
+    { key: "dulheti", month: 11, tithi: 15 },            // Fagan Vad Ekam 
     { key: "ramNavami", month: 0, tithi: 8 },         // Chaitra Sud Nom
     { key: "akshayaTritiya", month: 1, tithi: 2 },    // Vaishakh Sud Trij
     { key: "guruPurnima", month: 3, tithi: 14 },      // Ashadh Purnima
@@ -901,10 +902,10 @@ function openDetailView() {
 function closeDetailView() {
     document.getElementById('detailView').classList.remove('active');
     closeSettings();
-    showFestivalList(false); // reset to the photo view for next time it's opened
 }
 
-/* ---------- "show upcoming festivals" (swaps in place of the photo) ---------- */
+/* ---------- "show upcoming festivals" — main screen only, a floating
+   overlay panel over the moon image ---------- */
 
 const FESTIVAL_BATCH_SIZE = 5;
 
@@ -940,7 +941,6 @@ function renderFestivalBatch(batch) {
 }
 
 function showFestivalList(show) {
-    document.getElementById('detailPhotoWrap').style.display = show ? 'none' : '';
     document.getElementById('festivalList').classList.toggle('active', show);
     document.getElementById('festivalToggleLink').textContent = show ? I18n.t('ui.showMoon') : I18n.t('ui.showFestivals');
     if (show && currentFestivalBatch.length === 0) {
@@ -990,6 +990,7 @@ function applyStaticTranslations() {
     document.getElementById('settingsDoneBtn').textContent = I18n.t('ui.done');
     const festivalsShowing = document.getElementById('festivalList').classList.contains('active');
     document.getElementById('festivalToggleLink').textContent = I18n.t(festivalsShowing ? 'ui.showMoon' : 'ui.showFestivals');
+    document.getElementById('festivalHeaderTitle').textContent = I18n.t('ui.festivalsHeader');
 }
 
 /* ---------- boot ---------- */
@@ -1015,6 +1016,7 @@ document.getElementById('festivalToggleLink').addEventListener('keydown', (e) =>
 });
 document.getElementById('festivalPrevBtn').addEventListener('click', festivalPagePrev);
 document.getElementById('festivalNextBtn').addEventListener('click', festivalPageNext);
+document.getElementById('festivalCloseBtn').addEventListener('click', () => showFestivalList(false));
 document.getElementById('detailSettingsBtn').addEventListener('click', openSettings);
 document.getElementById('mainSettingsBtn').addEventListener('click', openSettings);
 document.getElementById('settingsDoneBtn').addEventListener('click', closeSettings);

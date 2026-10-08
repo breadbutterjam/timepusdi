@@ -146,10 +146,15 @@ not a different one per screen.
 
 ## Upcoming festivals
 
-The "Show upcoming festivals" link in the detail view swaps the moon
-photo for a paginated list of 5 — festival name + tithi on one line,
-Gregorian date as subtext below, `‹ ›` to page further forward or
-back. Two independent data sources, merged and sorted by date:
+The "Show upcoming festivals" link sits on the **main screen only**
+(not the detail view — tried there first, decided it was one screen
+too many for what this is), below the moon image. Tapping it opens a
+floating overlay panel over the moon photo (the moon stays visible
+through it, semi-transparent) — a paginated list of 5, left-aligned:
+festival name + tithi on one line, Gregorian date as lighter subtext
+below, a header with a close (×), and `‹ ›` navigation below the list
+to page further forward or back. Two independent data sources, merged
+and sorted by date:
 
 - `TITHI_FESTIVALS` (`js/app.js`) — most festivals; each is a
   `{month, tithi}` rule (reuses the exact same `monthSequence` /

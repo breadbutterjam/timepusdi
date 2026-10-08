@@ -177,25 +177,40 @@ body{
 }
 .detail-photo-wrap img{ max-width:100%; max-height:100%; object-fit:contain; border-radius:12px; }
 
-/* ----- "show upcoming festivals" toggle + list, swaps in place of
-   the moon photo (see detailPhotoWrap / festivalList in app.js) ----- */
+/* ----- "show upcoming festivals" toggle + list — main screen only,
+   a floating overlay panel over the moon image, not a separate
+   screen. (Previously also lived in the detail view; removed from
+   there per a later round — keeping it in one place only.) ----- */
 .festival-toggle-link{
-    margin-top:14px; text-align:center; font-size:0.85rem;
+    margin-top:14px; margin-bottom:24px; text-align:center; font-size:0.85rem;
     color:rgba(255,255,255,0.5); text-decoration:underline; cursor:pointer;
 }
 .festival-toggle-link:hover, .festival-toggle-link:focus-visible{ color:#fff; outline:none; }
 
 .festival-list{
     display:none;
-    width:100%; max-width:420px; flex:1; flex-direction:column;
-    min-height:0; padding:12px 4px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    position:absolute; left:50%; top:26%; transform:translateX(-50%);
+    width:86%; max-height:60%; z-index:100;
+    background:#0e0e0edb; border-radius:38px;
+    flex-direction:column; align-items:flex-start;
+    padding:20px 20px 16px 24px; overflow-y:auto; -webkit-overflow-scrolling:touch;
 }
 .festival-list.active{ display:flex; }
-.festival-nav{ display:flex; align-items:center; justify-content:center; gap:40px; margin-bottom:8px; flex-shrink:0; }
-.festival-rows{ display:flex; flex-direction:column; gap:16px; }
-.festival-row{ text-align:center; }
+
+.festival-header{ display:flex; align-items:center; justify-content:space-between; width:100%; margin-bottom:12px; }
+.festival-header-title{ color:#fff; font-size:1rem; font-weight:600; }
+.festival-close{
+    background:none; border:none; color:rgba(255,255,255,0.6); cursor:pointer;
+    font-size:22px; font-weight:300; line-height:1; padding:0;
+}
+.festival-close:hover, .festival-close:focus-visible{ color:#fff; outline:none; }
+
+.festival-rows{ display:flex; flex-direction:column; gap:16px; width:100%; }
+.festival-row{ text-align:left; }
 .festival-name-tithi{ color:#fff; font-size:1rem; font-weight:600; }
 .festival-date-sub{ margin-top:2px; font-size:0.8rem; color:rgba(255,255,255,0.45); }
+
+.festival-nav{ display:flex; align-items:center; justify-content:space-between; width:100%; margin-top:14px; }
 
 .detail-footer{ width:100%; text-align:center; color:#fff; }
 

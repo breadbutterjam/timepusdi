@@ -77,7 +77,8 @@
         "settingsTitleLang": "भाषा",
         "done": "पूर्ण",
         "showFestivals": "आगामी सण दाखवा",
-        "showMoon": "चंद्र दाखवा"
+        "showMoon": "चंद्र दाखवा",
+        "festivalsHeader": "सण"
     },
     "festivals": {
         "makarSankranti": "मकर संक्रांत",

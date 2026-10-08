@@ -77,13 +77,15 @@
         "settingsTitleLang": "Language",
         "done": "Done",
         "showFestivals": "Show upcoming festivals",
-        "showMoon": "Show moon"
+        "showMoon": "Show moon",
+        "festivalsHeader": "Festivals"
     },
     "festivals": {
         "makarSankranti": "Makar Sankranti",
         "vasantPanchami": "Vasant Panchami",
         "mahaShivratri": "Maha Shivratri",
         "holi": "Holi",
+        "dulheti": "Dulheti",
         "ramNavami": "Ram Navami",
         "akshayaTritiya": "Akshaya Tritiya",
         "guruPurnima": "Guru Purnima",
