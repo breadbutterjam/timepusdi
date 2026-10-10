@@ -36,6 +36,13 @@ body{
 
 .gujarati-date{ margin-top:10px; font-size:1.55rem; font-weight:500; letter-spacing:0.2px; cursor:pointer; }
 .gujarati-date:hover, .gujarati-date:focus-visible{ color:rgba(255,255,255,0.8); outline:none; }
+/* Shown only on a day that matches a festival (see findFestivalForDay
+   in app.js) — empty and zero-height otherwise, so no permanent gap
+   on the vast majority of ordinary days. */
+.festival-badge{
+    margin-top:4px; text-align:center; font-size:0.9rem; font-weight:600;
+    color:#ffce00; text-decoration:none; cursor:default;
+}
 .phase-line{ margin-top:10px; font-size:1.25rem; font-weight:400; color:rgba(255,255,255,0.8); }
 .till-line{ margin-top:6px; font-size:0.85rem; color:rgba(255,255,255,0.45); min-height:1.2em; }
 

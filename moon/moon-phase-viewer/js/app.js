@@ -60,56 +60,24 @@ const TITHI_KEYS = [
 // see nextOccurrenceOfFestival. Draft list, flagged for validation
 // against a trusted panchang the same way ADHIK_MAAS was — regional
 // naming/date variation is real here too; see README.
-const TITHI_FESTIVALS = [{ key: "rakshabandhan", month: 4, tithi: 14 },
-{ key: "satamAtham", month: 4, tithi: 21 },
-{ key: "janmashtami", month: 4, tithi: 22 },
-{ key: "paryushan", month: 4, tithi: 26 },
-{ key: "ganeshChaturthi", month: 5, tithi: 3 },
-{ key: "ganeshVisarjan", month: 5, tithi: 13 },
-{ key: "navratri1", month: 6, tithi: 0 },
-{ key: "navratri2", month: 6, tithi: 1 },
-{ key: "navratri3", month: 6, tithi: 2 },
-{ key: "navratri4", month: 6, tithi: 3 },
-{ key: "navratri5", month: 6, tithi: 4 },
-{ key: "navratri6", month: 6, tithi: 5 },
-{ key: "navratri7", month: 6, tithi: 6 },
-{ key: "navratri8", month: 6, tithi: 7 },
-{ key: "navratri9", month: 6, tithi: 8 },
-{ key: "dusshera", month: 6, tithi: 9 },
-{ key: "sharadPurnima", month: 6, tithi: 14 },
-{ key: "diwali", month: 6, tithi: 29 },
-{ key: "bestuVaras", month: 7, tithi: 0 },
-{ key: "bhaiBeej", month: 7, tithi: 1 },
-{ key: "jalaramJayanti", month: 7, tithi: 6 },
-{ key: "devUthiEkadashi", month: 7, tithi: 10 },
-{ key: "devDiwali", month: 7, tithi: 14 },
-{ key: "dattatreyJayanti", month: 8, tithi: 14 },
-{ key: "vasantPanchami", month: 10, tithi: 4 },
-{ key: "mahaShivratri", month: 10, tithi: 28 },
-{ key: "holi", month: 11, tithi: 14 },
-{ key: "dulheti", month: 11, tithi: 15 },
-{ key: "gudiPadvo", month: 0, tithi: 0 },
-{ key: "chaitraNavratri1", month: 0, tithi: 0 },
-// { key: "chaitraNavratri2", month: 0, tithi: 1 },
-// { key: "chaitraNavratri3", month: 0, tithi: 2 },
-// { key: "chaitraNavratri4", month: 0, tithi: 3 },
-// { key: "chaitraNavratri5", month: 0, tithi: 4 },
-// { key: "chaitraNavratri6", month: 0, tithi: 5 },
-// { key: "chaitraNavratri7", month: 0, tithi: 6 },
-// { key: "chaitraNavratri8", month: 0, tithi: 7 },
-{ key: "ramNavami", month: 0, tithi: 8 },
-{ key: "chaitraPurnima", month: 0, tithi: 14 },
-{ key: "akhaTreej", month: 1, tithi: 2 },
-{ key: "buddhaPurnima", month: 1, tithi: 14 },
-{ key: "bhimEkadashi", month: 2, tithi: 10 },
-{ key: "vadSavitri", month: 2, tithi: 14 },
-{ key: "kutchiNewYear", month: 3, tithi: 0 },
-{ key: "guruPurnima", month: 3, tithi: 14 },
+const TITHI_FESTIVALS = [
+    { key: "vasantPanchami", month: 10, tithi: 4 },   // Maha Sud Pancham
+    { key: "mahaShivratri", month: 10, tithi: 28 },   // Maha Vad Chaudas
+    { key: "holi", month: 11, tithi: 14 },            // Fagan Purnima
+    { key: "ramNavami", month: 0, tithi: 8 },         // Chaitra Sud Nom
+    { key: "akshayaTritiya", month: 1, tithi: 2 },    // Vaishakh Sud Trij
+    { key: "guruPurnima", month: 3, tithi: 14 },      // Ashadh Purnima
+    { key: "rakshaBandhan", month: 4, tithi: 14 },    // Shravan Purnima
+    { key: "janmashtami", month: 4, tithi: 22 },      // Shravan Vad Aatham
+    { key: "ganeshChaturthi", month: 5, tithi: 3 },   // Bhadarvo Sud Choth
+    { key: "navratriBegins", month: 6, tithi: 0 },    // Ashwin Sud Ekam
+    { key: "dussehra", month: 6, tithi: 9 },          // Ashwin Sud Dasham
+    { key: "sharadPurnima", month: 6, tithi: 14 },    // Ashwin Purnima
+    { key: "diwali", month: 6, tithi: 29 },           // Ashwin Amas
+    { key: "bestuVaras", month: 7, tithi: 0 },        // Kartik Sud Ekam
+    { key: "bhaiBeej", month: 7, tithi: 1 },          // Kartik Sud Beej
+    { key: "devDiwali", month: 7, tithi: 14 }         // Kartik Purnima
 ];
-
-
-
-
 
 // Purely Gregorian-calendar events — solar festivals (Makar Sankranti)
 // and, if you want to add them later, things like national holidays
@@ -184,6 +152,10 @@ function formatClockTimeIST(date) {
 // 0-11, IST calendar month.
 function istMonthIndexOf(date) {
     return +new Intl.DateTimeFormat('en-CA', { timeZone: IST_TZ, month: 'numeric' }).format(date) - 1;
+}
+
+function istDayOfMonthOf(date) {
+    return +new Intl.DateTimeFormat('en-CA', { timeZone: IST_TZ, day: 'numeric' }).format(date);
 }
 
 // Gregorian month name from the locale file (gregorianMonths, a plain
@@ -452,6 +424,29 @@ function getFestivalBatch(anchorMs, count, direction) {
     }
     occurrences.sort((a, b) => a.date.getTime() - b.date.getTime());
     return direction === 'next' ? occurrences.slice(0, count) : occurrences.slice(-count);
+}
+
+// Does the day's own chosen tithi (mainTithiInfo — whichever one
+// sunrise/majority mode picked) land exactly on a festival? Checked
+// against both festival sources: a tithi-based match requires the
+// day's month to be a REGULAR (non-adhik) occurrence, same rule as
+// the festival list itself; a Gregorian-event match is independent of
+// tithi entirely. Returns a festival key, or null. Silently finds
+// nothing outside the generated data range (monthSequenceEntryAt
+// returns null there) — same degrade-gracefully pattern as everywhere
+// else tithi-dependent in this app; the Gregorian check still works
+// for any date regardless.
+function findFestivalForDay(dayStartMs, mainTithiInfo) {
+    const entry = monthSequenceEntryAt(mainTithiInfo.start.getTime());
+    if (entry && !entry.isAdhik) {
+        const match = TITHI_FESTIVALS.find(f => f.month === entry.index && f.tithi === mainTithiInfo.tithi);
+        if (match) return match.key;
+    }
+    const dayInstant = new Date(dayStartMs + 43200000);
+    const m = istMonthIndexOf(dayInstant);
+    const d = istDayOfMonthOf(dayInstant);
+    const gMatch = GREGORIAN_EVENTS.find(e => e.month === m && e.day === d);
+    return gMatch ? gMatch.key : null;
 }
 
 function monthNameFor(date) {
@@ -771,6 +766,8 @@ async function renderAll() {
 
     // ---- main screen ----
     document.getElementById('gujaratiDate').textContent = label.full;
+    const festivalKey = findFestivalForDay(dayStart, mainTithiInfo);
+    document.getElementById('festivalBadge').textContent = festivalKey ? I18n.t('festivals.' + festivalKey) : '';
     document.getElementById('phaseLine').textContent = phaseName;
     document.getElementById('tillLine').textContent = gregText;
     document.getElementById('datePickerMain').value = toISTDateInputValue(new Date(dayStart + 43200000));

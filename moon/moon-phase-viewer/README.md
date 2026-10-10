@@ -144,6 +144,29 @@ The choice is saved (`localStorage`) and applies to both the main
 screen and the detail view — there's one "tithi for today" per day,
 not a different one per screen.
 
+## Festival badge (on the day itself)
+
+When the day currently shown matches a festival — checked against
+both `TITHI_FESTIVALS` and `GREGORIAN_EVENTS`, same rules as the
+festival list (a tithi match must be a regular, non-adhik month
+occurrence) — its name appears as a small gold (`#ffce00`) label
+between the tithi name and the phase name, non-interactive (no
+underline, no pointer cursor, unlike the links around it). Empty and
+zero-height on ordinary days, so there's no permanent gap — this is a
+different tradeoff than the "today" link's reserve-space treatment
+elsewhere in this app, deliberately: "today" toggles on essentially
+every navigation, so avoiding layout jump there matters a lot; a
+festival day is rare by comparison, so a small one-time shift when you
+land on one is the better tradeoff than a permanent blank gap on
+every other day of the year.
+
+**Known gap, by design, for now**: a handful of real festivals span
+multiple days (start/end), which this doesn't yet model — every
+festival here is a single-instant match. The accepted workaround for
+now is listing the same festival on each day of its range as separate
+`TITHI_FESTIVALS` entries; proper multi-day range support is a planned
+second pass.
+
 ## Upcoming festivals
 
 The "Show upcoming festivals" link sits on the **main screen only**
@@ -289,7 +312,6 @@ trusting them):
   पौष, फाल्गुन) — a direct transliteration of the Gujarati vernacular
   names into Devanagari would look foreign to Hindi/Marathi readers,
   since that's not what their own calendars call these months.
-  
 - **Lower confidence**: the four continuous phase names (Waxing/
   Waning Crescent/Gibbous) are descriptive translations, not
   standardized vocabulary the way calendar terms are — worth a native
