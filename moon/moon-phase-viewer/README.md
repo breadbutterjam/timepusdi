@@ -160,6 +160,23 @@ festival day is rare by comparison, so a small one-time shift when you
 land on one is the better tradeoff than a permanent blank gap on
 every other day of the year.
 
+**Manual date overrides**: `MANUAL_FESTIVALS` in `js/app.js` lets a
+specific `{festival, year}` combination's date be overridden outright
+— e.g. Dussehra 2026, where this app's sunrise-mode tithi calculation
+has Ashwin Sud Dasham beginning at sunrise on Oct 21, but published
+holiday calendars place it on Oct 20 (the day the tithi itself begins,
+pre-sunrise). Deliberately a manual, reviewable, per-year list rather
+than a second calculation method — some other automated rule could
+just as easily disagree with some other source for some other year,
+so this doesn't try to guess which rule should generally "win". An
+override fully replaces that year's occurrence (the natural day no
+longer shows the festival at all, only the override day does) and
+applies consistently everywhere a festival date is used — the badge,
+the list, and pagination all share the same `applyFestivalOverride` /
+`manualOverrideFor` logic, so none of them can silently disagree with
+each other. `showOn` is `"YYYY-MM-DD"`, the same format used
+everywhere else dates are compared in this file.
+
 **Known gap, by design, for now**: a handful of real festivals span
 multiple days (start/end), which this doesn't yet model — every
 festival here is a single-instant match. The accepted workaround for

@@ -60,51 +60,23 @@ const TITHI_KEYS = [
 // see nextOccurrenceOfFestival. Draft list, flagged for validation
 // against a trusted panchang the same way ADHIK_MAAS was — regional
 // naming/date variation is real here too; see README.
-const TITHI_FESTIVALS = [{ key: "rakshabandhan", month: 4, tithi: 14 },
-{ key: "satamAtham", month: 4, tithi: 21 },
-{ key: "janmashtami", month: 4, tithi: 22 },
-{ key: "paryushan", month: 4, tithi: 26 },
-{ key: "ganeshChaturthi", month: 5, tithi: 3 },
-{ key: "ganeshVisarjan", month: 5, tithi: 13 },
-{ key: "navratri1", month: 6, tithi: 0 },
-// { key: "navratri2", month: 6, tithi: 1 },
-// { key: "navratri3", month: 6, tithi: 2 },
-// { key: "navratri4", month: 6, tithi: 3 },
-// { key: "navratri5", month: 6, tithi: 4 },
-// { key: "navratri6", month: 6, tithi: 5 },
-// { key: "navratri7", month: 6, tithi: 6 },
-// { key: "navratri8", month: 6, tithi: 7 },
-// { key: "navratri9", month: 6, tithi: 8 },
-{ key: "dusshera", month: 6, tithi: 9 },
-{ key: "sharadPurnima", month: 6, tithi: 14 },
-{ key: "diwali", month: 6, tithi: 29 },
-{ key: "bestuVaras", month: 7, tithi: 0 },
-{ key: "bhaiBeej", month: 7, tithi: 1 },
-{ key: "jalaramJayanti", month: 7, tithi: 6 },
-{ key: "devUthiEkadashi", month: 7, tithi: 10 },
-{ key: "devDiwali", month: 7, tithi: 14 },
-{ key: "dattatreyJayanti", month: 8, tithi: 14 },
-{ key: "vasantPanchami", month: 10, tithi: 4 },
-{ key: "mahaShivratri", month: 10, tithi: 28 },
-{ key: "holi", month: 11, tithi: 14 },
-{ key: "dulheti", month: 11, tithi: 15 },
-{ key: "gudiPadvo", month: 0, tithi: 0 },
-{ key: "chaitraNavratri1", month: 0, tithi: 0 },
-{ key: "chaitraNavratri2", month: 0, tithi: 1 },
-{ key: "chaitraNavratri3", month: 0, tithi: 2 },
-{ key: "chaitraNavratri4", month: 0, tithi: 3 },
-{ key: "chaitraNavratri5", month: 0, tithi: 4 },
-{ key: "chaitraNavratri6", month: 0, tithi: 5 },
-{ key: "chaitraNavratri7", month: 0, tithi: 6 },
-{ key: "chaitraNavratri8", month: 0, tithi: 7 },
-{ key: "ramNavami", month: 0, tithi: 8 },
-{ key: "chaitraPurnima", month: 0, tithi: 14 },
-{ key: "akhaTreej", month: 1, tithi: 2 },
-{ key: "buddhaPurnima", month: 1, tithi: 14 },
-{ key: "bhimEkadashi", month: 2, tithi: 10 },
-{ key: "vadSavitri", month: 2, tithi: 14 },
-{ key: "kutchiNewYear", month: 3, tithi: 0 },
-{ key: "guruPurnima", month: 3, tithi: 14 },
+const TITHI_FESTIVALS = [
+    { key: "vasantPanchami", month: 10, tithi: 4 },   // Maha Sud Pancham
+    { key: "mahaShivratri", month: 10, tithi: 28 },   // Maha Vad Chaudas
+    { key: "holi", month: 11, tithi: 14 },            // Fagan Purnima
+    { key: "ramNavami", month: 0, tithi: 8 },         // Chaitra Sud Nom
+    { key: "akshayaTritiya", month: 1, tithi: 2 },    // Vaishakh Sud Trij
+    { key: "guruPurnima", month: 3, tithi: 14 },      // Ashadh Purnima
+    { key: "rakshaBandhan", month: 4, tithi: 14 },    // Shravan Purnima
+    { key: "janmashtami", month: 4, tithi: 22 },      // Shravan Vad Aatham
+    { key: "ganeshChaturthi", month: 5, tithi: 3 },   // Bhadarvo Sud Choth
+    { key: "navratriBegins", month: 6, tithi: 0 },    // Ashwin Sud Ekam
+    { key: "dussehra", month: 6, tithi: 9 },          // Ashwin Sud Dasham
+    { key: "sharadPurnima", month: 6, tithi: 14 },    // Ashwin Purnima
+    { key: "diwali", month: 6, tithi: 29 },           // Ashwin Amas
+    { key: "bestuVaras", month: 7, tithi: 0 },        // Kartik Sud Ekam
+    { key: "bhaiBeej", month: 7, tithi: 1 },          // Kartik Sud Beej
+    { key: "devDiwali", month: 7, tithi: 14 }         // Kartik Purnima
 ];
 
 // Purely Gregorian-calendar events — solar festivals (Makar Sankranti)
@@ -120,6 +92,38 @@ const TITHI_FESTIVALS = [{ key: "rakshabandhan", month: 4, tithi: 14 },
 const GREGORIAN_EVENTS = [
     { key: "makarSankranti", month: 0, day: 14 }
 ];
+
+// Per-year manual date overrides for specific TITHI_FESTIVALS entries
+// — for when a tithi genuinely begins a day before/after the date a
+// conventional holiday calendar actually observes it on. E.g. Dussehra
+// 2026: this app's sunrise-mode calculation has Ashwin Sud Dasham
+// beginning at sunrise on Oct 21, but published holiday calendars
+// place it on Oct 20 (the day the tithi itself begins, pre-sunrise).
+// Deliberately a manual, reviewable, per-year list rather than a
+// second calculation method — a different automated rule could just
+// as easily disagree with some OTHER source for some OTHER year, so
+// this doesn't try to guess which rule "wins" in general.
+//
+// When an entry exists for a given {key, year}, it fully REPLACES
+// that year's occurrence — the day TITHI_FESTIVALS would otherwise
+// compute no longer shows the festival at all, only `showOn` does.
+// `showOn` is "YYYY-MM-DD", the IST calendar date to show it on
+// instead (same format used everywhere else dates are compared in
+// this file — see toISTDateInputValue / parseISTDateInputValue).
+const MANUAL_FESTIVALS = [
+    { key: "dussehra", year: 2026, showOn: "2026-10-20" }
+];
+
+function manualOverrideFor(key, year) {
+    return MANUAL_FESTIVALS.find(o => o.key === key && o.year === year) || null;
+}
+
+// Applies an override (if one exists for naturalDate's IST year) to a
+// tithi-computed festival date, substituting the override's date.
+function applyFestivalOverride(key, naturalDate) {
+    const override = manualOverrideFor(key, istYearOf(naturalDate));
+    return override ? new Date(parseISTDateInputValue(override.showOn)) : naturalDate;
+}
 
 // Anchor: a known Sud Ekam (tithi index 0) instant, and which of the
 // 12 month names it corresponds to — the one fixed point the whole
@@ -394,20 +398,24 @@ function tithiStartDateInMonth(monthSeqIndex, targetTithi) {
     return info.start;
 }
 
-function nextOccurrenceOfFestival(fromMs, monthIdx, tithiIdx) {
+function nextOccurrenceOfFestival(fromMs, monthIdx, tithiIdx, key) {
     for (let i = 0; i < monthSequence.length; i++) {
         if (monthSequence[i].index !== monthIdx || monthSequence[i].isAdhik) continue;
-        const d = tithiStartDateInMonth(i, tithiIdx);
-        if (d && d.getTime() > fromMs) return d;
+        let d = tithiStartDateInMonth(i, tithiIdx);
+        if (!d) continue;
+        d = applyFestivalOverride(key, d);
+        if (d.getTime() > fromMs) return d;
     }
     return null; // none found within the loaded data range
 }
 
-function prevOccurrenceOfFestival(beforeMs, monthIdx, tithiIdx) {
+function prevOccurrenceOfFestival(beforeMs, monthIdx, tithiIdx, key) {
     for (let i = monthSequence.length - 1; i >= 0; i--) {
         if (monthSequence[i].index !== monthIdx || monthSequence[i].isAdhik) continue;
-        const d = tithiStartDateInMonth(i, tithiIdx);
-        if (d && d.getTime() < beforeMs) return d;
+        let d = tithiStartDateInMonth(i, tithiIdx);
+        if (!d) continue;
+        d = applyFestivalOverride(key, d);
+        if (d.getTime() < beforeMs) return d;
     }
     return null;
 }
@@ -440,8 +448,8 @@ function getFestivalBatch(anchorMs, count, direction) {
     const occurrences = [];
     for (const f of TITHI_FESTIVALS) {
         const d = direction === 'next'
-            ? nextOccurrenceOfFestival(anchorMs, f.month, f.tithi)
-            : prevOccurrenceOfFestival(anchorMs, f.month, f.tithi);
+            ? nextOccurrenceOfFestival(anchorMs, f.month, f.tithi, f.key)
+            : prevOccurrenceOfFestival(anchorMs, f.month, f.tithi, f.key);
         if (d) occurrences.push({ key: f.key, date: d, monthIdx: f.month, tithiIdx: f.tithi, isGregorian: false });
     }
     for (const e of GREGORIAN_EVENTS) {
@@ -465,12 +473,25 @@ function getFestivalBatch(anchorMs, count, direction) {
 // else tithi-dependent in this app; the Gregorian check still works
 // for any date regardless.
 function findFestivalForDay(dayStartMs, mainTithiInfo) {
-    const entry = monthSequenceEntryAt(mainTithiInfo.start.getTime());
-    if (entry && !entry.isAdhik) {
-        const match = TITHI_FESTIVALS.find(f => f.month === entry.index && f.tithi === mainTithiInfo.tithi);
-        if (match) return match.key;
-    }
     const dayInstant = new Date(dayStartMs + 43200000);
+    const year = istYearOf(dayInstant);
+    const todayDateStr = toISTDateInputValue(dayInstant);
+    const entry = monthSequenceEntryAt(mainTithiInfo.start.getTime());
+
+    for (const f of TITHI_FESTIVALS) {
+        const override = manualOverrideFor(f.key, year);
+        if (override) {
+            // An override fully replaces this year's occurrence — the
+            // tithi-computed day no longer counts as a match at all,
+            // only the override's own day does.
+            if (override.showOn === todayDateStr) return f.key;
+            continue;
+        }
+        if (entry && !entry.isAdhik && entry.index === f.month && mainTithiInfo.tithi === f.tithi) {
+            return f.key;
+        }
+    }
+
     const m = istMonthIndexOf(dayInstant);
     const d = istDayOfMonthOf(dayInstant);
     const gMatch = GREGORIAN_EVENTS.find(e => e.month === m && e.day === d);

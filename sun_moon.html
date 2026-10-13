@@ -969,7 +969,9 @@ const LOCATIONS = {
   });
 
   const dateInput = document.getElementById("dateInput");
+  alert("dateInput: " + dateInput);
   document.getElementById("dateBtn").addEventListener("click", () => {
+    alert("Select a date using the calendar popup. The time will remain unchanged.");
     dateInput.value = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}`;
     dateInput.style.pointerEvents = "auto";
     dateInput.showPicker ? dateInput.showPicker() : dateInput.click();
