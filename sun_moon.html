@@ -255,23 +255,33 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   position: relative;
   display: inline-flex;
   align-items: center;
+  gap: 8px;
 }
 
-#dateInput {
+/* Invisible native date-time input laid over the date + time labels.
+   Tapping either label hits it directly (works on mobile); on desktop
+   a click handler calls showPicker(). */
+#dtInput {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   opacity: 0;
-  pointer-events: auto;
   z-index: 2;
   margin: 0;
   padding: 0;
+  cursor: pointer;
+  border: 0;
 }
+#dateBtn, #timeBtn { pointer-events: none; }
 
 
 .bigerIcon{
   font-size: 16px;
+}
+
+#dateBtn{
+  background: #ff000000;
 }
 
 </style>
@@ -283,10 +293,10 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   <div class="top-bar">
     <div style="display: flex; align-items: center; gap: 8px;">
       <div class="date-control">
-        <button id="dateBtn" type="button"></button>
-        <input type="date" id="dateInput" aria-label="Choose date">
+        <button id="dateBtn" type="button" tabindex="-1"></button>
+        <button id="timeBtn" type="button" tabindex="-1"></button>
+        <input type="datetime-local" id="dtInput" aria-label="Choose date and time">
       </div>
-      <button id="timeBtn"></button>
     </div>
     <select id="locationSelect"></select>
   </div>
@@ -408,7 +418,7 @@ const LOCATIONS = {
   const SPEEDS     = [1, 2, 5, 10];
   const SPEED_LABELS = ["", "2x", "5x", "10x"];
   let speedIndex   = 0;
-  let isPaused     = false;
+  let isPaused     = true;   // static by default: shows the load-time moment, no live update
   let liveInterval = null;
 
   // ── Build UTC-correct Date from city local time ──
@@ -773,9 +783,13 @@ const LOCATIONS = {
     }).format(d);
   }
 
+  // Clicking the sun or moon toggles the play / fast-forward controls
+  // together with the time scrubber.
   function toggleTimeControls() {
     const tc = document.getElementById("timeControls");
     tc.classList.toggle("hddn");
+    sliderOpen = !tc.classList.contains("hddn");
+    document.getElementById("sliderTray").classList.toggle("open", sliderOpen);
   }
 
   // ── Cache DOM refs — looked up once, reused every frame ──
@@ -787,6 +801,7 @@ const LOCATIONS = {
   const timeBtnEl  = document.getElementById("timeBtn");
   const dateBtnEl  = document.getElementById("dateBtn");
   const sliderEl   = document.getElementById("timeSlider");
+  const dtInput    = document.getElementById("dtInput");
 
   // ── Create persistent sun/moon elements once, reposition each frame ──
   function createBody(id, className, panel) {
@@ -844,7 +859,6 @@ const LOCATIONS = {
     groundEl.querySelectorAll(".ground-item.clickable").forEach(el => {
       el.addEventListener("click", () => {
         selMinutes = +el.dataset.jump;
-        scrubbed   = true;
         isPaused   = true;
         updatePlayPauseBtn();
         renderFrame();
@@ -903,7 +917,11 @@ const LOCATIONS = {
     const colonClass = !isPaused ? "colon-live" : "";
     timeBtnEl.innerHTML  = `${h}<span class="${colonClass}">:</span>${m}`;
     dateBtnEl.textContent = fmtDateLabel(selDate.y, selDate.m, selDate.d);
-    dateInput.value = `${selDate.y}-${String(selDate.m + 1).padStart(2, "0")}-${String(selDate.d).padStart(2, "0")}`;
+
+    // Keep the native picker in sync (don't touch it while it's focused / open)
+    const dtVal = `${selDate.y}-${String(selDate.m + 1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}T${h}:${m}`;
+    if (dtInput.value !== dtVal && document.activeElement !== dtInput) dtInput.value = dtVal;
+
     sliderEl.value = Math.floor(selMinutes);
   }
 
@@ -928,12 +946,7 @@ const LOCATIONS = {
   }
 
   document.getElementById("btnPlayPause").addEventListener("click", () => {
-    isPaused = !isPaused;
-    if (!isPaused && speedIndex === 0 && !scrubbed) {
-      // Not scrubbed — snap back to real local time
-      selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
-      selDate    = localToday(loc.tz);
-    }
+    isPaused = !isPaused;   // play continues from whatever moment is currently shown
     updatePlayPauseBtn();
     renderFrame();
   });
@@ -948,25 +961,21 @@ const LOCATIONS = {
 
   const TICK_MS = 50; // render interval in ms (~20fps)
 
-  let scrubbed = false; // true when user has manually moved away from real time
-
-  // ── Live tick — fires every TICK_MS ──
+  // ── Playback tick — only advances time while playing (default: paused) ──
+  // 1x = real time (1 sec per sec); 2x/5x/10x keep the original
+  // "N minutes per second" fast-forward behaviour.
   function startLive() {
     if (liveInterval) clearInterval(liveInterval);
     liveInterval = setInterval(() => {
       if (isPaused) return;
-      if (speedIndex === 0 && !scrubbed) {
-        // 1x real time — read wall clock directly, no drift
-        selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
-        selDate    = localToday(loc.tz);
-      } else {
-        // Accelerated: advance proportional to tick size
-        selMinutes += SPEEDS[speedIndex] * TICK_MS / 1000;
-        if (selMinutes >= 1440) {
-          selMinutes -= 1440;
-          const d = new Date(selDate.y, selDate.m, selDate.d + 1);
-          selDate = { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() };
-        }
+      selMinutes += speedIndex === 0
+        ? TICK_MS / 1000 / 60
+        : SPEEDS[speedIndex] * TICK_MS / 1000;
+      if (selMinutes >= 1440) {
+        selMinutes -= 1440;
+        const d = new Date(selDate.y, selDate.m, selDate.d + 1);
+        selDate = { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() };
+        renderStatic(); // new day — rise/set times change
       }
       renderFrame(); // frame only — no DOM rebuild
     }, TICK_MS);
@@ -977,30 +986,29 @@ const LOCATIONS = {
     loc        = JSON.parse(selEl.value);
     selDate    = localToday(loc.tz);
     selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
-    isPaused   = false;
-    scrubbed   = false;
+    isPaused   = true;
     updatePlayPauseBtn();
     render(); // full rebuild on city change
   });
 
-  const dateInput = document.getElementById("dateInput");
-  dateInput.addEventListener("change", () => {
-    if (!dateInput.value) return;
-    const [y, m, d] = dateInput.value.split("-");
-    selDate  = { y: +y, m: +m - 1, d: +d };
-    scrubbed = true;
-    isPaused = true;
+  // Date / time labels open the native date-time picker (calendar + time)
+  dtInput.addEventListener("click", () => {
+    try { if (dtInput.showPicker) dtInput.showPicker(); } catch (e) {}
+  });
+  dtInput.addEventListener("change", () => {
+    if (!dtInput.value) return;
+    const [datePart, timePart = "00:00"] = dtInput.value.split("T");
+    const [y, mo, d] = datePart.split("-");
+    const [hh, mm]   = timePart.split(":");
+    selDate    = { y: +y, m: +mo - 1, d: +d };
+    selMinutes = (+hh) * 60 + (+mm);
+    isPaused   = true;
     updatePlayPauseBtn();
-    render(); // full rebuild — date changed, rise/set times need recalculating
+    render(); // full rebuild — date may have changed, rise/set times need recalculating
   });
 
-  document.getElementById("timeBtn").addEventListener("click", () => {
-    sliderOpen = !sliderOpen;
-    document.getElementById("sliderTray").classList.toggle("open", sliderOpen);
-  });
   document.getElementById("timeSlider").addEventListener("input", e => {
     selMinutes = +e.target.value;
-    scrubbed   = true;
     isPaused   = true;
     updatePlayPauseBtn();
     renderFrame(); // position update only — no static rebuild
@@ -1008,6 +1016,7 @@ const LOCATIONS = {
 
   function waitAndRender() {
     if (typeof SunCalc === "undefined") { setTimeout(waitAndRender, 50); return; }
+    updatePlayPauseBtn(); // shows ▶ since we start paused
     render();
     startLive();
     startShootingStars();
