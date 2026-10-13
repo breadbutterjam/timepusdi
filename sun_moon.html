@@ -251,17 +251,29 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
 }
 .hddn { display: none; }
 
+.date-control {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
 #dateInput {
   position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   opacity: 0;
-  pointer-events: none;
-  width: 1px; height: 1px;
+  pointer-events: auto;
+  z-index: 2;
+  margin: 0;
+  padding: 0;
 }
 
 
 .bigerIcon{
   font-size: 16px;
 }
+
 </style>
 </head>
 <body>
@@ -270,7 +282,10 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   <!-- TOP BAR -->
   <div class="top-bar">
     <div style="display: flex; align-items: center; gap: 8px;">
-      <button id="dateBtn"></button>
+      <div class="date-control">
+        <button id="dateBtn" type="button"></button>
+        <input type="date" id="dateInput" aria-label="Choose date">
+      </div>
       <button id="timeBtn"></button>
     </div>
     <select id="locationSelect"></select>
@@ -303,7 +318,6 @@ html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
   <div class="horizon-bar"></div>
   <div class="ground-bar" id="groundBar"></div>
 
-  <input type="date" id="dateInput">
 </div>
 
 <script>
@@ -889,6 +903,7 @@ const LOCATIONS = {
     const colonClass = !isPaused ? "colon-live" : "";
     timeBtnEl.innerHTML  = `${h}<span class="${colonClass}">:</span>${m}`;
     dateBtnEl.textContent = fmtDateLabel(selDate.y, selDate.m, selDate.d);
+    dateInput.value = `${selDate.y}-${String(selDate.m + 1).padStart(2, "0")}-${String(selDate.d).padStart(2, "0")}`;
     sliderEl.value = Math.floor(selMinutes);
   }
 
@@ -969,20 +984,13 @@ const LOCATIONS = {
   });
 
   const dateInput = document.getElementById("dateInput");
-  alert("dateInput: " + dateInput);
-  document.getElementById("dateBtn").addEventListener("click", () => {
-    alert("Select a date using the calendar popup. The time will remain unchanged.");
-    dateInput.value = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}`;
-    dateInput.style.pointerEvents = "auto";
-    dateInput.showPicker ? dateInput.showPicker() : dateInput.click();
-  });
   dateInput.addEventListener("change", () => {
+    if (!dateInput.value) return;
     const [y, m, d] = dateInput.value.split("-");
     selDate  = { y: +y, m: +m - 1, d: +d };
     scrubbed = true;
     isPaused = true;
     updatePlayPauseBtn();
-    dateInput.style.pointerEvents = "none";
     render(); // full rebuild — date changed, rise/set times need recalculating
   });
 

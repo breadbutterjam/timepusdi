@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sun & Moon</title>
+<script src="https://cdn.jsdelivr.net/npm/suncalc@1.9.0/suncalc.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; height: 100dvh; overflow: hidden; background: #000; }
+#app {
+  font-family: system-ui, sans-serif;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+#locationSelect{
+  text-align: right;
+  appearance: none;
+  -webkit-appearance: none; /* Chrome, Safari */
+  -moz-appearance: none;    /* Firefox */
+}
+
+#locationSelect::-ms-expand {
+  display: none; /* Internet Explorer */
+}
+
+/* ── TOP BAR ── */
+.top-bar {
+  background: #000035;
+  top: 0; left: 0; right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 12px;
+  gap: 8px;
+  transition: background 2s ease;
+}
+.top-bar select,
+.top-bar button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.82);
+  font-size: 12px;
+  font-family: system-ui, sans-serif;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  letter-spacing: 0.02em;
+}
+.top-bar select option,
+.top-bar select optgroup {
+  background: #1a2a1a;
+  color: #fff;
+}
+.top-bar .sep {
+  color: rgba(255,255,255,0.25);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.top-bar .spacer { flex: 1; }
+
+/* ── TIME SLIDER TRAY — overlays just below top bar ── */
+.slider-tray {
+  position: absolute;
+  top: 20px;
+  left: 0; right: 0;
+  z-index: 19;
+  height: 0;
+  overflow: hidden;
+  transition: height 0.2s ease;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.38), rgba(0,0,0,0.0));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 14px;
+}
+.slider-tray.open { height: 44px; }
+.slider-tray input[type=range] {
+  width: 100%;
+  accent-color: rgba(255,255,255,0.75);
+  cursor: pointer;
+  height: 2px;
+}
+.slider-labels {
+  opacity: 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: rgba(255,255,255,0.38);
+  margin-top: 3px;
+}
+
+/* ── SKY ── */
+.sky {
+  flex: 0 0 80%;
+  display: flex;
+  position: relative;
+  overflow: hidden;
+}
+.panel {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+.panel-label {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  pointer-events: none;
+  z-index: 2;
+}
+.divider {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: rgba(0,0,0,0.35);
+  z-index: 4;
+}
+.altitude-axis {
+  position: absolute;
+  top: 0; right: 0;
+  height: 100%;
+  width: 32px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 4px;
+  z-index: 3;
+  pointer-events: none;
+}
+.alt-tick {
+  font-size: 10px;
+  color: rgba(255,255,255,0.65);
+  text-align: right;
+}
+.body {
+  position: absolute;
+  border-radius: 50%;
+  z-index: 5;
+  transform: translateX(-50%);
+}
+.sun-body {
+  width: clamp(32px, 8vw, 54px);
+  height: clamp(32px, 8vw, 54px);
+  /* color, glow, size set dynamically in JS */
+}
+.moon-body {
+  width: clamp(22px, 5.5vw, 38px);
+  height: clamp(22px, 5.5vw, 38px);
+  /* phase, glow and opacity set dynamically in JS */
+  transform: translateX(-50%);
+  position: absolute;
+  border-radius: 50%;
+  overflow: hidden; /* clips the phase shadow disc */
+}
+
+/* ── HORIZON + GROUND ── */
+.horizon-bar {
+  height: 2px;
+  background: rgba(255,255,255,0.12);
+  flex-shrink: 0;
+}
+.ground-bar {
+  flex: 1;
+  min-height: 0;
+  background: #1a5c0a;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  padding: 0 8px 10px;
+}
+.ground-item {
+  text-align: left;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.3;
+}
+
+.ground-item.clickable {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.ground-item.clickable:active strong,
+.ground-item.clickable:hover strong {
+  color: #ccff00;
+}
+
+.ground-item span {
+  display: block;
+  font-size: 10px;
+  opacity: 0.7;
+  /* text-transform: uppercase; */
+  letter-spacing: 0.04em;
+}
+.ground-item strong {
+  display: block;
+  font-size: clamp(11px, 2.5vw, 14px);
+  font-weight: 500;
+}
+
+/* ── BLINKING COLON ── */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+.colon-live { animation: blink 1s step-end infinite; }
+
+/* ── PLAYBACK CONTROLS — inline in top bar ── */
+.ctrl-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
+}
+.ctrl-btn:active { color: rgba(255,255,255,1); }
+.speed-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  display: none;
+}
+.speed-label.visible { display: inline; }
+
+.time-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: absolute;
+  left: 50%;
+  translate: -50%;
+  top: -1px;
+  z-index: 25;
+  background: rgba(0,0,0,0.3);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+.hddn { display: none; }
+
+#dateInput {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px; height: 1px;
+}
+
+
+.bigerIcon{
+  font-size: 16px;
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <button id="dateBtn"></button>
+      <button id="timeBtn"></button>
+    </div>
+    <select id="locationSelect"></select>
+  </div>
+
+  <div class="time-controls hddn" id="timeControls">
+    <button class="ctrl-btn bigerIcon" id="btnPlayPause">⏸︎</button>
+    <button class="ctrl-btn bigerIcon" id="btnSpeed">⏩︎</button>
+    <span class="speed-label" id="speedLabel"></span>
+  </div>
+
+  <!-- TIME SLIDER (overlays below top bar) -->
+  <div class="slider-tray" id="sliderTray">
+    <input type="range" id="timeSlider" min="0" max="1439" step="1">
+    <div class="slider-labels">
+      <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>24:00</span>
+    </div>
+  </div>
+
+  <!-- SKY -->
+  <div class="sky" id="sky">
+    <div class="panel" id="panelEast"><span class="panel-label">E</span></div>
+    <div class="panel" id="panelWest">
+      <span class="panel-label">W</span>
+      <div class="altitude-axis" id="altAxis"></div>
+    </div>
+    <div class="divider"></div>
+  </div>
+
+  <div class="horizon-bar"></div>
+  <div class="ground-bar" id="groundBar"></div>
+
+  <input type="date" id="dateInput">
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────
+//  LOCATIONS — edit freely
+//  Fields: name, lat, lng, tz (IANA timezone string)
+// ─────────────────────────────────────────────────────────
+const LOCATIONS = {
+  "India": [
+    { name: "Mumbai",      lat: 19.0760,  lng:  72.8777, tz: "Asia/Kolkata"        },
+    { name: "Pune",        lat: 18.5204,  lng:  73.8567, tz: "Asia/Kolkata"        },
+    { name: "Tithal",     lat: 20.5978,  lng:  72.8950, tz: "Asia/Kolkata"        },
+    { name: "Gandevi",     lat: 20.8026,  lng:  73.0090, tz: "Asia/Kolkata"        },
+    { name: "Rajkot",     lat: 22.3039,  lng:  70.8022, tz: "Asia/Kolkata"        },
+    { name: "Morbi",     lat: 22.8120,  lng:  70.8236, tz: "Asia/Kolkata"        },
+    { name: "Delhi",       lat: 28.6139,  lng:  77.2090, tz: "Asia/Kolkata"        },
+    { name: "Bangalore",   lat: 12.9716,  lng:  77.5946, tz: "Asia/Kolkata"        },
+    { name: "Chennai",     lat: 13.0827,  lng:  80.2707, tz: "Asia/Kolkata"        },
+    { name: "Kolkata",     lat: 22.5726,  lng:  88.3639, tz: "Asia/Kolkata"        },
+    
+  ],
+  "Global": [
+    { name: "Dubai",       lat: 25.2048,  lng:  55.2708, tz: "Asia/Dubai"          },
+    { name: "London",      lat: 51.5074,  lng:  -0.1278, tz: "Europe/London"       },
+    { name: "Paris",       lat: 48.8566,  lng:   2.3522, tz: "Europe/Paris"        },
+    { name: "New York",    lat: 40.7128,  lng: -74.0060, tz: "America/New_York"    },
+    { name: "Los Angeles", lat: 34.0522,  lng:-118.2437, tz: "America/Los_Angeles" },
+    { name: "São Paulo",   lat:-23.5505,  lng: -46.6333, tz: "America/Sao_Paulo"   },
+    { name: "Tokyo",       lat: 35.6762,  lng: 139.6503, tz: "Asia/Tokyo"          },
+    { name: "Singapore",   lat:  1.3521,  lng: 103.8198, tz: "Asia/Singapore"      },
+    { name: "Sydney",      lat:-33.8688,  lng: 151.2093, tz: "Australia/Sydney"    },
+    { name: "Cape Town",   lat:-33.9249,  lng:  18.4241, tz: "Africa/Johannesburg" },
+  ]
+};
+// ─────────────────────────────────────────────────────────
+
+(function () {
+  // ── Build location <select> ──
+  const selEl = document.getElementById("locationSelect");
+  Object.entries(LOCATIONS).forEach(([group, cities]) => {
+    const og = document.createElement("optgroup");
+    og.label = group;
+    cities.forEach(city => {
+      const opt = document.createElement("option");
+      opt.value = JSON.stringify({ lat: city.lat, lng: city.lng, tz: city.tz });
+      opt.textContent = city.name;
+      if (city.name === "Mumbai") opt.selected = true;
+      og.appendChild(opt);
+    });
+    selEl.appendChild(og);
+  });
+
+  // ── Helpers: timezone-aware now ──
+  function localNowMinutes(tz) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, hour: "numeric", minute: "numeric", hour12: false
+    }).formatToParts(new Date());
+    return +parts.find(p => p.type === "hour").value * 60
+         + +parts.find(p => p.type === "minute").value;
+  }
+
+  function localNowSeconds(tz) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, hour: "numeric", minute: "numeric", second: "numeric", hour12: false
+    }).formatToParts(new Date());
+    return +parts.find(p => p.type === "second").value;
+  }
+
+  function localToday(tz) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz, year: "numeric", month: "numeric", day: "numeric"
+    }).formatToParts(new Date());
+    return {
+      y: +parts.find(p => p.type === "year").value,
+      m: +parts.find(p => p.type === "month").value - 1,
+      d: +parts.find(p => p.type === "day").value
+    };
+  }
+
+  let loc        = JSON.parse(selEl.value);
+  let selDate    = localToday(loc.tz);
+  // Store as fractional minutes (minutes + seconds/60) for smooth live updates
+  let selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
+  let sliderOpen = false;
+
+  // ── Playback state ──
+  // speedIndex cycles through SPEEDS; 0 = 1x (real time)
+  const SPEEDS     = [1, 2, 5, 10];
+  const SPEED_LABELS = ["", "2x", "5x", "10x"];
+  let speedIndex   = 0;
+  let isPaused     = false;
+  let liveInterval = null;
+
+  // ── Build UTC-correct Date from city local time ──
+  function getDateTime() {
+    const totalSecs = selMinutes * 60;
+    const hh = String(Math.floor(totalSecs / 3600)).padStart(2, "0");
+    const mm = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, "0");
+    const ss = String(Math.floor(totalSecs % 60)).padStart(2, "0");
+    const iso = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}T${hh}:${mm}:${ss}`;
+    const approx = new Date(`${iso}Z`);
+    const localStr = new Intl.DateTimeFormat("en-US", {
+      timeZone: loc.tz,
+      year:"numeric", month:"2-digit", day:"2-digit",
+      hour:"2-digit", minute:"2-digit", second:"2-digit", hour12: false
+    }).format(approx);
+    const [datePart, timePart] = localStr.split(", ");
+    const [mo, dy, yr] = datePart.split("/");
+    const [tH, tM, tS] = timePart.split(":");
+    const tzDate  = new Date(Date.UTC(+yr, +mo-1, +dy, +tH, +tM, +tS));
+    const offsetMs = approx - tzDate;
+    return new Date(approx.getTime() + offsetMs);
+  }
+
+  // Format whole-minute display (no seconds shown to user)
+  function fmtTime(m) {
+    const wholeMin = Math.floor(m);
+    return String(Math.floor(wholeMin / 60)).padStart(2,"0")
+         + ":" + String(wholeMin % 60).padStart(2,"0");
+  }
+
+  function fmtDateLabel(y, m, d) {
+    const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return String(d).padStart(2,"0") + "-" + months[m] + "-" + y;
+  }
+
+  // ── Sky visuals ──
+
+  // Lerp between two hex colours by t (0–1)
+  function lerpColor(a, b, t) {
+    const ah = a.replace('#',''), bh = b.replace('#','');
+    const ar = parseInt(ah.slice(0,2),16), ag = parseInt(ah.slice(2,4),16), ab = parseInt(ah.slice(4,6),16);
+    const br = parseInt(bh.slice(0,2),16), bg = parseInt(bh.slice(2,4),16), bb = parseInt(bh.slice(4,6),16);
+    const rr = Math.round(ar + (br-ar)*t), rg = Math.round(ag + (bg-ag)*t), rb = Math.round(ab + (bb-ab)*t);
+    return `rgb(${rr},${rg},${rb})`;
+  }
+
+  // Sky gradient stops [zenith, horizon] for a given sun altitude
+  function skyGradient(sunAlt) {
+    // Returns top/upper/mid/lower/horizon colour stops for a 5-stop gradient
+    // Each state defines the full sky column at that sun altitude
+    const states = [
+      { alt: -18, top: '#010208', upper: '#03050f', mid: '#05080f', lower: '#080d1a', horizon: '#080d1a' }, // deep night
+      { alt:  -8, top: '#05080f', upper: '#080d1f', mid: '#0d1530', lower: '#141e3a', horizon: '#111830' }, // astronomical twilight
+      { alt:  -4, top: '#080d1f', upper: '#0f1840', mid: '#1a2855', lower: '#2a3060', horizon: '#1e2850' }, // nautical twilight
+      { alt:   0, top: '#0f1840', upper: '#1a2860', mid: '#2a3878', lower: '#8b3a10', horizon: '#c86010' }, // civil twilight / sunrise-set
+      { alt:   4, top: '#162250', upper: '#1e3570', mid: '#3060a0', lower: '#d08820', horizon: '#e8a030' }, // golden hour low
+      { alt:  10, top: '#1e3a80', upper: '#2a55a0', mid: '#4a80c0', lower: '#a0c8e0', horizon: '#c0dff0' }, // golden hour high
+      { alt:  20, top: '#1a5ab8', upper: '#2870c8', mid: '#4090d0', lower: '#80c0e8', horizon: '#a8d8f0' }, // post-golden
+      { alt:  90, top: '#1060c0', upper: '#1a6acd', mid: '#3585d8', lower: '#60aaec', horizon: '#69c0f5' }, // full day
+    ];
+
+    let lo = states[0], hi = states[states.length - 1];
+    for (let i = 0; i < states.length - 1; i++) {
+      if (sunAlt >= states[i].alt && sunAlt <= states[i+1].alt) {
+        lo = states[i]; hi = states[i+1]; break;
+      }
+    }
+    const t = Math.max(0, Math.min(1, (sunAlt - lo.alt) / (hi.alt - lo.alt)));
+    return {
+      top:     lerpColor(lo.top,     hi.top,     t),
+      upper:   lerpColor(lo.upper,   hi.upper,   t),
+      mid:     lerpColor(lo.mid,     hi.mid,     t),
+      lower:   lerpColor(lo.lower,   hi.lower,   t),
+      horizon: lerpColor(lo.horizon, hi.horizon, t),
+      // keep zenith alias for top-bar colour
+      zenith:  lerpColor(lo.top,     hi.top,     t),
+    };
+  }
+
+  // Apply 5-stop gradient + optional horizon glow to a panel
+  function applyPanelSky(panel, sunAlt, hasSun) {
+    const c = skyGradient(sunAlt);
+    let gradient = `linear-gradient(to bottom,
+      ${c.top}     0%,
+      ${c.upper}  25%,
+      ${c.mid}    50%,
+      ${c.lower}  78%,
+      ${c.horizon}100%)`;
+
+    // Horizon glow in sun's panel during twilight / golden hour
+    if (hasSun && sunAlt > -8 && sunAlt < 15) {
+      const gi = 1 - Math.abs(sunAlt - 3) / 12;
+      const glow = Math.max(0, Math.min(1, gi));
+      const glowColor = sunAlt > 0
+        ? `rgba(255,160,30,${(glow * 0.55).toFixed(2)})`
+        : `rgba(200,100,20,${(glow * 0.4).toFixed(2)})`;
+      gradient = `radial-gradient(ellipse 80% 28% at 50% 100%, ${glowColor} 0%, transparent 70%),
+        linear-gradient(to bottom,
+          ${c.top}     0%,
+          ${c.upper}  25%,
+          ${c.mid}    50%,
+          ${c.lower}  78%,
+          ${c.horizon}100%)`;
+    }
+    panel.style.background = gradient;
+  }
+
+  // Seeded pseudo-random number generator (mulberry32)
+  function makeRng(seed) {
+    return function() {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  // ── Inject twinkle keyframes once ──
+  (function injectTwinkleCSS() {
+    if (document.getElementById('twinkle-style')) return;
+    const style = document.createElement('style');
+    style.id = 'twinkle-style';
+    style.textContent = `
+      @keyframes twinkle-a { 0%,100%{opacity:0.85} 50%{opacity:0.2} }
+      @keyframes twinkle-b { 0%,100%{opacity:0.6}  50%{opacity:0.9} }
+      @keyframes twinkle-c { 0%,100%{opacity:0.4}  40%{opacity:1.0} 80%{opacity:0.3} }
+      @keyframes twinkle-d { 0%,100%{opacity:0.7}  30%{opacity:0.15} 70%{opacity:0.95} }
+
+      @keyframes shoot {
+        0%   { transform: translate(0,0) scaleX(1); opacity: 0; }
+        5%   { opacity: 1; }
+        85%  { opacity: 0.9; }
+        100% { transform: translate(var(--dx), var(--dy)) scaleX(0.1); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  })();
+
+  const TWINKLE_ANIMS = ['twinkle-a','twinkle-b','twinkle-c','twinkle-d'];
+
+  function updateStars(panel, sunAlt) {
+    let starLayer = panel.querySelector('.star-layer');
+    const starOpacity = Math.max(0, Math.min(1, (-sunAlt - 4) / 10));
+
+    if (!starLayer) {
+      starLayer = document.createElement('div');
+      starLayer.className = 'star-layer';
+      starLayer.style.cssText =
+        'position:absolute;inset:0;z-index:1;pointer-events:none;transition:opacity 3s ease;';
+
+      const rng   = makeRng(panel.id === 'panelEast' ? 0xA3F1 : 0x5C8E);
+      const count = 36;
+
+      for (let i = 0; i < count; i++) {
+        const px     = rng() * 100;
+        const py     = rng() * 68;           // top 68% of sky only
+        const sz     = rng() < 0.15 ? 2 : 1; // ~15% are larger stars
+        const baseOp = 0.35 + rng() * 0.6;
+        const anim   = TWINKLE_ANIMS[i % TWINKLE_ANIMS.length];
+        const dur    = (2.2 + rng() * 3.5).toFixed(1);
+        const delay  = -(rng() * 4).toFixed(1);
+
+        const s = document.createElement('div');
+        s.style.cssText = `
+          position:absolute;
+          border-radius:50%;
+          background:#fff;
+          width:${sz}px; height:${sz}px;
+          left:${px.toFixed(2)}%; top:${py.toFixed(2)}%;
+          opacity:${baseOp.toFixed(2)};
+          animation:${anim} ${dur}s ${delay}s ease-in-out infinite;
+        `;
+        starLayer.appendChild(s);
+      }
+      panel.appendChild(starLayer);
+    }
+
+    starLayer.style.opacity = starOpacity;
+  }
+
+  // ── Shooting stars — fire occasionally during night ──
+  const shootingRng = makeRng(0xDEAD);
+  let shootingInterval = null;
+
+  function fireShootingStar(sunAlt) {
+    if (sunAlt > -6) return; // only in darkness
+    // Pick a random panel
+    const panel = shootingRng() < 0.5 ? E : W;
+    const star  = document.createElement('div');
+
+    // Start position: top 55% of sky, anywhere horizontally
+    const startX = shootingRng() * 90 + 5;   // 5–95%
+    const startY = shootingRng() * 55;         // 0–55%
+
+    // Travel direction: always angled down-right or down-left, shallow angle
+    const angle  = (25 + shootingRng() * 30) * (shootingRng() < 0.5 ? 1 : -1); // ±25–55°
+    const dist   = 80 + shootingRng() * 120;  // travel distance px
+    const dx     = Math.cos(angle * Math.PI / 180) * dist;
+    const dy     = Math.sin(Math.abs(angle) * Math.PI / 180) * dist;
+    const dur    = 0.6 + shootingRng() * 0.7; // 0.6–1.3s
+    const len    = 40 + shootingRng() * 60;   // tail length px
+
+    star.style.cssText = `
+      position: absolute;
+      left: ${startX}%;
+      top:  ${startY}%;
+      width: ${len}px;
+      height: 1.5px;
+      border-radius: 1px;
+      background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 100%);
+      transform-origin: right center;
+      transform: rotate(${angle}deg);
+      --dx: ${dx}px;
+      --dy: ${dy}px;
+      animation: shoot ${dur}s ease-in forwards;
+      pointer-events: none;
+      z-index: 2;
+    `;
+
+    panel.appendChild(star);
+    star.addEventListener('animationend', () => star.remove());
+  }
+
+  function startShootingStars() {
+    if (shootingInterval) return;
+    // Fire a star every 4–10 seconds on average using random intervals
+    function scheduleNext() {
+      const delay = 4000 + shootingRng() * 6000;
+      shootingInterval = setTimeout(() => {
+        // Get current sun altitude from latest position calculation
+        const dt     = getDateTime();
+        const sunPos = SunCalc.getPosition(dt, loc.lat, loc.lng);
+        const sunAlt = sunPos.altitude * (180 / Math.PI);
+        fireShootingStar(sunAlt);
+        shootingInterval = null;
+        scheduleNext();
+      }, delay);
+    }
+    scheduleNext();
+  }
+
+  function stopShootingStars() {
+    if (shootingInterval) { clearTimeout(shootingInterval); shootingInterval = null; }
+    // Remove any mid-flight stars
+    [E, W].forEach(p => p.querySelectorAll('div[style*="shoot"]').forEach(s => s.remove()));
+  }
+
+  // Sun colour: white-yellow at high alt → amber → deep orange at horizon
+  function sunColor(alt) {
+    // Above 15°: bright yellow-white; 15→0°: shift to deep orange
+    if (alt >= 15) return { core: '#fff5c0', mid: '#ffe050', edge: '#ffc200' };
+    const t = Math.max(0, alt / 15); // 1 at 15°, 0 at horizon
+    const core = lerpColor('#ff6a00', '#fff5c0', t);
+    const mid  = lerpColor('#cc3300', '#ffe050', t);
+    const edge = lerpColor('#8b1a00', '#ffc200', t);
+    return { core, mid, edge };
+  }
+
+  // Sun glow: tight pale halo at high alt → wide fiery bloom near horizon
+  function sunGlow(alt, r) {
+    if (alt >= 20) {
+      // High sun — tight pale halo
+      return `0 0 ${r * 0.6}px ${r * 0.2}px rgba(255,240,150,0.35)`;
+    }
+    if (alt >= 0) {
+      const t = alt / 20; // 1 at 20°, 0 at horizon
+      const spread = r * (1.5 - t * 1.2);   // wider near horizon
+      const blur   = r * (2.5 - t * 1.8);
+      const ra = Math.round(255);
+      const ga = Math.round(lerpColor('#ff4400','#fff099', t).match(/\d+/g)[1]);
+      const ba = Math.round(20 + t * 80);
+      const alpha = 0.25 + (1 - t) * 0.45;
+      return `0 0 ${blur}px ${spread}px rgba(${ra},${ga},${ba},${alpha})`;
+    }
+    return 'none';
+  }
+
+  // Sun size scale: slightly larger near horizon (moon illusion)
+  function sunScale(alt) {
+    if (alt >= 15) return 1;
+    const t = Math.max(0, alt / 15);
+    return 1 + (1 - t) * 0.22; // up to 22% larger at horizon
+  }
+
+  // Apply all sun styles to the div
+  function styleSun(div, alt, r) {
+    const { core, mid, edge } = sunColor(alt);
+    const scale = sunScale(alt);
+    div.style.transform = `translateX(-50%) scale(${scale})`;
+    div.style.transformOrigin = 'bottom center';
+
+    if (alt <= 5) {
+      // Flat disc — blend from gradient to solid between 5° and 2°
+      const t = Math.max(0, Math.min(1, (5 - alt) / 3)); // 0 at 5°, 1 at 2° and below
+      if (t >= 1) {
+        // Fully flat — just the solid edge colour (deep red/orange)
+        div.style.background = edge;
+        div.style.boxShadow  = sunGlow(alt, r);
+      } else {
+        // Crossfade: blend gradient opacity out, solid colour in
+        div.style.background =
+          `radial-gradient(circle at 50% 50%,
+            ${core} 0%,
+            ${mid}  ${45 - t * 45}%,
+            ${edge} ${78 - t * 28}%,
+            ${edge} 100%)`;
+        div.style.boxShadow = sunGlow(alt, r);
+      }
+    } else {
+      // Full gradient sphere
+      div.style.background =
+        `radial-gradient(circle at 50% 50%, ${core} 0%, ${mid} 45%, ${edge} 78%, rgba(0,0,0,0) 100%)`;
+      div.style.boxShadow = sunGlow(alt, r);
+    }
+  }
+
+  // ── Ground illumination during golden hour ──
+  // ── Moon appearance ──
+  function styleMoon(div, alt, r, sunAlt) {
+    const illum    = SunCalc.getMoonIllumination(getDateTime());
+    const fraction = illum.fraction; // 0=new, 1=full
+
+    // Simple sphere gradient — no phase rendering
+    div.innerHTML  = '';
+    div.style.background = 'radial-gradient(circle at 38% 38%, #f5f5e8 0%, #d0d0c0 55%, #a8a89a 100%)';
+    div.style.transform  = 'translateX(-50%)';
+
+    // ── Moon glow — silver-blue, stronger at full moon ──
+    const glowBlur   = r * (1.2 + fraction * 2.5);
+    const glowSpread = r * fraction * 0.8;
+    const glowAlpha  = 0.08 + fraction * 0.38;
+
+    // Fade in daylight
+    const dayFade    = Math.max(0, Math.min(1, 1 - sunAlt / 40));
+    div.style.opacity   = Math.max(0.25, dayFade).toFixed(2);
+    div.style.boxShadow = fraction > 0.05
+      ? `0 0 ${glowBlur}px ${glowSpread}px rgba(200,215,240,${(glowAlpha * dayFade).toFixed(2)})`
+      : 'none';
+  }
+
+  function updateGroundIllumination(sunAlt) {
+    const groundBar = document.getElementById('groundBar');
+    const horizonBar = document.querySelector('.horizon-bar');
+    if (sunAlt > -4 && sunAlt < 18) {
+      // t=1 at alt=4°, fades to 0 at -4° and 18°
+      const t = Math.max(0, 1 - Math.abs(sunAlt - 4) / 12);
+      const warmAlpha = t * 0.45;
+      const horiAlpha = t * 0.7;
+      groundBar.style.background =
+        `linear-gradient(to bottom, rgba(200,90,10,${warmAlpha}) 0%, transparent 35%), #1a5c0a`;
+      horizonBar.style.background =
+        `rgba(220,120,20,${horiAlpha})`;
+    } else {
+      groundBar.style.background = '#1a5c0a';
+      horizonBar.style.background = 'rgba(255,255,255,0.12)';
+    }
+  }
+
+  function fmt(d) {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: loc.tz, hour: "2-digit", minute: "2-digit", hour12: false
+    }).format(d);
+  }
+
+  function toggleTimeControls() {
+    const tc = document.getElementById("timeControls");
+    tc.classList.toggle("hddn");
+  }
+
+  // ── Cache DOM refs — looked up once, reused every frame ──
+  const E          = document.getElementById("panelEast");
+  const W          = document.getElementById("panelWest");
+  const topBar     = document.querySelector(".top-bar");
+  const groundEl   = document.getElementById("groundBar");
+  const horizEl    = document.querySelector(".horizon-bar");
+  const timeBtnEl  = document.getElementById("timeBtn");
+  const dateBtnEl  = document.getElementById("dateBtn");
+  const sliderEl   = document.getElementById("timeSlider");
+
+  // ── Create persistent sun/moon elements once, reposition each frame ──
+  function createBody(id, className, panel) {
+    const div = document.createElement("div");
+    div.id = id;
+    div.className = "body " + className;
+    div.style.left    = "50%";
+    div.style.cursor  = "pointer";
+    div.style.display = "none";
+    div.addEventListener("click", () => toggleTimeControls());
+    panel.appendChild(div);
+    return div;
+  }
+  const sunEl  = createBody("sun",  "sun-body",  E);
+  const moonEl = createBody("moon", "moon-body", E);
+
+  // ── STATIC render — DOM rebuild, only called on location/date change ──
+  function renderStatic() {
+    const dt        = getDateTime();
+    const sunTimes  = SunCalc.getTimes(dt, loc.lat, loc.lng);
+    const moonTimes = SunCalc.getMoonTimes(dt, loc.lat, loc.lng);
+
+    // Altitude axis
+    const axis = document.getElementById("altAxis");
+    axis.innerHTML = "";
+    [90,75,60,45,30,15,0].forEach(deg => {
+      const t = document.createElement("div");
+      t.className = "alt-tick";
+      t.textContent = deg + "°";
+      axis.appendChild(t);
+    });
+
+    function dateToLocalMinutes(d) {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: loc.tz, hour: "numeric", minute: "numeric", hour12: false
+      }).formatToParts(d);
+      return +parts.find(p => p.type === "hour").value * 60
+           + +parts.find(p => p.type === "minute").value;
+    }
+
+    function jumpItem(label, time) {
+      if (!time) return `<div class="ground-item"><span>${label}</span><strong>--:--</strong></div>`;
+      const mins = dateToLocalMinutes(time);
+      return `<div class="ground-item clickable" data-jump="${mins}"><span>${label}</span><strong>${fmt(time)}</strong></div>`;
+    }
+
+    groundEl.innerHTML =
+      jumpItem("Sunrise", sunTimes.sunrise) +
+      jumpItem("Sunset",  sunTimes.sunset) +
+      `<div class="ground-item" id="sunAltLabel"><span>&#9728; Alt</span><strong>--</strong></div>` +
+      jumpItem("Moonrise", moonTimes.rise || null) +
+      jumpItem("Moonset",  moonTimes.set  || null) +
+      `<div class="ground-item" id="moonAltLabel"><span>&#9790; Alt</span><strong>--</strong></div>`;
+
+    groundEl.querySelectorAll(".ground-item.clickable").forEach(el => {
+      el.addEventListener("click", () => {
+        selMinutes = +el.dataset.jump;
+        scrubbed   = true;
+        isPaused   = true;
+        updatePlayPauseBtn();
+        renderFrame();
+      });
+    });
+  }
+
+  // ── FRAME render — zero DOM creation, runs every tick ──
+  function renderFrame() {
+    const dt      = getDateTime();
+    const sunPos  = SunCalc.getPosition(dt, loc.lat, loc.lng);
+    const moonPos = SunCalc.getMoonPosition(dt, loc.lat, loc.lng);
+
+    const sunAlt  = sunPos.altitude  * (180 / Math.PI);
+    const moonAlt = moonPos.altitude * (180 / Math.PI);
+    const sunAz   = sunPos.azimuth   * (180 / Math.PI) + 180;
+    const moonAz  = moonPos.azimuth  * (180 / Math.PI) + 180;
+
+    // Sky & environment
+    const sunInEast = sunAz < 180;
+    applyPanelSky(E, sunAlt, sunInEast);
+    applyPanelSky(W, sunAlt, !sunInEast);
+    updateStars(E, sunAlt);
+    updateStars(W, sunAlt);
+    topBar.style.background = skyGradient(sunAlt).zenith;
+    updateGroundIllumination(sunAlt);
+
+    // Body positioning
+    const skyH = document.getElementById("sky").offsetHeight;
+    const sunR  = Math.min(Math.max(window.innerWidth * 0.08,  32), 54) / 2;
+    const moonR = Math.min(Math.max(window.innerWidth * 0.055, 22), 38) / 2;
+
+    function positionBody(el, altDeg, r, targetPanel) {
+      if (el.parentElement !== targetPanel) targetPanel.appendChild(el);
+      const bottomPx = (altDeg / 90) * skyH - r;
+      // Keep in DOM until 6px past the top edge clears the horizon — overflow:hidden does the visual clipping
+      const visible = bottomPx + 2 * r + 6 > 0;
+      el.style.display = visible ? "block" : "none";
+      if (visible) el.style.bottom = bottomPx + "px";
+    }
+
+    positionBody(sunEl,  sunAlt,  sunR,  sunInEast    ? E : W);
+    positionBody(moonEl, moonAlt, moonR, moonAz < 180 ? E : W);
+    if (sunEl.style.display  !== "none") styleSun(sunEl,   sunAlt,  sunR);
+    if (moonEl.style.display !== "none") styleMoon(moonEl, moonAlt, moonR, sunAlt);
+
+    // Alt labels — update text only
+    const sLabel = document.getElementById("sunAltLabel");
+    const mLabel = document.getElementById("moonAltLabel");
+    if (sLabel) sLabel.querySelector("strong").textContent = sunAlt  > 0 ? sunAlt.toFixed(1)+"°"  : "Below";
+    if (mLabel) mLabel.querySelector("strong").textContent = moonAlt > 0 ? moonAlt.toFixed(1)+"°" : "Below";
+
+    // Top bar time + date
+    const h = String(Math.floor(Math.floor(selMinutes) / 60)).padStart(2,"0");
+    const m = String(Math.floor(selMinutes) % 60).padStart(2,"0");
+    const colonClass = !isPaused ? "colon-live" : "";
+    timeBtnEl.innerHTML  = `${h}<span class="${colonClass}">:</span>${m}`;
+    dateBtnEl.textContent = fmtDateLabel(selDate.y, selDate.m, selDate.d);
+    sliderEl.value = Math.floor(selMinutes);
+  }
+
+  // ── render() = static rebuild + one frame ──
+  function render() {
+    renderStatic();
+    renderFrame();
+  }
+
+  // ── Play / pause ──
+  function updatePlayPauseBtn() {
+    document.getElementById("btnPlayPause").textContent = isPaused ? "▶" : "⏸︎";
+    
+    const playPauseBtn = document.getElementById("btnPlayPause");
+    if (!isPaused) {
+      playPauseBtn.classList.add("bigerIcon");
+    } else {
+    // document.getElementById("btnPlayPause").classList.add("bigerIcon");
+      // playPauseBtn.style.fontSize = "";
+      playPauseBtn.classList.remove("bigerIcon");
+    }
+  }
+
+  document.getElementById("btnPlayPause").addEventListener("click", () => {
+    isPaused = !isPaused;
+    if (!isPaused && speedIndex === 0 && !scrubbed) {
+      // Not scrubbed — snap back to real local time
+      selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
+      selDate    = localToday(loc.tz);
+    }
+    updatePlayPauseBtn();
+    renderFrame();
+  });
+
+  // ── Speed cycling ──
+  document.getElementById("btnSpeed").addEventListener("click", () => {
+    speedIndex = (speedIndex + 1) % SPEEDS.length;
+    const lbl = document.getElementById("speedLabel");
+    lbl.textContent = SPEED_LABELS[speedIndex];
+    lbl.classList.toggle("visible", speedIndex > 0);
+  });
+
+  const TICK_MS = 50; // render interval in ms (~20fps)
+
+  let scrubbed = false; // true when user has manually moved away from real time
+
+  // ── Live tick — fires every TICK_MS ──
+  function startLive() {
+    if (liveInterval) clearInterval(liveInterval);
+    liveInterval = setInterval(() => {
+      if (isPaused) return;
+      if (speedIndex === 0 && !scrubbed) {
+        // 1x real time — read wall clock directly, no drift
+        selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
+        selDate    = localToday(loc.tz);
+      } else {
+        // Accelerated: advance proportional to tick size
+        selMinutes += SPEEDS[speedIndex] * TICK_MS / 1000;
+        if (selMinutes >= 1440) {
+          selMinutes -= 1440;
+          const d = new Date(selDate.y, selDate.m, selDate.d + 1);
+          selDate = { y: d.getFullYear(), m: d.getMonth(), d: d.getDate() };
+        }
+      }
+      renderFrame(); // frame only — no DOM rebuild
+    }, TICK_MS);
+  }
+
+  // ── Wire up existing controls ──
+  selEl.addEventListener("change", () => {
+    loc        = JSON.parse(selEl.value);
+    selDate    = localToday(loc.tz);
+    selMinutes = localNowMinutes(loc.tz) + localNowSeconds(loc.tz) / 60;
+    isPaused   = false;
+    scrubbed   = false;
+    updatePlayPauseBtn();
+    render(); // full rebuild on city change
+  });
+
+  const dateInput = document.getElementById("dateInput");
+  // alert("dateInput: " + dateInput);
+  document.getElementById("dateBtn").addEventListener("click", () => {
+    // alert("Select a date using the calendar popup. The time will remain unchanged.");
+    dateInput.value = `${selDate.y}-${String(selDate.m+1).padStart(2,"0")}-${String(selDate.d).padStart(2,"0")}`;
+    dateInput.style.pointerEvents = "auto";
+    // document.getElementById("consoleDiv").innerText = 
+    console.log("dateInput: " + dateInput);
+    dateInput.showPicker ? dateInput.showPicker() : dateInput.click();
+  });
+  dateInput.addEventListener("change", () => {
+    const [y, m, d] = dateInput.value.split("-");
+    selDate  = { y: +y, m: +m - 1, d: +d };
+    scrubbed = true;
+    isPaused = true;
+    updatePlayPauseBtn();
+    dateInput.style.pointerEvents = "none";
+    render(); // full rebuild — date changed, rise/set times need recalculating
+  });
+
+  document.getElementById("timeBtn").addEventListener("click", () => {
+    sliderOpen = !sliderOpen;
+    document.getElementById("sliderTray").classList.toggle("open", sliderOpen);
+  });
+  document.getElementById("timeSlider").addEventListener("input", e => {
+    selMinutes = +e.target.value;
+    scrubbed   = true;
+    isPaused   = true;
+    updatePlayPauseBtn();
+    renderFrame(); // position update only — no static rebuild
+  });
+
+  function waitAndRender() {
+    if (typeof SunCalc === "undefined") { setTimeout(waitAndRender, 50); return; }
+    render();
+    startLive();
+    startShootingStars();
+  }
+  waitAndRender();
+})();
+</script>
+</body>
+</html>
