@@ -384,3 +384,49 @@ skipped for anyone on Chrome/Android's Save-Data mode or a detected
 slow connection. The resolved photo URLs are cached in `localStorage`
 (upgraded from `sessionStorage`), so they also survive across reloads
 and later visits, not just the current tab session.
+
+## PWA — installability (pass 1 of 2)
+
+This is now installable ("Add to Home Screen" on iOS, "Install" on
+Chrome/Android/desktop), launching standalone — no browser chrome or
+URL bar. This pass is installability only; offline support (a service
+worker) is a deliberately separate follow-up pass, not included yet.
+
+- **`manifest.json`** — name, icons, `display: "standalone"` (the
+  specific property that removes browser chrome on launch),
+  black theme/background color to match the app, portrait lock.
+  `start_url`/`scope` are relative, so this works whether the app ends
+  up hosted at a domain root or a subpath.
+- **`icons/`** — see "Swapping in real icon artwork" below.
+- **iOS-specific meta tags** in `index.html` (`apple-mobile-web-app-*`)
+  — Safari has historically lagged the manifest spec and needs these
+  regardless of what the manifest already says; `black-translucent`
+  status bar style lets the app's own black background show through
+  under the iOS status bar, pairing with the safe-area-inset handling
+  already built into this app's CSS.
+- No custom "Add to Home Screen" prompt button — deliberately left
+  out; the UI already has enough controls, and this relies on
+  whatever install affordance the browser offers on its own
+  (Chrome/Edge show one automatically once a site meets the
+  installability criteria above; iOS only ever offers this through
+  Safari's Share menu, with no in-page event to hook a custom button
+  into even if one were wanted).
+
+### Swapping in real icon artwork
+
+`icons/source.png` is a placeholder (a simple crescent in the app's
+own color palette) — replace it with real art whenever you have
+something, then run:
+
+```
+python3 icons/generate-icons.py
+```
+
+from anywhere. That regenerates all four derived files (`icon-192.png`,
+`icon-512.png`, `icon-512-maskable.png`, `apple-touch-icon.png`,
+`favicon-32.png`) from the one source image. `manifest.json` and
+`index.html` already reference those fixed filenames, so nothing else
+needs to change — swap the source, rerun the script, done. Source
+should be square (any size — 1024x1024 recommended; non-square images
+get center-cropped automatically), PNG, transparent background is
+fine. Needs Pillow (`pip install Pillow --break-system-packages`).

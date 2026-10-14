@@ -6,6 +6,23 @@
 <title>Moon Phase Viewer</title>
 <link rel="preconnect" href="https://timepusdi.vercel.app">
 <link rel="stylesheet" href="style.css">
+
+<!-- PWA: installability. manifest.json + these tags are what let a
+     browser offer "Add to Home Screen" / "Install", and what makes
+     the installed app launch standalone (no browser chrome/URL bar)
+     rather than as a bookmark. See icons/generate-icons.py to swap
+     in real artwork later — nothing here needs to change when you do,
+     it already points at the fixed output filenames that script writes. -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#000000">
+
+<!-- iOS-specific: Safari doesn't fully read the manifest above, so
+     standalone-launch support needs its own meta tags regardless. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Moon Phase">
 </head>
 <body>
 
