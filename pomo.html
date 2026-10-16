@@ -213,7 +213,7 @@
             timeCont.addEventListener("click", () => {
                 // console.log("Time container clicked. Timer running:", bTimerRunning);
                 if (bTimerRunning) {
-                    clearInterval(intervalId);
+                    stopTicker();
                     bTimerRunning = false;
                     timeCont.classList.add("pause");
                 } else {
@@ -289,19 +289,53 @@
             }
         }
 
-        var intervalId = null;
-        function startTimer() {
-            bTimerRunning = true;
-            if (intervalId) {
-                clearInterval(intervalId);
-            }
-            intervalId = setInterval(() => {
-                if (totalSeconds > 0) {
-                    totalSeconds--;
+        // Timer is driven by the wall clock (endTime), not by counting ticks,
+        // so throttled/suspended background tabs can't make it drift.
+        // Ticks come from a Web Worker, which browsers don't throttle like
+        // main-thread timers, so the ding fires on time in the background too.
+        let endTime = 0;
+        let tickWorker = null;
+        var intervalId = null; // fallback if Workers are unavailable
+
+        function tick() {
+            if (totalSeconds > 0) {
+                const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+                if (remaining !== totalSeconds) {
+                    totalSeconds = remaining;
                     updateTime();
                 }
-            }, 1000);
+            }
         }
+
+        function stopTicker() {
+            if (tickWorker) {
+                tickWorker.terminate();
+                tickWorker = null;
+            }
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
+        }
+
+        function startTimer() {
+            bTimerRunning = true;
+            stopTicker();
+            endTime = Date.now() + totalSeconds * 1000;
+
+            try {
+                const src = "setInterval(()=>postMessage(0),250);";
+                tickWorker = new Worker(URL.createObjectURL(new Blob([src], { type: "text/javascript" })));
+                tickWorker.onmessage = tick;
+            } catch (e) {
+                intervalId = setInterval(tick, 250);
+            }
+        }
+
+        // Catch up immediately when the tab becomes visible again
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden && bTimerRunning) tick();
+        });
 
         // const toggle = document.getElementById("toggle");
 
