@@ -276,7 +276,9 @@
         function updateTime() {
             let minutes = Math.floor(totalSeconds / 60);
             let seconds = totalSeconds % 60;
-            timeCont.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const text = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timeCont.textContent = text;
+            document.title = `${text} · Pomo`; // time left shows in the browser tab
 
             if (minutes === 0 && seconds === 0) {
                 // alert("Time's up!");
