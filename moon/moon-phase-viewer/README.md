@@ -385,6 +385,54 @@ slow connection. The resolved photo URLs are cached in `localStorage`
 (upgraded from `sessionStorage`), so they also survive across reloads
 and later visits, not just the current tab session.
 
+## Bug fix: layout overflow in standalone (installed) mode
+
+Found via real-device testing after pass 1: on an installed (Add to
+Home Screen) iPhone, there was a gap at the top and the footer was
+pushed below the visible viewport, needing a scroll to reach — but it
+looked perfect in regular Safari on the same device. Root cause:
+`body` applied `env(safe-area-inset-top/bottom)` as padding, *and*
+`.card` separately specified `min-height: 100dvh` — in regular Safari
+the inset evaluates to 0 (Safari's own chrome already clears the
+notch), so this was invisible; standalone mode has no browser chrome
+and draws edge-to-edge (`viewport-fit=cover`), so the inset becomes
+genuinely non-zero there, and `.card`'s own full-height requirement
+left no room to absorb it, pushing total content past the viewport.
+Fixed by moving the safe-area padding from `body` onto `.card` itself
+(matching the pattern `.detail-view`/`.help-view`/`.settings-panel`/
+`.splash-view` already used correctly — those are all
+`position: fixed`, so they'd always bypassed this entirely, which is
+exactly why only the main screen showed the bug).
+
+## PWA — offline support (pass 2 of 2)
+
+`sw.js` (project root — a service worker's scope only extends to its
+own directory and below, so it has to live at the root to control the
+whole app). Cache-first for everything same-origin: the app shell,
+`tithi-data.json`, all four locale files, and the icons are precached
+on install and served from cache first, falling back to network (and
+caching the result) for anything not explicitly listed. The real NASA
+photo proxy is deliberately excluded entirely — every request to it
+passes straight through untouched, since this app already has its own
+graceful fallback (local placeholder → CSS-drawn crescent) for when
+that photo is unavailable, online or off, and caching per-date photos
+would only add staleness risk for no benefit.
+
+**Updating the cache when shipped files change**: bump `CACHE_VERSION`
+in `sw.js` any time `data/tithi-data.json` is regenerated, a locale
+file changes, or any other precached file changes — this is a manual,
+deliberate step (matching how this project already gets updated:
+infrequent, manual regeneration) rather than a more complex
+stale-while-revalidate scheme. The service worker's `activate` handler
+deletes any cache not matching the current `CACHE_VERSION`
+automatically, and takes over already-open tabs immediately
+(`skipWaiting()` + `clients.claim()`) rather than waiting for every
+tab to close first.
+
+Registered from `js/app.js`, fire-and-forget — a failed registration
+(unsupported browser, served over plain `http://`, etc.) is never
+fatal, since the app already works fully online without it.
+
 ## PWA — installability (pass 1 of 2)
 
 This is now installable ("Add to Home Screen" on iOS, "Install" on

@@ -1211,3 +1211,14 @@ Promise.all([
     applyStaticTranslations();
     renderAll();
 });
+
+// PWA offline support (pass 2) — registration failing (unsupported
+// browser, served over plain http, etc.) is never fatal, the app
+// already works fully online without it.
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((e) => {
+            console.warn('Service worker registration failed (app still works online):', e);
+        });
+    });
+}

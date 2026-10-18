@@ -8,9 +8,17 @@ body{
     display:flex;
     align-items:center;
     justify-content:center;
-    padding: env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
 }
 
+/* Safe-area insets are applied here, not on body — .card uses normal
+   document flow (unlike .detail-view/.help-view/.settings-panel/
+   .splash-view, all position:fixed and already self-contained this
+   way), so padding on BODY stacks on top of .card's own min-height:
+   100dvh instead of being absorbed into it. That's invisible in
+   regular Safari (the inset evaluates to 0 there — Safari's own
+   chrome already clears the notch) but real once installed standalone
+   (viewport-fit=cover + no browser chrome means the inset is actually
+   non-zero), where it pushed total content height past the viewport. */
 .card{
     width:100%;
     max-width:420px;
@@ -21,6 +29,8 @@ body{
     justify-content:space-between;
     align-items:center;
     padding:28px 20px;
+    padding-top:calc(28px + env(safe-area-inset-top,0px));
+    padding-bottom:calc(28px + env(safe-area-inset-bottom,0px));
     position:relative;
 }
 
