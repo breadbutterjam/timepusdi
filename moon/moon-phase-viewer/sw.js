@@ -22,7 +22,7 @@
    stale-while-revalidate scheme.
 ========================================================= */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v1.2';
 const CACHE_NAME = `moon-phase-viewer-${CACHE_VERSION}`;
 
 const PRECACHE_URLS = [
