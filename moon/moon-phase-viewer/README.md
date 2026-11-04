@@ -418,16 +418,25 @@ graceful fallback (local placeholder → CSS-drawn crescent) for when
 that photo is unavailable, online or off, and caching per-date photos
 would only add staleness risk for no benefit.
 
-**Updating the cache when shipped files change**: bump `CACHE_VERSION`
-in `sw.js` any time `data/tithi-data.json` is regenerated, a locale
-file changes, or any other precached file changes — this is a manual,
-deliberate step (matching how this project already gets updated:
-infrequent, manual regeneration) rather than a more complex
-stale-while-revalidate scheme. The service worker's `activate` handler
-deletes any cache not matching the current `CACHE_VERSION`
+**Updating the cache when shipped files change**: bump `APP_VERSION`
+in `js/version.js` any time `data/tithi-data.json` is regenerated, a
+locale file changes, or any other precached file changes — this is a
+manual, deliberate step (matching how this project already gets
+updated: infrequent, manual regeneration) rather than a more complex
+stale-while-revalidate scheme. `js/version.js` is the **single source
+of truth** — `sw.js` reads it via `importScripts('js/version.js')` to
+build its cache name, and `app.js` reads the same constant to display
+it in the info panel (small, bottom of the ⓘ overlay, styled like
+`.upcoming-label`), so the displayed version and the actual cache
+state can never disagree. Format doesn't matter: any distinct string
+works (`v1`, `v1.2`, `2026-10-20`, anything) — the mechanism is a
+plain string-equality check, not a numeric or semver comparison, so it
+only cares that the value *changed*. The service worker's `activate`
+handler deletes any cache not matching the current name
 automatically, and takes over already-open tabs immediately
 (`skipWaiting()` + `clients.claim()`) rather than waiting for every
-tab to close first.
+tab to close first. (`js/version.js` itself is in the precache list
+too, so it's available offline like every other script.)
 
 Registered from `js/app.js`, fire-and-forget — a failed registration
 (unsupported browser, served over plain `http://`, etc.) is never

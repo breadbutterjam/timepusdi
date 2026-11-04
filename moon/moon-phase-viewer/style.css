@@ -92,6 +92,11 @@ body{
 .upcoming-row.clickable:last-child{ margin-bottom:-4px; }
 .upcoming-row.clickable:hover, .upcoming-row.clickable:focus-visible{ background:rgba(255,255,255,0.06); outline:none; }
 .upcoming-label{ font-size:0.85rem; color:rgba(255,255,255,0.45); margin-bottom:4px; }
+/* Version label in the info panel — same look as .upcoming-label
+   (font-size/color), positioned as a small footer instead of inside
+   an .upcoming-row (hence the combined selector, so these overrides
+   don't leak into the other, centered-column usages of that class). */
+.upcoming-label.help-version{ text-align:center; margin-top:24px; margin-bottom:0; }
 .upcoming-date{ font-size:1.2rem; font-weight:600; }
 
 .error-note{

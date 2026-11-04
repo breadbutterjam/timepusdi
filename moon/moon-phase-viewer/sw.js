@@ -22,8 +22,11 @@
    stale-while-revalidate scheme.
 ========================================================= */
 
-const CACHE_VERSION = 'v1.2';
-const CACHE_NAME = `moon-phase-viewer-${CACHE_VERSION}`;
+// APP_VERSION is the single source of truth for versioning (see
+// js/version.js) — also what the info panel displays, so the two can
+// never disagree about what's actually installed.
+importScripts('js/version.js');
+const CACHE_NAME = `moon-phase-viewer-${APP_VERSION}`;
 
 const PRECACHE_URLS = [
     './',
@@ -34,6 +37,7 @@ const PRECACHE_URLS = [
     './js/ephemeris.js',
     './js/tithi-engine.js',
     './js/i18n.js',
+    './js/version.js',
     './js/app.js',
     './data/tithi-data.json',
     './locales/en.json',

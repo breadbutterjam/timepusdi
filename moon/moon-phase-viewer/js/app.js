@@ -140,7 +140,7 @@ const GREGORIAN_EVENTS = [
 // instead (same format used everywhere else dates are compared in
 // this file — see toISTDateInputValue / parseISTDateInputValue).
 const MANUAL_FESTIVALS = [
-    { key: "dusshera", year: 2026, showOn: "2026-10-20" }
+    { key: "dussehra", year: 2026, showOn: "2026-10-20" }
 ];
 
 function manualOverrideFor(key, year) {
@@ -620,7 +620,7 @@ const ORDERED_PHASE_SLUGS = [
     'waning-gibbous-4', 
     'last-quarter',
     'waning-crescent-1', 'waning-crescent-2', 'waning-crescent-3',
-    'waning-crescent-4',
+    'waning-crescent-4'
 ];
 function localPhaseImagePath(elong) {
     const fraction = elong / 360;
@@ -1081,6 +1081,7 @@ function closeSettings() {
 // display) but still need to follow the selected language — applied
 // on boot and again every time the language changes.
 function applyStaticTranslations() {
+    document.getElementById('appVersionLabel').textContent = APP_VERSION; // from js/version.js, not translated
     document.getElementById('todayLink').textContent = I18n.t('ui.today');
     document.getElementById('detailTodayLink').textContent = I18n.t('ui.today');
     document.getElementById('phase1Label').textContent = I18n.t('ui.nextFullMoon');
