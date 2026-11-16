@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tree Marker</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message" id="statusMessage"></div>
+
+    <!-- Top Section - Form -->
+    <div class="form-section">
+        <!-- Tree Type Selection -->
+        <div class="type-section">
+            <div class="type-header">
+                <span class="type-label">Type</span>
+                <button class="view-toggle" id="viewToggle">select visually</button>
+            </div>
+
+            <!-- Search Bar (only visible in visual mode) -->
+            <div class="tree-search" id="treeSearch">
+                <input 
+                    type="text" 
+                    class="search-input" 
+                    id="searchInput" 
+                    placeholder="Search trees..."
+                    autocomplete="off"
+                >
+            </div>
+
+            <!-- Visual Grid -->
+            <div class="visual-grid" id="visualGrid">
+                <!-- Tree cards will be populated by JavaScript -->
+            </div>
+
+            <!-- Dropdown View -->
+            <div class="dropdown-view active" id="dropdownView">
+                <select id="treeTypeDropdown">
+                    <option value="">Select tree type...</option>
+                </select>
+            </div>
+        </div>
+
+
+        <!-- Coordinates -->
+        <div class="coordinates">
+            <div class="coordinates-header">
+                <span class="coordinates-title">Longitude, Latitude 📍</span>
+                <button class="locate-btn-small" id="locateBtnSmall">
+                    <span id="locateIcon">📍</span>
+                    <span id="locateText">locate me</span>
+                </button>
+            </div>
+            <div class="coordinates-values">
+                <div class="coord-value">
+                    <input 
+                        type="number" 
+                        step="0.000001" 
+                        id="latitudeInput" 
+                        class="coord-input"
+                        placeholder="Tap map"
+                        readonly
+                    >
+                </div>
+                <div class="coord-value">
+                    <input 
+                        type="number" 
+                        step="0.000001" 
+                        id="longitudeInput" 
+                        class="coord-input"
+                        placeholder="—"
+                        readonly
+                    >
+                </div>
+            </div>
+        </div>
+
+        
+
+        <!-- Optional Details -->
+        <div class="optional-details">
+            <button class="optional-toggle" id="optionalToggle">
+                <span id="toggleArrow">+</span>
+                <span id="optionDetailsLabel">Add optional details</span>
+            </button>
+            <div class="optional-content" id="optionalContent">
+                <div class="form-group">
+                    <label class="form-label">Name</label>
+                    <input type="text" id="customName" placeholder="e.g., Big tree near gate">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Description</label>
+                    <textarea id="description" placeholder="Add notes about this tree..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons (Hidden - using floating buttons instead) -->
+        <div class="action-buttons" style="display: none;">
+            <button class="btn btn-delete" id="deleteBtn" style="display: none;">Delete</button>
+            <button class="btn btn-secondary" id="cancelBtn" style="display: none;">Cancel</button>
+            <button class="btn btn-primary" id="saveBtn" disabled>Add Tree</button>
+        </div>
+    </div>
+
+    <!-- Bottom Section - Map -->
+    <div id="map">
+        <!-- Floating Edit Actions (will be positioned dynamically) -->
+        <div class="edit-actions-container" id="editActionsContainer">
+            <button class="edit-action-btn delete" id="floatingDeleteBtn" title="Delete tree">🗑️</button>
+            <button class="edit-action-btn cancel" id="floatingCancelBtn" title="Cancel">✖️</button>
+            <button class="edit-action-btn update" id="floatingUpdateBtn" title="Update tree">✓</button>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
