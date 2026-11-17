@@ -12,6 +12,66 @@
 <body>
     <div id="map"></div>
 
+    <!-- Settings and filter (top left, away from where a thumb rests while mapping).
+         Bare icons: no background, so they stay out of the way of the map. -->
+    <button id="settingsBtn" class="map-icon-btn settings-btn" type="button" aria-label="Settings" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+    </button>
+    <button id="filterBtn" class="map-icon-btn filter-btn" type="button" aria-label="Filter trees" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4.5h18l-6.8 8.2V19l-4.4 2v-8.3z"/></svg>
+        <span id="filterDot" class="filter-dot" hidden></span>
+    </button>
+    <div id="modePill" class="mode-pill" hidden>👁️ View mode</div>
+
+    <!-- Settings pane -->
+    <aside id="settingsPane" class="settings-pane" hidden aria-label="Settings">
+        <div class="settings-head">
+            <h2>Settings</h2>
+            <button id="settingsClose" class="icon-btn" type="button" aria-label="Close settings">✕</button>
+        </div>
+
+        <section class="settings-section">
+            <h3>Display</h3>
+            <label class="check-row">
+                <input type="checkbox" id="optFaded">
+                <span class="check-name">Show faded trees</span>
+            </label>
+            <p class="setting-help">Trees that don't match the filter appear faded. Turn off to hide them.</p>
+            <label class="check-row">
+                <input type="checkbox" id="optLabelsSelected">
+                <span class="check-name">Labels only on the selected tree</span>
+            </label>
+        </section>
+
+        <section class="settings-section">
+            <h3>Export all trees</h3>
+            <button id="exportSheetBtn" class="link-row" type="button">Download CSV for Google Sheets</button>
+            <button id="exportMapBtn" class="link-row" type="button">Download CSV for Google My Maps</button>
+            <p class="export-help">Every tree is exported, whatever the filter. In My Maps, import the file into a layer, choose latitude and longitude for position and "name" for the title.</p>
+        </section>
+
+        <section class="settings-section">
+            <button id="signOutBtn" class="link-row danger" type="button">Sign out</button>
+        </section>
+    </aside>
+
+    <!-- Filter pane -->
+    <aside id="filterPane" class="settings-pane" hidden aria-label="Filter trees">
+        <div class="settings-head">
+            <h2>Filter trees</h2>
+            <button id="filterClose" class="icon-btn" type="button" aria-label="Close filter">✕</button>
+        </div>
+
+        <!-- Search is built but hidden for now; it will come back as its own magnifier icon -->
+        <input type="search" id="filterSearch" class="settings-search" placeholder="Search name, type or notes..." autocomplete="off" hidden>
+        <div id="filterTypes" class="filter-types"></div>
+        <p id="filterSummary" class="filter-summary"></p>
+        <div class="filter-actions">
+            <button id="filterShow" class="btn btn-primary" type="button">Show on map</button>
+            <button id="filterClear" class="link-btn" type="button" hidden>Clear filters</button>
+        </div>
+    </aside>
+
     <!-- Current tree type (top right). Tap to change the type used for new trees. -->
     <button id="typeChip" class="type-chip" type="button" aria-haspopup="listbox" aria-expanded="false">
         <span class="type-chip-icon">🌳</span>
@@ -23,6 +83,9 @@
         <input type="search" id="typeSearch" class="type-search" placeholder="Search trees..." autocomplete="off">
         <ul id="typeList" class="type-list" role="listbox"></ul>
     </div>
+
+    <!-- Switch mode: shows the mode you will switch TO (eye = view mode, pencil = edit mode) -->
+    <button id="modeBtn" class="fab fab-mode" type="button" aria-label="Switch to view mode" title="Switch to view mode">👁️</button>
 
     <!-- Locate me -->
     <button id="locateBtn" class="fab" type="button" aria-label="Locate me" title="Locate me">📍</button>

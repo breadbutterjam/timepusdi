@@ -73,6 +73,28 @@ body {
     display: none;
 }
 
+/* Setting: labels only on the selected tree (wins over the zoom rule above) */
+#map.labels-selected-only .tree-pin:not(.selected) .tree-label {
+    display: none;
+}
+
+#map.labels-selected-only .tree-pin.selected .tree-label {
+    display: block;
+}
+
+/* Trees outside the current filter, when "Show faded trees" is on */
+.tree-pin {
+    transition: opacity 0.6s;
+}
+
+.tree-pin.faded {
+    opacity: 0.25;
+}
+
+.tree-pin.faded .tree-label {
+    display: none;
+}
+
 /* The tree being edited: semi-transparent and a little larger */
 .tree-pin.selected {
     opacity: 0.7;
@@ -336,7 +358,14 @@ body {
 /* While a tree is being edited, hide the map-level controls */
 body.panel-open .type-chip,
 body.panel-open .type-picker,
+body.panel-open .map-icon-btn,
 body.panel-open .fab {
+    display: none;
+}
+
+/* View mode: no adding, so no type chip */
+body.view-mode .type-chip,
+body.view-mode .type-picker {
     display: none;
 }
 
@@ -405,4 +434,227 @@ body.panel-open .fab {
     min-height: 1.2em;
     font-size: 13px;
     color: #dc3545;
+}
+
+/* ---------- Top-left icons (bare, no background) + mode pill ---------- */
+.map-icon-btn {
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top));
+    z-index: 1100;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: none;
+    color: #343a40;
+    cursor: pointer;
+}
+
+.settings-btn {
+    left: 6px;
+}
+
+.filter-btn {
+    left: 54px;
+}
+
+/* White outline + soft shadow keeps the dark icon readable on any map */
+.map-icon-btn svg {
+    width: 28px;
+    height: 28px;
+    fill: currentColor;
+    stroke: #fff;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+    paint-order: stroke;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+.map-icon-btn:active svg {
+    transform: scale(0.9);
+}
+
+/* Green dot: a filter is active */
+.filter-dot {
+    position: absolute;
+    top: 7px;
+    right: 6px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #28a745;
+    border: 2px solid #fff;
+}
+
+/* The mode button sits just above the locate button */
+.fab-mode {
+    bottom: calc(94px + env(safe-area-inset-bottom));
+}
+
+/* Shown in view mode, where the type chip would otherwise be */
+.mode-pill {
+    position: fixed;
+    top: calc(12px + env(safe-area-inset-top));
+    right: 12px;
+    z-index: 1100;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    border-radius: 999px;
+    background: #212529;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ---------- Settings pane ---------- */
+.settings-pane {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1250;
+    width: min(340px, 88vw);
+    overflow-y: auto;
+    padding: calc(12px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    background: #fff;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.35);
+}
+
+.settings-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.settings-head h2 {
+    font-size: 18px;
+}
+
+.icon-btn {
+    padding: 8px;
+    border: none;
+    background: none;
+    font-size: 20px;
+    color: #6c757d;
+    cursor: pointer;
+}
+
+.link-row {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    border: none;
+    background: none;
+    text-align: left;
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a73e8;
+    cursor: pointer;
+}
+
+.link-row.danger {
+    color: #dc3545;
+}
+
+.link-btn {
+    padding: 8px 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: 14px;
+    color: #1a73e8;
+    cursor: pointer;
+}
+
+.settings-section {
+    padding: 12px 0;
+    border-top: 1px solid #e9ecef;
+}
+
+.settings-section h3 {
+    margin-bottom: 8px;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+
+.settings-search {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 9px 12px;
+    border: 2px solid #dee2e6;
+    border-radius: 8px;
+    font: inherit;
+    font-size: 16px; /* 16px stops iOS zooming in on focus */
+}
+
+.settings-search:focus {
+    outline: none;
+    border-color: #28a745;
+}
+
+.filter-types {
+    margin-bottom: 8px;
+}
+
+.check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 2px;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.check-row input {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    accent-color: #28a745;
+}
+
+.check-name {
+    flex: 1;
+}
+
+.check-count {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.setting-help {
+    margin: -2px 0 8px 30px;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.filter-summary {
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #495057;
+}
+
+.filter-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.filter-actions .btn:disabled {
+    opacity: 0.5;
+}
+
+.export-help {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #6c757d;
 }

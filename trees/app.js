@@ -15,6 +15,9 @@ const LABEL_MIN_ZOOM = 17;    // labels are hidden when zoomed out beyond this
 const ADD_DEBOUNCE_MS = 350;  // ignore a second tap this soon after an add (double-tap reflex)
 const STORAGE_KEY = 'savedTrees';
 const CURRENT_TYPE_KEY = 'currentTreeType';
+const SETTINGS_KEY = 'treeSettings';
+const RECENT_MS = 5000;       // a tree you just added or saved stays fully visible this long, even if a filter would fade it
+const FADE_MS = 600;          // matches the opacity transition in style.css
 
 // Shown when a tree photo is missing. Built in as an inline SVG, so it can
 // never fail to load.
@@ -106,17 +109,53 @@ const els = {
     del: $('panelDelete'),
     cancel: $('panelCancel'),
     save: $('panelSave'),
-    toast: $('toast')
+    toast: $('toast'),
+    settingsBtn: $('settingsBtn'),
+    settingsPane: $('settingsPane'),
+    settingsClose: $('settingsClose'),
+    filterBtn: $('filterBtn'),
+    filterDot: $('filterDot'),
+    filterPane: $('filterPane'),
+    filterClose: $('filterClose'),
+    modeBtn: $('modeBtn'),
+    modePill: $('modePill'),
+    filterSearch: $('filterSearch'),
+    filterTypes: $('filterTypes'),
+    filterSummary: $('filterSummary'),
+    filterShow: $('filterShow'),
+    filterClear: $('filterClear'),
+    optFaded: $('optFaded'),
+    optLabelsSelected: $('optLabelsSelected'),
+    exportSheet: $('exportSheetBtn'),
+    exportMap: $('exportMapBtn'),
+    signOut: $('signOutBtn')
 };
 
 // ---------- State ----------
 const state = {
+    mode: 'edit',         // 'edit' (default) or 'view'; always starts in edit
     trees: new Map(),     // id -> tree
     markers: new Map(),   // id -> L.Marker
+    recent: new Map(),    // id -> timer, for trees exempt from the filter for a few seconds
     currentTypeId: null,  // type used for newly added trees
     selected: null,       // { id, original } while the panel is open
     lastAddAt: 0
 };
+
+// What the filter currently lets through (not remembered between visits)
+const filter = { types: new Set(), query: '' };
+
+// Display settings (remembered on this device)
+const settings = { showFaded: true, labelsSelectedOnly: false };
+try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if (typeof saved.showFaded === 'boolean') settings.showFaded = saved.showFaded;
+    if (typeof saved.labelsSelectedOnly === 'boolean') settings.labelsSelectedOnly = saved.labelsSelectedOnly;
+} catch (err) { /* use defaults */ }
+
+function saveSettings() {
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (err) { /* not critical */ }
+}
 
 // ---------- Map ----------
 const map = L.map('map', {
@@ -285,6 +324,84 @@ function updateLabelVisibility() {
 }
 map.on('zoomend', updateLabelVisibility);
 
+// ---------- Filtering: which trees are shown, faded or hidden ----------
+const hideTimers = new Map();   // id -> timer that removes a faded marker once its fade-out has finished
+
+function isFilterActive() {
+    return filter.types.size > 0 || filter.query.trim() !== '';
+}
+
+function matchesFilter(tree) {
+    if (filter.types.size && !filter.types.has(tree.treeTypeId)) return false;
+    const words = filter.query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.length) return true;
+    const type = typesById.get(tree.treeTypeId);
+    const haystack = [tree.customName, type && type.commonName, type && type.scientificName, tree.description]
+        .join(' ').toLowerCase();
+    return words.every(w => haystack.includes(w));
+}
+
+// 'normal' | 'faded' | 'hidden'
+function computeVisibility(tree) {
+    // The tree being edited, and trees added or saved in the last few seconds, always show in full
+    if ((state.selected && state.selected.id === tree.id) || state.recent.has(tree.id)) return 'normal';
+    if (matchesFilter(tree)) return 'normal';
+    return settings.showFaded ? 'faded' : 'hidden';
+}
+
+function setPinFaded(marker, faded) {
+    const el = marker && marker.getElement();
+    const pin = el && el.querySelector('.tree-pin');
+    if (pin) pin.classList.toggle('faded', faded);
+}
+
+function applyVisibility(id) {
+    const tree = state.trees.get(id);
+    const marker = state.markers.get(id);
+    if (!tree || !marker) return;
+
+    clearTimeout(hideTimers.get(id));
+    hideTimers.delete(id);
+
+    const visibility = computeVisibility(tree);
+    if (visibility === 'hidden') {
+        // Fade out first, then take the marker off the map
+        setPinFaded(marker, true);
+        hideTimers.set(id, setTimeout(() => {
+            hideTimers.delete(id);
+            const current = state.trees.get(id);
+            if (current && computeVisibility(current) === 'hidden' && map.hasLayer(marker)) {
+                map.removeLayer(marker);
+            }
+        }, FADE_MS));
+        return;
+    }
+
+    if (!map.hasLayer(marker)) marker.addTo(map);
+    setPinFaded(marker, visibility === 'faded');
+}
+
+function applyAllVisibility() {
+    for (const id of state.trees.keys()) applyVisibility(id);
+}
+
+// Keep a just-added or just-saved tree fully visible for a few seconds
+function markRecent(id) {
+    clearTimeout(state.recent.get(id));
+    state.recent.set(id, setTimeout(() => {
+        state.recent.delete(id);
+        applyVisibility(id);
+    }, RECENT_MS));
+    applyVisibility(id);
+}
+
+function forgetTree(id) {
+    clearTimeout(state.recent.get(id));
+    state.recent.delete(id);
+    clearTimeout(hideTimers.get(id));
+    hideTimers.delete(id);
+}
+
 // ---------- Moving the selected tree ----------
 function moveSelectedTo(latlng) {
     const marker = state.markers.get(state.selected.id);
@@ -312,12 +429,14 @@ async function addTreeAt(latlng) {
     // Show the tree immediately; save in the background and undo if it fails
     state.trees.set(tree.id, tree);
     addMarkerFor(tree);   // quiet add: marker + label appear, nothing else opens
+    markRecent(tree.id);  // stays fully visible for a few seconds even if a filter would fade it
 
     try {
         await storage.saveTree(tree);
     } catch (err) {
         console.error('Could not save tree:', err);
         if (state.selected && state.selected.id === tree.id) closePanel();
+        forgetTree(tree.id);
         const marker = state.markers.get(tree.id);
         if (marker) map.removeLayer(marker);
         state.markers.delete(tree.id);
@@ -327,17 +446,26 @@ async function addTreeAt(latlng) {
 }
 
 map.on('click', e => {
-    // A tap outside the picker just closes it
+    // A tap outside the picker or the settings pane just closes it
     if (isPickerOpen()) {
         closePicker();
         return;
     }
-
-    // A tree is open in the panel: a tap moves it there (Save keeps it, Cancel undoes it)
-    if (state.selected) {
-        moveSelectedTo(e.latlng);
+    if (isPaneOpen()) {
+        closePanes();
         return;
     }
+
+    if (state.selected) {
+        // View mode: the panel is read-only, a tap elsewhere just closes it
+        if (state.mode === 'view') closePanel();
+        // Edit mode: a tap moves the tree there (Save keeps it, Cancel undoes it)
+        else moveSelectedTo(e.latlng);
+        return;
+    }
+
+    // View mode never adds trees
+    if (state.mode === 'view') return;
 
     const now = Date.now();
     if (now - state.lastAddAt < ADD_DEBOUNCE_MS) return;
@@ -502,15 +630,28 @@ function selectTree(id) {
     if (!tree || !marker) return;
 
     closePicker();
+    closePanes();
+    const readOnly = state.mode === 'view';
     state.selected = { id, original: { ...tree }, typeId: tree.treeTypeId };
     fillPanel(tree);
+    setPanelReadOnly(readOnly);
 
     setPinSelected(marker, true);
-    marker.dragging.enable();
+    if (!readOnly) marker.dragging.enable();
+    applyVisibility(id);   // a faded tree shows in full while it is open
 
     document.body.classList.add('panel-open');
     els.panel.hidden = false;
     revealMarker(marker);
+}
+
+// View mode shows the details but nothing can be changed
+function setPanelReadOnly(readOnly) {
+    for (const field of [els.type, els.name, els.desc, els.lat, els.lng]) field.disabled = readOnly;
+    els.save.hidden = readOnly;
+    els.del.hidden = readOnly;
+    els.cancel.textContent = readOnly ? 'Close' : 'Cancel';
+    els.desc.placeholder = readOnly ? 'No notes' : 'Add notes about this tree...';
 }
 
 function closePanel() {
@@ -528,6 +669,9 @@ function closePanel() {
         syncMarker(sel.id);
         map.panInside(marker.getLatLng(), { padding: [60, 60] });
     }
+
+    setPanelReadOnly(false);
+    applyVisibility(sel.id);   // back under the filter's rules (unless it was just saved)
 }
 
 // Live label preview while typing / changing type (reverted by Cancel)
@@ -604,6 +748,7 @@ els.save.addEventListener('click', async () => {
     }
 
     state.trees.set(sel.id, updated);
+    markRecent(sel.id);   // stays fully visible for a few seconds even if its new type is filtered out
     closePanel();
 });
 
@@ -625,6 +770,7 @@ els.del.addEventListener('click', async () => {
         els.del.disabled = false;
     }
 
+    forgetTree(sel.id);
     const marker = state.markers.get(sel.id);
     if (marker) map.removeLayer(marker);
     state.markers.delete(sel.id);
@@ -677,6 +823,285 @@ els.locate.addEventListener('click', () => {
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+});
+
+// ---------- Settings and filter panes ----------
+function isSettingsOpen() {
+    return !els.settingsPane.hidden;
+}
+
+function isFilterOpen() {
+    return !els.filterPane.hidden;
+}
+
+function isPaneOpen() {
+    return isSettingsOpen() || isFilterOpen();
+}
+
+function closeSettings() {
+    els.settingsPane.hidden = true;
+}
+
+function closeFilter() {
+    els.filterPane.hidden = true;
+}
+
+function closePanes() {
+    closeSettings();
+    closeFilter();
+}
+
+function openSettings() {
+    closePicker();
+    closeFilter();
+    els.optFaded.checked = settings.showFaded;
+    els.optLabelsSelected.checked = settings.labelsSelectedOnly;
+    els.settingsPane.hidden = false;
+}
+
+function openFilter() {
+    closePicker();
+    closeSettings();
+    renderFilterTypes();
+    els.filterSearch.value = filter.query;
+    updateFilterSummary();
+    els.filterPane.hidden = false;
+}
+
+els.settingsBtn.addEventListener('click', () => {
+    if (isSettingsOpen()) closeSettings(); else openSettings();
+});
+els.settingsClose.addEventListener('click', closeSettings);
+
+els.filterBtn.addEventListener('click', () => {
+    if (isFilterOpen()) closeFilter(); else openFilter();
+});
+els.filterClose.addEventListener('click', closeFilter);
+
+// -- View / edit mode (the button shows the mode you will switch TO)
+function setMode(mode) {
+    if (mode === state.mode) return;
+    if (state.selected) {
+        if (isDirty()) {
+            showToast('Save or cancel your changes first');
+            return;
+        }
+        closePanel();
+    }
+    state.mode = mode;
+    closePicker();
+    closePanes();
+    document.body.classList.toggle('view-mode', mode === 'view');
+    els.modePill.hidden = mode !== 'view';
+
+    const next = mode === 'view' ? 'Switch to edit mode' : 'Switch to view mode';
+    els.modeBtn.textContent = mode === 'view' ? '✏️' : '👁️';
+    els.modeBtn.setAttribute('aria-label', next);
+    els.modeBtn.title = next;
+}
+
+els.modeBtn.addEventListener('click', () => setMode(state.mode === 'view' ? 'edit' : 'view'));
+
+// -- Filters
+function renderFilterTypes() {
+    const counts = new Map();
+    for (const tree of state.trees.values()) {
+        counts.set(tree.treeTypeId, (counts.get(tree.treeTypeId) || 0) + 1);
+    }
+
+    els.filterTypes.replaceChildren();
+    for (const type of treeTypes) {
+        const row = document.createElement('label');
+        row.className = 'check-row';
+
+        const box = document.createElement('input');
+        box.type = 'checkbox';
+        box.checked = filter.types.has(type.id);
+        box.addEventListener('change', () => {
+            if (box.checked) filter.types.add(type.id); else filter.types.delete(type.id);
+            onFilterChanged();
+        });
+
+        const name = document.createElement('span');
+        name.className = 'check-name';
+        name.textContent = type.commonName;
+
+        const count = document.createElement('span');
+        count.className = 'check-count';
+        count.textContent = counts.get(type.id) || 0;
+
+        row.append(box, name, count);
+        els.filterTypes.appendChild(row);
+    }
+}
+
+function updateFilterSummary() {
+    const total = state.trees.size;
+    const matching = [...state.trees.values()].filter(matchesFilter).length;
+    const active = isFilterActive();
+
+    els.filterSummary.textContent = active
+        ? `${matching} of ${total} trees match`
+        : `${total} tree${total === 1 ? '' : 's'}`;
+    els.filterShow.textContent = active ? `Show ${matching} on map` : `Show all ${total}`;
+    els.filterShow.disabled = matching === 0;
+    els.filterClear.hidden = !active;
+    els.filterDot.hidden = !active;
+}
+
+function onFilterChanged() {
+    applyAllVisibility();
+    updateFilterSummary();
+}
+
+els.filterSearch.addEventListener('input', () => {
+    filter.query = els.filterSearch.value;
+    onFilterChanged();
+});
+
+els.filterSearch.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        showMatchesOnMap();
+    }
+});
+
+els.filterClear.addEventListener('click', () => {
+    filter.types.clear();
+    filter.query = '';
+    els.filterSearch.value = '';
+    renderFilterTypes();
+    onFilterChanged();
+});
+
+function showMatchesOnMap() {
+    const points = [...state.trees.values()]
+        .filter(matchesFilter)
+        .map(t => [t.latitude, t.longitude]);
+    if (!points.length) {
+        showToast('No matching trees');
+        return;
+    }
+    closeFilter();
+    map.fitBounds(L.latLngBounds(points), { padding: [70, 70], maxZoom: MAX_NATIVE_ZOOM });
+}
+els.filterShow.addEventListener('click', showMatchesOnMap);
+
+// -- Display options
+function applyLabelSetting() {
+    els.map.classList.toggle('labels-selected-only', settings.labelsSelectedOnly);
+}
+
+els.optFaded.addEventListener('change', () => {
+    settings.showFaded = els.optFaded.checked;
+    saveSettings();
+    applyAllVisibility();
+});
+
+els.optLabelsSelected.addEventListener('change', () => {
+    settings.labelsSelectedOnly = els.optLabelsSelected.checked;
+    saveSettings();
+    applyLabelSetting();
+});
+
+// -- Export (built in the browser from the trees already loaded; nothing is sent anywhere)
+const MY_MAPS_ROW_LIMIT = 2000;   // Google My Maps: files shouldn't exceed 2,000 rows
+
+// Quote a CSV cell. Text that starts with = + - @ would be read as a formula by
+// Google Sheets / Excel, so it gets a leading apostrophe.
+function csvCell(value, isText = true) {
+    let s = value == null ? '' : String(value);
+    if (isText && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+function buildCsv(columns, rows) {
+    // columns: [{ header, value(tree) , text? }]; BOM so Excel reads accents correctly
+    const lines = [columns.map(c => csvCell(c.header, false)).join(',')];
+    for (const tree of rows) {
+        lines.push(columns.map(c => csvCell(c.value(tree), c.text !== false)).join(','));
+    }
+    return '﻿' + lines.join('\r\n') + '\r\n';
+}
+
+const coord = n => Number(n.toFixed(7));   // 7 decimals is about 1 cm
+
+const typeLabel = tree => typeName(tree.treeTypeId) || tree.treeTypeId;
+const typeScientific = tree => (typesById.get(tree.treeTypeId) || {}).scientificName || '';
+
+// Everything, for Google Sheets (also works as a backup)
+const SHEET_COLUMNS = [
+    { header: 'id', value: t => t.id },
+    { header: 'latitude', value: t => coord(t.latitude), text: false },
+    { header: 'longitude', value: t => coord(t.longitude), text: false },
+    { header: 'tree_type', value: typeLabel },
+    { header: 'scientific_name', value: typeScientific },
+    { header: 'tree_type_id', value: t => t.treeTypeId },
+    { header: 'name', value: t => t.customName },
+    { header: 'description', value: t => t.description },
+    { header: 'status', value: t => t.status },
+    { header: 'created_at', value: t => t.timestamp },
+    { header: 'updated_at', value: t => t.updatedAt }
+];
+
+// Leaner, for Google My Maps: "name" is the title, and every other column shows in the pin's popup
+const MAP_COLUMNS = [
+    { header: 'name', value: labelFor },
+    { header: 'latitude', value: t => coord(t.latitude), text: false },
+    { header: 'longitude', value: t => coord(t.longitude), text: false },
+    { header: 'type', value: typeLabel },
+    { header: 'scientific_name', value: typeScientific },
+    { header: 'description', value: t => t.description }
+];
+
+function localDateStamp() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function downloadTextFile(filename, text, mime) {
+    const url = URL.createObjectURL(new Blob([text], { type: mime }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function exportTrees(kind) {
+    const trees = [...state.trees.values()].sort((x, y) => String(x.timestamp).localeCompare(String(y.timestamp)));
+    if (!trees.length) {
+        showToast('No trees to export');
+        return;
+    }
+    const isMap = kind === 'map';
+    const csv = buildCsv(isMap ? MAP_COLUMNS : SHEET_COLUMNS, trees);
+    downloadTextFile(`trees-${isMap ? 'my-maps' : 'sheet'}-${localDateStamp()}.csv`, csv, 'text/csv;charset=utf-8');
+
+    if (isMap && trees.length > MY_MAPS_ROW_LIMIT) {
+        showToast(`Exported ${trees.length} trees. My Maps takes up to ${MY_MAPS_ROW_LIMIT.toLocaleString()} rows per file, so split it.`);
+    } else {
+        showToast(`Exported ${trees.length} tree${trees.length === 1 ? '' : 's'}`);
+    }
+}
+
+els.exportSheet.addEventListener('click', () => exportTrees('sheet'));
+els.exportMap.addEventListener('click', () => exportTrees('map'));
+
+// -- Sign out (this device only; other devices stay signed in)
+els.signOut.addEventListener('click', async () => {
+    if (!confirm('Sign out on this device?')) return;
+    try {
+        const { error } = await sb.auth.signOut({ scope: 'local' });
+        if (error) throw error;
+    } catch (err) {
+        console.error('Sign out failed:', err);
+        showToast("Couldn't sign out");
+    }
+    // On success the SIGNED_OUT event below reloads the page to the sign-in screen
 });
 
 // ---------- Trees saved on this device from before Supabase ----------
@@ -810,6 +1235,7 @@ async function init() {
     state.currentTypeId = loadCurrentType();
     updateChip();
     updateLabelVisibility();
+    applyLabelSetting();
 
     let session = null;
     try {
