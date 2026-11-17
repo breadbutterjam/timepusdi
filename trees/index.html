@@ -64,7 +64,20 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <!-- Sign in (shown until there is a session) -->
+    <div id="loginOverlay" class="login-overlay" hidden>
+        <form id="loginForm" class="login-card">
+            <h1>🌳 Tree Marker</h1>
+            <input type="email" id="loginEmail" placeholder="Email" autocomplete="username" required>
+            <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" required>
+            <p id="loginError" class="login-error" role="alert"></p>
+            <button id="loginBtn" class="btn btn-primary" type="submit">Sign in</button>
+        </form>
+    </div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.87.3/dist/umd/supabase.js"></script>
+    <script src="supabase-config.js"></script>
     <script src="tree-types.js"></script>
     <script src="app.js"></script>
 </body>

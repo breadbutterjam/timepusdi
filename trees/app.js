@@ -28,26 +28,62 @@ const PLACEHOLDER_IMG = 'data:image/svg+xml,' + encodeURIComponent(
 // ---------- Tree types (defined in tree-types.js) ----------
 const typesById = new Map(treeTypes.map(t => [t.id, t]));
 
-// ---------- Storage layer ----------
-// Everything else talks to storage only through these three functions, so the
-// backend can be swapped (Supabase later) without touching the UI.
+// ---------- Storage layer (Supabase) ----------
+// Everything else talks to storage only through these three functions. The
+// app uses camelCase fields; the database uses snake_case, converted here.
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const TABLE = 'trees';
+const PAGE_SIZE = 1000;   // Supabase returns at most 1000 rows per request
+
+function toRow(tree) {
+    return {
+        id: tree.id,
+        latitude: tree.latitude,
+        longitude: tree.longitude,
+        tree_type_id: tree.treeTypeId || 'unknown',
+        custom_name: tree.customName || '',
+        description: tree.description || '',
+        status: ['active', 'pruned', 'cut', 'fell'].includes(tree.status) ? tree.status : 'active',
+        created_at: tree.timestamp,
+        updated_at: tree.updatedAt
+    };
+}
+
+function fromRow(row) {
+    return {
+        id: row.id,
+        latitude: row.latitude,
+        longitude: row.longitude,
+        treeTypeId: row.tree_type_id,
+        customName: row.custom_name || '',
+        description: row.description || '',
+        status: row.status,
+        timestamp: row.created_at,
+        updatedAt: row.updated_at
+    };
+}
+
 const storage = {
-    _read() {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];   // throws on corrupt data, so we never overwrite it
-    },
     async listTrees() {
-        return this._read();
+        const all = [];
+        for (let from = 0; ; from += PAGE_SIZE) {
+            const { data, error } = await sb.from(TABLE)
+                .select('*')
+                .order('created_at', { ascending: true })
+                .range(from, from + PAGE_SIZE - 1);
+            if (error) throw error;
+            all.push(...data);
+            if (data.length < PAGE_SIZE) break;
+        }
+        return all.map(fromRow);
     },
     async saveTree(tree) {
-        const trees = this._read();
-        const i = trees.findIndex(t => t.id === tree.id);
-        if (i >= 0) trees[i] = tree; else trees.push(tree);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(trees));
+        const { error } = await sb.from(TABLE).upsert(toRow(tree));
+        if (error) throw error;
     },
     async deleteTree(id) {
-        const trees = this._read().filter(t => t.id !== id);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(trees));
+        const { error } = await sb.from(TABLE).delete().eq('id', id);
+        if (error) throw error;
     }
 };
 
@@ -100,8 +136,17 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
 // ---------- Helpers ----------
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// The browser creates each tree's id (a UUID), so a tree can appear on the map
+// instantly, before the database has answered.
 function generateId() {
-    return 'tree_' + Date.now() + '_' + Math.random().toString(36).slice(2, 11);
+    if (crypto.randomUUID) return crypto.randomUUID();   // needs https or localhost
+    const b = crypto.getRandomValues(new Uint8Array(16));
+    b[6] = (b[6] & 0x0f) | 0x40;
+    b[8] = (b[8] & 0x3f) | 0x80;
+    const h = [...b].map(x => x.toString(16).padStart(2, '0')).join('');
+    return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
 function round6(n) {
@@ -264,16 +309,21 @@ async function addTreeAt(latlng) {
         status: 'active'
     };
 
+    // Show the tree immediately; save in the background and undo if it fails
+    state.trees.set(tree.id, tree);
+    addMarkerFor(tree);   // quiet add: marker + label appear, nothing else opens
+
     try {
         await storage.saveTree(tree);
     } catch (err) {
         console.error('Could not save tree:', err);
-        showToast("Couldn't save the tree");
-        return;
+        if (state.selected && state.selected.id === tree.id) closePanel();
+        const marker = state.markers.get(tree.id);
+        if (marker) map.removeLayer(marker);
+        state.markers.delete(tree.id);
+        state.trees.delete(tree.id);
+        showToast("Couldn't save the tree. Check your connection.");
     }
-
-    state.trees.set(tree.id, tree);
-    addMarkerFor(tree);   // quiet add: marker + label appear, nothing else opens
 }
 
 map.on('click', e => {
@@ -542,12 +592,15 @@ els.save.addEventListener('click', async () => {
         updatedAt: new Date().toISOString()
     };
 
+    els.save.disabled = true;   // guard against a double-tap while the request is in flight
     try {
         await storage.saveTree(updated);
     } catch (err) {
         console.error('Could not save tree:', err);
-        showToast("Couldn't save changes");
+        showToast("Couldn't save changes. Check your connection.");
         return;
+    } finally {
+        els.save.disabled = false;
     }
 
     state.trees.set(sel.id, updated);
@@ -561,12 +614,15 @@ els.del.addEventListener('click', async () => {
     const tree = state.trees.get(sel.id);
     if (!confirm(`Delete ${labelFor(tree)}?`)) return;
 
+    els.del.disabled = true;
     try {
         await storage.deleteTree(sel.id);
     } catch (err) {
         console.error('Could not delete tree:', err);
-        showToast("Couldn't delete the tree");
+        showToast("Couldn't delete the tree. Check your connection.");
         return;
+    } finally {
+        els.del.disabled = false;
     }
 
     const marker = state.markers.get(sel.id);
@@ -623,23 +679,150 @@ els.locate.addEventListener('click', () => {
     );
 });
 
+// ---------- Trees saved on this device from before Supabase ----------
+const validDate = v => (v && !Number.isNaN(Date.parse(v))) ? v : null;
+
+// One-time offer to upload trees that only exist in this browser's localStorage.
+// Ids are converted to UUIDs and saved locally *before* uploading, so a retry
+// after a failure reuses the same ids and can't create duplicates.
+async function offerLocalUpload() {
+    let raw = null;
+    let local = [];
+    try {
+        raw = localStorage.getItem(STORAGE_KEY);
+        local = raw ? JSON.parse(raw) : [];
+    } catch (err) {
+        console.error('Could not read local trees:', err);
+        return;
+    }
+    if (!Array.isArray(local)) return;
+    local = local.filter(t => t && Number.isFinite(t.latitude) && Number.isFinite(t.longitude));
+    if (!local.length) return;
+
+    const n = local.length;
+    if (!confirm(`${n} tree${n === 1 ? ' is' : 's are'} saved only on this device. Upload ${n === 1 ? 'it' : 'them'} to your account?`)) return;
+
+    const now = new Date().toISOString();
+    const prepared = local.map(t => ({
+        ...t,
+        id: UUID_RE.test(t.id) ? t.id : generateId(),
+        timestamp: validDate(t.timestamp) || now,
+        updatedAt: validDate(t.updatedAt) || validDate(t.timestamp) || now
+    }));
+
+    try {
+        if (!localStorage.getItem(STORAGE_KEY + '_original')) localStorage.setItem(STORAGE_KEY + '_original', raw);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(prepared));
+    } catch (err) {
+        console.error('Could not prepare local trees:', err);
+        showToast("Couldn't prepare the upload");
+        return;
+    }
+
+    try {
+        for (let i = 0; i < prepared.length; i += 200) {
+            const { error } = await sb.from(TABLE).upsert(prepared.slice(i, i + 200).map(toRow));
+            if (error) throw error;
+        }
+    } catch (err) {
+        console.error('Upload failed:', err);
+        showToast("Couldn't upload your device's trees. They are still saved here.");
+        return;
+    }
+
+    try {
+        localStorage.setItem(STORAGE_KEY + '_uploaded', JSON.stringify(prepared));   // kept as a backup
+        localStorage.removeItem(STORAGE_KEY);
+    } catch (err) { /* not critical */ }
+    showToast(`Uploaded ${n} tree${n === 1 ? '' : 's'}`);
+}
+
+// ---------- Sign in ----------
+const loginEls = {
+    overlay: $('loginOverlay'),
+    form: $('loginForm'),
+    email: $('loginEmail'),
+    password: $('loginPassword'),
+    error: $('loginError'),
+    btn: $('loginBtn')
+};
+
+function showLogin() {
+    loginEls.overlay.hidden = false;
+    loginEls.email.focus();
+}
+
+loginEls.form.addEventListener('submit', async e => {
+    e.preventDefault();
+    loginEls.error.textContent = '';
+    loginEls.btn.disabled = true;
+
+    let error = null;
+    try {
+        ({ error } = await sb.auth.signInWithPassword({
+            email: loginEls.email.value.trim(),
+            password: loginEls.password.value
+        }));
+    } catch (err) {
+        error = err;
+    }
+    loginEls.btn.disabled = false;
+
+    if (error) {
+        console.error('Sign in failed:', error);
+        loginEls.error.textContent = /invalid login/i.test(error.message || '')
+            ? 'Wrong email or password.'
+            : "Couldn't sign in. Check your connection and try again.";
+        return;
+    }
+
+    loginEls.password.value = '';
+    loginEls.overlay.hidden = true;
+    await loadTrees();
+});
+
+// If the session ends (signed out, or it can no longer be refreshed), start over at the sign-in screen
+sb.auth.onAuthStateChange(event => {
+    if (event === 'SIGNED_OUT') location.reload();
+});
+
 // ---------- Start up ----------
+async function loadTrees() {
+    await offerLocalUpload();
+
+    try {
+        const trees = await storage.listTrees();
+        for (const marker of state.markers.values()) map.removeLayer(marker);
+        state.markers.clear();
+        state.trees.clear();
+        for (const tree of trees) {
+            state.trees.set(tree.id, tree);
+            addMarkerFor(tree);
+        }
+    } catch (err) {
+        console.error('Could not load trees:', err);
+        showToast("Couldn't load your trees. Check your connection and reload.");
+    }
+}
+
 async function init() {
     buildPanelTypeOptions();
     state.currentTypeId = loadCurrentType();
     updateChip();
     updateLabelVisibility();
 
+    let session = null;
     try {
-        const trees = await storage.listTrees();
-        for (const tree of trees) {
-            state.trees.set(tree.id, tree);
-            addMarkerFor(tree);
-        }
+        ({ data: { session } } = await sb.auth.getSession());
     } catch (err) {
-        console.error('Could not load saved trees:', err);
-        showToast("Couldn't load saved trees");
+        console.error('Could not read session:', err);
     }
+
+    if (!session) {
+        showLogin();
+        return;
+    }
+    await loadTrees();
 }
 
 init();
