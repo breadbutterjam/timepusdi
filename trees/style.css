@@ -810,3 +810,55 @@ body.view-mode .type-picker {
 }
 
 body.guest .fab-mode { display: none; }
+
+/* ---------- Setting: trees as dots ---------- */
+.tree-dot {
+    display: none;
+}
+
+#map.dot-pins .tree-emoji {
+    display: none;
+}
+
+#map.dot-pins .tree-dot {
+    display: block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #2e7d32;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+    transform: translateY(16px);   /* the dot sits on the coordinate, where the tree's base would be */
+    transition: transform 0.15s;
+}
+
+#map.dot-pins .tree-pin.selected .tree-dot {
+    transform: translateY(16px) scale(1.5);
+}
+
+/* Dots carry no labels, except the selected tree's */
+#map.dot-pins .tree-pin:not(.selected) .tree-label {
+    display: none;
+}
+
+#map.dot-pins .tree-pin.selected .tree-label {
+    display: block;
+    margin-top: 6px;
+}
+
+/* ---------- Per-type icon and colour ---------- */
+.tree-emoji img {
+    display: block;
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+.type-swatch {
+    flex: 0 0 auto;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+}

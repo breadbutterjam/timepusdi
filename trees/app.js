@@ -138,6 +138,7 @@ const els = {
     filterClear: $('filterClear'),
     optFaded: $('optFaded'),
     optLabelsSelected: $('optLabelsSelected'),
+    optDots: $('optDots'),
     exportSheet: $('exportSheetBtn'),
     exportMap: $('exportMapBtn'),
     signOut: $('signOutBtn')
@@ -161,11 +162,12 @@ const state = {
 const filter = { types: new Set(), query: '' };
 
 // Display settings (remembered on this device)
-const settings = { showFaded: true, labelsSelectedOnly: false };
+const settings = { showFaded: true, labelsSelectedOnly: false, dotPins: false };
 try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
     if (typeof saved.showFaded === 'boolean') settings.showFaded = saved.showFaded;
     if (typeof saved.labelsSelectedOnly === 'boolean') settings.labelsSelectedOnly = saved.labelsSelectedOnly;
+    if (typeof saved.dotPins === 'boolean') settings.dotPins = saved.dotPins;
 } catch (err) { /* use defaults */ }
 
 function saveSettings() {
@@ -241,25 +243,53 @@ function makeTreeImg(type) {
 }
 
 // ---------- Markers ----------
-function buildPin(label) {
+const DEFAULT_TREE_ICON = '🌳';
+const DEFAULT_DOT_COLOR = '#2e7d32';   // keep in step with .tree-dot in style.css
+const IMAGE_ICON_RE = /\.(png|svg|webp|jpe?g|gif)$/i;
+
+// Icon (a type's emoji or image) and dot colour for a tree type
+function applyTypeLook(pin, typeId) {
+    const type = typesById.get(typeId) || {};
+    const emoji = pin.querySelector('.tree-emoji');
+    const dot = pin.querySelector('.tree-dot');
+    const icon = (type.icon || '').trim();
+
+    emoji.replaceChildren();
+    if (IMAGE_ICON_RE.test(icon)) {
+        const img = document.createElement('img');
+        img.alt = '';
+        img.draggable = false;
+        img.onerror = () => { img.onerror = null; emoji.replaceChildren(DEFAULT_TREE_ICON); };   // missing file: fall back to the tree
+        img.src = `img/${icon}`;
+        emoji.appendChild(img);
+    } else {
+        emoji.textContent = icon || DEFAULT_TREE_ICON;
+    }
+    dot.style.background = type.color || '';
+}
+
+function buildPin(label, typeId) {
     const pin = document.createElement('div');
     pin.className = 'tree-pin';
 
     const emoji = document.createElement('span');
     emoji.className = 'tree-emoji';
-    emoji.textContent = '🌳';
 
     const text = document.createElement('span');
     text.className = 'tree-label';
     text.textContent = label;
 
-    pin.append(emoji, text);
+    const dot = document.createElement('span');
+    dot.className = 'tree-dot';
+
+    pin.append(emoji, dot, text);
+    applyTypeLook(pin, typeId);
     return pin;
 }
 
-function pinIcon(label) {
+function pinIcon(label, typeId) {
     return L.divIcon({
-        html: buildPin(label),
+        html: buildPin(label, typeId),
         className: 'tree-pin-wrap',
         iconSize: [44, 44],      // generous tap target
         iconAnchor: [22, 38]     // base of the tree sits on the coordinate
@@ -272,6 +302,12 @@ function updateMarkerLabel(marker, text) {
     if (label) label.textContent = text;
 }
 
+function updateMarkerType(marker, typeId) {
+    const el = marker && marker.getElement();
+    const pin = el && el.querySelector('.tree-pin');
+    if (pin) applyTypeLook(pin, typeId);
+}
+
 function setPinSelected(marker, selected) {
     const el = marker && marker.getElement();
     const pin = el && el.querySelector('.tree-pin');
@@ -280,7 +316,7 @@ function setPinSelected(marker, selected) {
 
 function addMarkerFor(tree) {
     const marker = L.marker([tree.latitude, tree.longitude], {
-        icon: pinIcon(labelFor(tree)),
+        icon: pinIcon(labelFor(tree), tree.treeTypeId),
         draggable: false
     }).addTo(map);
 
@@ -310,6 +346,7 @@ function syncMarker(id) {
     if (!tree || !marker) return;
     marker.setLatLng([tree.latitude, tree.longitude]);
     updateMarkerLabel(marker, labelFor(tree));
+    updateMarkerType(marker, tree.treeTypeId);
 }
 
 // Pan the map just enough that the marker is visible above the floating panel
@@ -702,7 +739,9 @@ function onDraftChanged() {
     if (!state.selected) return;
     const d = readDraft();
     const text = d.customName || typesById.get(d.treeTypeId)?.commonName || 'Unknown tree';
-    updateMarkerLabel(state.markers.get(state.selected.id), text);
+    const marker = state.markers.get(state.selected.id);
+    updateMarkerLabel(marker, text);
+    updateMarkerType(marker, d.treeTypeId);
 }
 els.type.addEventListener('change', () => {
     // If the name is still just the old type name (or empty), follow the new type
@@ -879,6 +918,7 @@ function openSettings() {
     closeFilter();
     els.optFaded.checked = settings.showFaded;
     els.optLabelsSelected.checked = settings.labelsSelectedOnly;
+    els.optDots.checked = settings.dotPins;
     els.settingsPane.hidden = false;
 }
 
@@ -946,6 +986,10 @@ function renderFilterTypes() {
             onFilterChanged();
         });
 
+        const swatch = document.createElement('span');
+        swatch.className = 'type-swatch';
+        swatch.style.background = type.color || DEFAULT_DOT_COLOR;
+
         const name = document.createElement('span');
         name.className = 'check-name';
         name.textContent = type.commonName;
@@ -954,7 +998,7 @@ function renderFilterTypes() {
         count.className = 'check-count';
         count.textContent = counts.get(type.id) || 0;
 
-        row.append(box, name, count);
+        row.append(box, swatch, name, count);
         els.filterTypes.appendChild(row);
     }
 }
@@ -1014,12 +1058,19 @@ els.filterShow.addEventListener('click', showMatchesOnMap);
 // -- Display options
 function applyLabelSetting() {
     els.map.classList.toggle('labels-selected-only', settings.labelsSelectedOnly);
+    els.map.classList.toggle('dot-pins', settings.dotPins);
 }
 
 els.optFaded.addEventListener('change', () => {
     settings.showFaded = els.optFaded.checked;
     saveSettings();
     applyAllVisibility();
+});
+
+els.optDots.addEventListener('change', () => {
+    settings.dotPins = els.optDots.checked;
+    saveSettings();
+    applyLabelSetting();
 });
 
 els.optLabelsSelected.addEventListener('change', () => {

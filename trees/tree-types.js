@@ -5,20 +5,31 @@
 //   scientificName shown in the picker, also searchable
 //   image          file name inside the img/ folder (optional; a built-in
 //                  placeholder is used if the file is missing)
+//   color          dot colour on the map and swatch in the filter list, as
+//                  '#rrggbb' (optional; green if left out)
+//   icon           what to show on the map instead of the default tree 🌳
+//                  (optional). Either an emoji, like '🌴', or an image file
+//                  name inside the img/ folder, like 'papaya.png' (a small
+//                  transparent PNG or SVG, about 88 x 88 px, works best)
 //
 // The first type in the list is the default for new trees.
+// Colour groups (about five colours stay easy to tell apart on a map):
+//   green (default)  Rain Tree
+//   magenta          flowering trees: Gulmohar, Bougainvillea, Copperpod
+//   purple           sacred figs: Peepal, Banyan
+//   orange           fruit trees: Mango, Papaya
+//   blue             palms: Coconut
 const treeTypes = [
     { id: 'rain-tree', commonName: 'Rain Tree', scientificName: 'Samanea saman', image: 'rain-tree.jpg' },
-    { id: 'copperpod', commonName: 'Copperpod', scientificName: 'Peltophorum pterocarpum', image: 'copperpod.jpg' },
-    { id: 'gulmohar', commonName: 'Gulmohar', scientificName: 'Delonix regia', image: 'gulmohar.jpg' },
-    { id: 'bougainvillea', commonName: 'Bougainvillea', scientificName: 'Bougainvillea glabra', image: 'bougainvillea.jpg' },
-    { id: 'peepal', commonName: 'Peepal', scientificName: 'Ficus religiosa', image: 'peepal.jpg' },
-    { id: 'mango', commonName: 'Mango', scientificName: 'Mangifera indica', image: 'mango.jpg' },
-    { id: 'banyan', commonName: 'Banyan', scientificName: 'Ficus benghalensis', image: 'banyan.jpg' },
-    { id: 'papaya', commonName: 'Papaya', scientificName: 'Carica papaya', image: 'papaya.jpg' },
-    { id: 'cocos-nucifera', commonName: 'Coconut tree', scientificName: 'Cocos nucifera', image: 'cocos-nucifera.jpg' },
-    { id: 'jamun', commonName: 'Jamun tree', scientificName: 'Syzygium cumini', image: 'jamun.jpg' },
-    { id: 'badam', commonName: 'Badam tree', scientificName: 'Terminalia catappa', image: 'badam.jpg' },
+    { id: 'gulmohar', commonName: 'Gulmohar', scientificName: 'Delonix regia', image: 'gulmohar.jpg', color: '#d81b60' },
+    { id: 'bougainvillea', commonName: 'Bougainvillea', scientificName: 'Bougainvillea glabra', image: 'bougainvillea.jpg', color: '#d81b60' },
+    { id: 'peepal', commonName: 'Peepal', scientificName: 'Ficus religiosa', image: 'peepal.jpg', color: '#7b1fa2' },
+    { id: 'mango', commonName: 'Mango', scientificName: 'Mangifera indica', image: 'mango.jpg', color: '#ef6c00' },
+    { id: 'banyan', commonName: 'Banyan', scientificName: 'Ficus benghalensis', image: 'banyan.jpg', color: '#7b1fa2' },
+    { id: 'copperpod', commonName: 'Copperpod', scientificName: 'Peltophorum pterocarpum', image: 'copperpod.jpg', color: '#d81b60' },
+    { id: 'papaya', commonName: 'Papaya', scientificName: 'Carica papaya', image: 'papaya.jpg', color: '#ef6c00' },
+    { id: 'cocos-nucifera', commonName: 'Coconut tree', scientificName: 'Cocos nucifera', image: 'cocos-nucifera.jpg', color: '#1e88e5', icon: '🌴' }
+    // { id: 'pink-trumpet', commonName: 'Pink Trumpet', scientificName: 'Tabebuia rosea', image: 'pink-trumpet.jpg' },
     // { id: 'devil-tree', commonName: 'Devil Tree', scientificName: 'Alstonia scholaris', image: 'devil-tree.jpg' },
     // { id: 'golden-shower', commonName: 'Golden Shower', scientificName: 'Cassia fistula', image: 'golden-shower.jpg' },
     // { id: 'frangipani', commonName: 'Frangipani', scientificName: 'Plumeria', image: 'frangipani.jpg' },
