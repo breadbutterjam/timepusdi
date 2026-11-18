@@ -190,40 +190,92 @@ const map = L.map('map', {
 // Each entry is a set of tiles Leaflet can draw. To offer another style, add an entry.
 const IS_LOCAL_HOST = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
 const CARTO_KEY = IS_LOCAL_HOST ? CARTO_KEY_LOCAL : CARTO_KEY_SITE;
+const ARCGIS_KEY = ARCGIS_API_KEY;
 const CARTO_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
     '© <a href="https://carto.com/attribution/">CARTO</a>';
 
 const cartoUrl = style => `https://basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(CARTO_KEY)}`;
 
+// Esri's static basemap tiles are 512 px, so Leaflet needs tileSize 512 and a zoom offset of -1
+const ESRI_BASE = 'https://static-map-tiles-api.arcgis.com/arcgis/rest/services/static-basemap-tiles-service/v1/';
+const esriUrl = style => `${ESRI_BASE}${style}/static/tile/{z}/{y}/{x}?token=${encodeURIComponent(ARCGIS_KEY)}`;
+const ESRI_ATTRIBUTION = 'Powered by <a href="https://www.esri.com">Esri</a>';
+// The aerial pictures come from Esri's World Imagery service (ordinary 256 px tiles);
+// the street-name overlay comes from the static basemap tiles service above.
+const IMAGERY_SERVICE = 'https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer';
+const imageryUrl = () => `${IMAGERY_SERVICE}/tile/{z}/{y}/{x}?token=${encodeURIComponent(ARCGIS_KEY)}`;
+const imageryOptions = { maxNativeZoom: 19 };
+const labelsOptions = { tileSize: 512, zoomOffset: -1, maxNativeZoom: 19 };
+
 const BASE_MAPS = [
     {
         id: 'osm', label: 'Standard',
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-        attribution: '© OpenStreetMap contributors', maxNativeZoom: 19
+        attribution: '© OpenStreetMap contributors', options: { maxNativeZoom: 19 }
     },
     {
-        id: 'light', label: 'Light', needsKey: true,
-        url: () => cartoUrl('light_all'), attribution: CARTO_ATTRIBUTION, maxNativeZoom: 18
+        id: 'light', label: 'Light', available: () => !!CARTO_KEY,
+        url: () => cartoUrl('light_all'), attribution: CARTO_ATTRIBUTION, options: { maxNativeZoom: 18 }
     },
     {
-        id: 'light-nolabels', label: 'Light, no labels', needsKey: true,
-        url: () => cartoUrl('light_nolabels'), attribution: CARTO_ATTRIBUTION, maxNativeZoom: 18
+        id: 'light-nolabels', label: 'Light, no labels', available: () => !!CARTO_KEY,
+        url: () => cartoUrl('light_nolabels'), attribution: CARTO_ATTRIBUTION, options: { maxNativeZoom: 18 }
+    },
+    {
+        id: 'satellite', label: 'Satellite', available: () => !!ARCGIS_KEY,
+        url: imageryUrl, attribution: ESRI_ATTRIBUTION, options: imageryOptions, creditInfoUrl: IMAGERY_SERVICE
+    },
+    {
+        id: 'satellite-labels', label: 'Satellite with labels', available: () => !!ARCGIS_KEY,
+        url: imageryUrl, attribution: ESRI_ATTRIBUTION, options: imageryOptions, creditInfoUrl: IMAGERY_SERVICE,
+        overlayUrl: () => esriUrl('arcgis/imagery/labels'), overlayOptions: labelsOptions
     }
 ];
 const baseMapsById = new Map(BASE_MAPS.map(b => [b.id, b]));
-const baseMapAvailable = b => !b.needsKey || !!CARTO_KEY;
+const baseMapAvailable = b => !b.available || b.available();
 
 let baseLayer = null;
+let overlayLayer = null;
+let esriCopyright = null;   // attribution text currently added to the map for Esri
+
+function clearBaseMap() {
+    if (baseLayer) map.removeLayer(baseLayer);
+    if (overlayLayer) map.removeLayer(overlayLayer);
+    if (esriCopyright) map.attributionControl.removeAttribution(esriCopyright);
+    baseLayer = overlayLayer = esriCopyright = null;
+}
+
+// Esri asks for the data-provider credit that goes with the imagery in view; the service supplies it
+async function addEsriDataCredit(infoUrl, forLayer) {
+    try {
+        const res = await fetch(`${infoUrl}?f=json&token=${encodeURIComponent(ARCGIS_KEY)}`);
+        const info = await res.json();
+        if (!info.copyrightText || baseLayer !== forLayer) return;   // switched away meanwhile
+        esriCopyright = info.copyrightText;
+        map.attributionControl.addAttribution(esriCopyright);
+    } catch (err) {
+        console.error('Could not load the Esri data credit:', err);
+    }
+}
+
 function applyBaseMap() {
     let def = baseMapsById.get(settings.baseMap);
     if (!def || !baseMapAvailable(def)) def = baseMapsById.get('osm');   // unknown, or its key is missing
-    if (baseLayer) map.removeLayer(baseLayer);
-    baseLayer = L.tileLayer(typeof def.url === 'function' ? def.url() : def.url, {
-        attribution: def.attribution,
-        maxZoom: MAX_ZOOM,
-        maxNativeZoom: def.maxNativeZoom
-    }).addTo(map);
+    clearBaseMap();
+
+    const common = { attribution: def.attribution, maxZoom: MAX_ZOOM, ...def.options };
+    baseLayer = L.tileLayer(typeof def.url === 'function' ? def.url() : def.url, common).addTo(map);
     baseLayer.bringToBack();
+
+    if (def.overlayUrl) {
+        if (!map.getPane('base-labels')) {
+            const pane = map.createPane('base-labels');
+            pane.style.zIndex = 300;            // above the map pictures, below the trees
+            pane.style.pointerEvents = 'none';
+        }
+        overlayLayer = L.tileLayer(def.overlayUrl(), { ...common, ...def.overlayOptions, attribution: '', pane: 'base-labels' }).addTo(map);
+    }
+    if (def.creditInfoUrl) addEsriDataCredit(def.creditInfoUrl, baseLayer);
 }
 applyBaseMap();
 
