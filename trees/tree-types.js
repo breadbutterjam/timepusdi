@@ -9,12 +9,12 @@
 // The first type in the list is the default for new trees.
 const treeTypes = [
     { id: 'rain-tree', commonName: 'Rain Tree', scientificName: 'Samanea saman', image: 'rain-tree.jpg' },
+    { id: 'copperpod', commonName: 'Copperpod', scientificName: 'Peltophorum pterocarpum', image: 'copperpod.jpg' },
     { id: 'gulmohar', commonName: 'Gulmohar', scientificName: 'Delonix regia', image: 'gulmohar.jpg' },
     { id: 'bougainvillea', commonName: 'Bougainvillea', scientificName: 'Bougainvillea glabra', image: 'bougainvillea.jpg' },
     { id: 'peepal', commonName: 'Peepal', scientificName: 'Ficus religiosa', image: 'peepal.jpg' },
     { id: 'mango', commonName: 'Mango', scientificName: 'Mangifera indica', image: 'mango.jpg' },
     { id: 'banyan', commonName: 'Banyan', scientificName: 'Ficus benghalensis', image: 'banyan.jpg' },
-    { id: 'copperpod', commonName: 'Copperpod', scientificName: 'Peltophorum pterocarpum', image: 'copperpod.jpg' },
     { id: 'papaya', commonName: 'Papaya', scientificName: 'Carica papaya', image: 'papaya.jpg' },
     { id: 'cocos-nucifera', commonName: 'Coconut tree', scientificName: 'Cocos nucifera', image: 'cocos-nucifera.jpg' },
     { id: 'jamun', commonName: 'Jamun tree', scientificName: 'Syzygium cumini', image: 'jamun.jpg' },

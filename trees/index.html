@@ -5,6 +5,12 @@
     <!-- interactive-widget: lets the floating panel sit above the on-screen keyboard (Chrome/Android) -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Tree Marker</title>
+    <meta name="theme-color" content="#1f6b3a">
+
+    <!-- Icons: SVG for modern browsers, PNG fallbacks, and the home-screen icon for iPhone/iPad -->
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="style.css">
@@ -115,7 +121,17 @@
             </div>
         </div>
 
-        <!-- Photos / media: reserved for a later phase -->
+        <!-- Photos (see photos.js) -->
+        <div id="photoSection" class="panel-field photo-section" hidden>
+            <label id="photoLabel">Photos</label>
+            <div id="photoStrip" class="photo-strip"></div>
+            <div id="photoButtons" class="photo-buttons">
+                <button id="photoCameraBtn" class="btn btn-secondary" type="button">📷 Take photo</button>
+                <button id="photoGalleryBtn" class="btn btn-secondary" type="button">🖼️ From gallery</button>
+            </div>
+            <input type="file" id="photoCameraInput" accept="image/*" capture="environment" hidden>
+            <input type="file" id="photoGalleryInput" accept="image/*" multiple hidden>
+        </div>
 
         <div class="panel-actions">
             <button id="panelDelete" class="btn btn-delete" type="button" aria-label="Delete tree" title="Delete tree">🗑️</button>
@@ -126,6 +142,15 @@
     </section>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <!-- Full-size photo viewer -->
+    <div id="lightbox" class="lightbox" hidden role="dialog" aria-label="Photo viewer">
+        <button id="lbClose" class="lb-btn lb-close" type="button" aria-label="Close">✕</button>
+        <button id="lbPrev" class="lb-btn lb-prev" type="button" aria-label="Previous photo">‹</button>
+        <img id="lbImg" class="lb-img" alt="Tree photo">
+        <button id="lbNext" class="lb-btn lb-next" type="button" aria-label="Next photo">›</button>
+        <div id="lbCount" class="lb-count"></div>
+    </div>
 
     <!-- Sign in (shown until there is a session) -->
     <div id="loginOverlay" class="login-overlay" hidden>
@@ -143,5 +168,6 @@
     <script src="supabase-config.js"></script>
     <script src="tree-types.js"></script>
     <script src="app.js"></script>
+    <script src="photos.js"></script>
 </body>
 </html>

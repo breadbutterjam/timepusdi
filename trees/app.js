@@ -37,6 +37,8 @@ const typesById = new Map(treeTypes.map(t => [t.id, t]));
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const TABLE = 'trees';
 const PAGE_SIZE = 1000;   // Supabase returns at most 1000 rows per request
+const PHOTO_TABLE = 'tree_photos';
+const PHOTO_BUCKET = 'tree-photos';
 
 function toRow(tree) {
     return {
@@ -85,6 +87,15 @@ const storage = {
         if (error) throw error;
     },
     async deleteTree(id) {
+        // Remove the photo files first (best effort): once the tree row is gone,
+        // the photo rows go with it and we would lose track of the file names.
+        try {
+            const { data } = await sb.from(PHOTO_TABLE).select('path, thumb_path').eq('tree_id', id);
+            const paths = (data || []).flatMap(p => [p.path, p.thumb_path]).filter(Boolean);
+            if (paths.length) await sb.storage.from(PHOTO_BUCKET).remove(paths);
+        } catch (err) {
+            console.error('Could not remove photo files:', err);
+        }
         const { error } = await sb.from(TABLE).delete().eq('id', id);
         if (error) throw error;
     }
@@ -139,7 +150,9 @@ const state = {
     recent: new Map(),    // id -> timer, for trees exempt from the filter for a few seconds
     currentTypeId: null,  // type used for newly added trees
     selected: null,       // { id, original } while the panel is open
-    lastAddAt: 0
+    lastAddAt: 0,
+    photos: new Map(),    // treeId -> list of photos already loaded (see photos.js)
+    saving: new Map()     // treeId -> promise of a tree's first save still in flight
 };
 
 // What the filter currently lets through (not remembered between visits)
@@ -400,6 +413,7 @@ function forgetTree(id) {
     state.recent.delete(id);
     clearTimeout(hideTimers.get(id));
     hideTimers.delete(id);
+    state.photos.delete(id);
 }
 
 // ---------- Moving the selected tree ----------
@@ -431,10 +445,15 @@ async function addTreeAt(latlng) {
     addMarkerFor(tree);   // quiet add: marker + label appear, nothing else opens
     markRecent(tree.id);  // stays fully visible for a few seconds even if a filter would fade it
 
+    // Photos can't be attached until the tree row exists, so they wait on this
+    const saving = storage.saveTree(tree);
+    state.saving.set(tree.id, saving.catch(() => {}));
     try {
-        await storage.saveTree(tree);
+        await saving;
+        state.saving.delete(tree.id);
     } catch (err) {
         console.error('Could not save tree:', err);
+        state.saving.delete(tree.id);
         if (state.selected && state.selected.id === tree.id) closePanel();
         forgetTree(tree.id);
         const marker = state.markers.get(tree.id);
@@ -635,6 +654,7 @@ function selectTree(id) {
     state.selected = { id, original: { ...tree }, typeId: tree.treeTypeId };
     fillPanel(tree);
     setPanelReadOnly(readOnly);
+    if (typeof photoPanelOpen === 'function') photoPanelOpen(id, readOnly);   // photos.js
 
     setPinSelected(marker, true);
     if (!readOnly) marker.dragging.enable();
@@ -671,6 +691,7 @@ function closePanel() {
     }
 
     setPanelReadOnly(false);
+    if (typeof photoPanelClose === 'function') photoPanelClose();   // photos.js
     applyVisibility(sel.id);   // back under the filter's rules (unless it was just saved)
 }
 
