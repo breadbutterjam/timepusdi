@@ -28,7 +28,11 @@ const treeTypes = [
     { id: 'banyan', commonName: 'Banyan', scientificName: 'Ficus benghalensis', image: 'banyan.jpg', color: '#7b1fa2' },
     { id: 'copperpod', commonName: 'Copperpod', scientificName: 'Peltophorum pterocarpum', image: 'copperpod.jpg', color: '#d81b60' },
     { id: 'papaya', commonName: 'Papaya', scientificName: 'Carica papaya', image: 'papaya.jpg', color: '#ef6c00' },
-    { id: 'cocos-nucifera', commonName: 'Coconut tree', scientificName: 'Cocos nucifera', image: 'cocos-nucifera.jpg', color: '#1e88e5', icon: '🌴' }
+    { id: 'cocos-nucifera', commonName: 'Coconut tree', scientificName: 'Cocos nucifera', image: 'cocos-nucifera.jpg', color: '#00290e', icon: '🌴' },
+    { id: 'asopalav', commonName: 'Asopalav', scientificName: 'Monoon longifolium', image: 'asopalav.jpg', color: '#00290e', icon: '🌴' },
+    { id: 'badam', commonName: 'Badam', scientificName: 'Prunus dulcis', image: 'badam.jpg' },
+    { id: 'laburnum', commonName: 'Laburnum', scientificName: 'Laburnum anagyroides', image: 'laburnum.jpg', color: '#dcfb17'},
+    { id: 'other', commonName: 'Tree', scientificName: 'other-tree', image: 'tree.jpg' }
     // { id: 'pink-trumpet', commonName: 'Pink Trumpet', scientificName: 'Tabebuia rosea', image: 'pink-trumpet.jpg' },
     // { id: 'devil-tree', commonName: 'Devil Tree', scientificName: 'Alstonia scholaris', image: 'devil-tree.jpg' },
     // { id: 'golden-shower', commonName: 'Golden Shower', scientificName: 'Cassia fistula', image: 'golden-shower.jpg' },
