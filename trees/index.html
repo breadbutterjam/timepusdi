@@ -55,6 +55,12 @@
         </section>
 
         <section class="settings-section">
+            <h3>Map style</h3>
+            <div id="baseMapList"></div>
+            <p id="baseMapHelp" class="setting-help" hidden>The Light styles need a CARTO key: add it to map-config.js.</p>
+        </section>
+
+        <section class="settings-section">
             <h3>Export all trees</h3>
             <button id="exportSheetBtn" class="link-row" type="button">Download CSV for Google Sheets</button>
             <button id="exportMapBtn" class="link-row" type="button">Download CSV for Google My Maps</button>
@@ -173,6 +179,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.87.3/dist/umd/supabase.js"></script>
     <script src="supabase-config.js"></script>
+    <script src="map-config.js"></script>
     <script src="tree-types.js"></script>
     <script src="app.js"></script>
     <script src="photos.js"></script>

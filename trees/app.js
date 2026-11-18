@@ -139,6 +139,8 @@ const els = {
     optFaded: $('optFaded'),
     optLabelsSelected: $('optLabelsSelected'),
     optDots: $('optDots'),
+    baseMapList: $('baseMapList'),
+    baseMapHelp: $('baseMapHelp'),
     exportSheet: $('exportSheetBtn'),
     exportMap: $('exportMapBtn'),
     signOut: $('signOutBtn')
@@ -162,12 +164,13 @@ const state = {
 const filter = { types: new Set(), query: '' };
 
 // Display settings (remembered on this device)
-const settings = { showFaded: true, labelsSelectedOnly: false, dotPins: false };
+const settings = { showFaded: true, labelsSelectedOnly: false, dotPins: false, baseMap: 'osm' };
 try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
     if (typeof saved.showFaded === 'boolean') settings.showFaded = saved.showFaded;
     if (typeof saved.labelsSelectedOnly === 'boolean') settings.labelsSelectedOnly = saved.labelsSelectedOnly;
     if (typeof saved.dotPins === 'boolean') settings.dotPins = saved.dotPins;
+    if (typeof saved.baseMap === 'string') settings.baseMap = saved.baseMap;
 } catch (err) { /* use defaults */ }
 
 function saveSettings() {
@@ -183,11 +186,46 @@ const map = L.map('map', {
     doubleClickZoom: false   // a double-tap would otherwise add two trees as well as zoom
 });
 
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors',
-    maxZoom: MAX_ZOOM,
-    maxNativeZoom: MAX_NATIVE_ZOOM
-}).addTo(map);
+// ---------- Base maps ----------
+// Each entry is a set of tiles Leaflet can draw. To offer another style, add an entry.
+const IS_LOCAL_HOST = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+const CARTO_KEY = IS_LOCAL_HOST ? CARTO_KEY_LOCAL : CARTO_KEY_SITE;
+const CARTO_ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' +
+    '© <a href="https://carto.com/attribution/">CARTO</a>';
+
+const cartoUrl = style => `https://basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(CARTO_KEY)}`;
+
+const BASE_MAPS = [
+    {
+        id: 'osm', label: 'Standard',
+        url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        attribution: '© OpenStreetMap contributors', maxNativeZoom: 19
+    },
+    {
+        id: 'light', label: 'Light', needsKey: true,
+        url: () => cartoUrl('light_all'), attribution: CARTO_ATTRIBUTION, maxNativeZoom: 18
+    },
+    {
+        id: 'light-nolabels', label: 'Light, no labels', needsKey: true,
+        url: () => cartoUrl('light_nolabels'), attribution: CARTO_ATTRIBUTION, maxNativeZoom: 18
+    }
+];
+const baseMapsById = new Map(BASE_MAPS.map(b => [b.id, b]));
+const baseMapAvailable = b => !b.needsKey || !!CARTO_KEY;
+
+let baseLayer = null;
+function applyBaseMap() {
+    let def = baseMapsById.get(settings.baseMap);
+    if (!def || !baseMapAvailable(def)) def = baseMapsById.get('osm');   // unknown, or its key is missing
+    if (baseLayer) map.removeLayer(baseLayer);
+    baseLayer = L.tileLayer(typeof def.url === 'function' ? def.url() : def.url, {
+        attribution: def.attribution,
+        maxZoom: MAX_ZOOM,
+        maxNativeZoom: def.maxNativeZoom
+    }).addTo(map);
+    baseLayer.bringToBack();
+}
+applyBaseMap();
 
 L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
@@ -919,6 +957,7 @@ function openSettings() {
     els.optFaded.checked = settings.showFaded;
     els.optLabelsSelected.checked = settings.labelsSelectedOnly;
     els.optDots.checked = settings.dotPins;
+    renderBaseMapOptions();
     els.settingsPane.hidden = false;
 }
 
@@ -1066,6 +1105,32 @@ els.optFaded.addEventListener('change', () => {
     saveSettings();
     applyAllVisibility();
 });
+
+function renderBaseMapOptions() {
+    const current = baseMapsById.get(settings.baseMap) && baseMapAvailable(baseMapsById.get(settings.baseMap)) ? settings.baseMap : 'osm';
+    els.baseMapList.replaceChildren();
+    for (const b of BASE_MAPS) {
+        const row = document.createElement('label');
+        row.className = 'check-row';
+        const radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'baseMap';
+        radio.checked = b.id === current;
+        radio.disabled = !baseMapAvailable(b);
+        radio.addEventListener('change', () => {
+            if (!radio.checked) return;
+            settings.baseMap = b.id;
+            saveSettings();
+            applyBaseMap();
+        });
+        const name = document.createElement('span');
+        name.className = 'check-name';
+        name.textContent = b.label;
+        row.append(radio, name);
+        els.baseMapList.appendChild(row);
+    }
+    els.baseMapHelp.hidden = BASE_MAPS.every(baseMapAvailable);
+}
 
 els.optDots.addEventListener('change', () => {
     settings.dotPins = els.optDots.checked;
