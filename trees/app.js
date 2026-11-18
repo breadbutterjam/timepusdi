@@ -16,6 +16,7 @@ const ADD_DEBOUNCE_MS = 350;  // ignore a second tap this soon after an add (dou
 const STORAGE_KEY = 'savedTrees';
 const CURRENT_TYPE_KEY = 'currentTreeType';
 const SETTINGS_KEY = 'treeSettings';
+const GUEST_KEY = 'guestMode';   // remembered on this device so a returning guest lands on the map
 const RECENT_MS = 5000;       // a tree you just added or saved stays fully visible this long, even if a filter would fade it
 const FADE_MS = 600;          // matches the opacity transition in style.css
 
@@ -150,6 +151,7 @@ const state = {
     recent: new Map(),    // id -> timer, for trees exempt from the filter for a few seconds
     currentTypeId: null,  // type used for newly added trees
     selected: null,       // { id, original } while the panel is open
+    guest: false,         // signed out, view only
     lastAddAt: 0,
     photos: new Map(),    // treeId -> list of photos already loaded (see photos.js)
     saving: new Map()     // treeId -> promise of a tree's first save still in flight
@@ -902,6 +904,7 @@ els.filterClose.addEventListener('click', closeFilter);
 // -- View / edit mode (the button shows the mode you will switch TO)
 function setMode(mode) {
     if (mode === state.mode) return;
+    if (state.guest && mode === 'edit') return;
     if (state.selected) {
         if (isDirty()) {
             showToast('Save or cancel your changes first');
@@ -1112,8 +1115,13 @@ function exportTrees(kind) {
 els.exportSheet.addEventListener('click', () => exportTrees('sheet'));
 els.exportMap.addEventListener('click', () => exportTrees('map'));
 
-// -- Sign out (this device only; other devices stay signed in)
+// -- Sign out (this device only; other devices stay signed in). For a guest the same button is "Sign in".
 els.signOut.addEventListener('click', async () => {
+    if (state.guest) {
+        setGuestFlag(false);
+        location.reload();   // back to the sign-in screen
+        return;
+    }
     if (!confirm('Sign out on this device?')) return;
     try {
         const { error } = await sb.auth.signOut({ scope: 'local' });
@@ -1124,6 +1132,27 @@ els.signOut.addEventListener('click', async () => {
     }
     // On success the SIGNED_OUT event below reloads the page to the sign-in screen
 });
+
+// ---------- Guest mode ----------
+function setGuestFlag(on) {
+    try {
+        if (on) localStorage.setItem(GUEST_KEY, '1'); else localStorage.removeItem(GUEST_KEY);
+    } catch (err) { /* not critical */ }
+}
+
+function wasGuest() {
+    try { return localStorage.getItem(GUEST_KEY) === '1'; } catch (err) { return false; }
+}
+
+// View only: no mode button, no adding or editing, and "Sign out" becomes "Sign in"
+function enterGuestMode() {
+    state.guest = true;
+    document.body.classList.add('guest');
+    setMode('view');
+    els.modePill.textContent = '👁️ Guest · view only';
+    els.signOut.textContent = 'Sign in';
+    els.signOut.classList.remove('danger');
+}
 
 // ---------- Trees saved on this device from before Supabase ----------
 const validDate = v => (v && !Number.isNaN(Date.parse(v))) ? v : null;
@@ -1190,7 +1219,8 @@ const loginEls = {
     email: $('loginEmail'),
     password: $('loginPassword'),
     error: $('loginError'),
-    btn: $('loginBtn')
+    btn: $('loginBtn'),
+    guest: $('guestBtn')
 };
 
 function showLogin() {
@@ -1224,6 +1254,14 @@ loginEls.form.addEventListener('submit', async e => {
 
     loginEls.password.value = '';
     loginEls.overlay.hidden = true;
+    setGuestFlag(false);
+    await loadTrees();
+});
+
+loginEls.guest.addEventListener('click', async () => {
+    setGuestFlag(true);
+    loginEls.overlay.hidden = true;
+    enterGuestMode();
     await loadTrees();
 });
 
@@ -1234,7 +1272,7 @@ sb.auth.onAuthStateChange(event => {
 
 // ---------- Start up ----------
 async function loadTrees() {
-    await offerLocalUpload();
+    if (!state.guest) await offerLocalUpload();
 
     try {
         const trees = await storage.listTrees();
@@ -1266,9 +1304,15 @@ async function init() {
     }
 
     if (!session) {
-        showLogin();
+        if (wasGuest()) {
+            enterGuestMode();
+            await loadTrees();
+        } else {
+            showLogin();
+        }
         return;
     }
+    setGuestFlag(false);   // signed in: no longer a guest
     await loadTrees();
 }
 

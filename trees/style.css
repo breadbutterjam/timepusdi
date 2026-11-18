@@ -795,3 +795,18 @@ body.view-mode .type-picker {
     color: #fff;
     font-size: 14px;
 }
+
+/* ---------- Guest mode ---------- */
+.guest-btn {
+    align-self: center;
+    margin-top: 4px;
+}
+
+.guest-note {
+    margin: 0;
+    text-align: center;
+    font-size: 12px;
+    color: #8a929a;
+}
+
+body.guest .fab-mode { display: none; }
