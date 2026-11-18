@@ -836,14 +836,18 @@ body.guest .fab-mode { display: none; }
     transform: translateY(16px) scale(1.5);
 }
 
-/* Dots carry no labels, except the selected tree's */
-#map.dot-pins .tree-pin:not(.selected) .tree-label {
+/* Dots: labels sit just under the dot. If "Show labels on dots" is off, only the selected tree has one.
+   Otherwise the usual label rules apply (hidden when zoomed out, or selected-only). */
+#map.dot-pins .tree-label {
+    margin-top: 6px;
+}
+
+#map.dot-pins:not(.dot-labels) .tree-pin:not(.selected) .tree-label {
     display: none;
 }
 
 #map.dot-pins .tree-pin.selected .tree-label {
     display: block;
-    margin-top: 6px;
 }
 
 /* ---------- Per-type icon and colour ---------- */

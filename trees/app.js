@@ -139,6 +139,7 @@ const els = {
     optFaded: $('optFaded'),
     optLabelsSelected: $('optLabelsSelected'),
     optDots: $('optDots'),
+    optDotLabels: $('optDotLabels'),
     baseMapList: $('baseMapList'),
     baseMapHelp: $('baseMapHelp'),
     exportSheet: $('exportSheetBtn'),
@@ -164,12 +165,13 @@ const state = {
 const filter = { types: new Set(), query: '' };
 
 // Display settings (remembered on this device)
-const settings = { showFaded: true, labelsSelectedOnly: false, dotPins: false, baseMap: 'osm' };
+const settings = { showFaded: true, labelsSelectedOnly: false, dotPins: false, dotLabels: true, baseMap: 'osm' };
 try {
     const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
     if (typeof saved.showFaded === 'boolean') settings.showFaded = saved.showFaded;
     if (typeof saved.labelsSelectedOnly === 'boolean') settings.labelsSelectedOnly = saved.labelsSelectedOnly;
     if (typeof saved.dotPins === 'boolean') settings.dotPins = saved.dotPins;
+    if (typeof saved.dotLabels === 'boolean') settings.dotLabels = saved.dotLabels;
     if (typeof saved.baseMap === 'string') settings.baseMap = saved.baseMap;
 } catch (err) { /* use defaults */ }
 
@@ -1009,6 +1011,8 @@ function openSettings() {
     els.optFaded.checked = settings.showFaded;
     els.optLabelsSelected.checked = settings.labelsSelectedOnly;
     els.optDots.checked = settings.dotPins;
+    els.optDotLabels.checked = settings.dotLabels;
+    els.optDotLabels.disabled = !settings.dotPins;
     renderBaseMapOptions();
     els.settingsPane.hidden = false;
 }
@@ -1150,6 +1154,8 @@ els.filterShow.addEventListener('click', showMatchesOnMap);
 function applyLabelSetting() {
     els.map.classList.toggle('labels-selected-only', settings.labelsSelectedOnly);
     els.map.classList.toggle('dot-pins', settings.dotPins);
+    els.map.classList.toggle('dot-labels', settings.dotLabels);
+    els.optDotLabels.disabled = !settings.dotPins;
 }
 
 els.optFaded.addEventListener('change', () => {
@@ -1186,6 +1192,12 @@ function renderBaseMapOptions() {
 
 els.optDots.addEventListener('change', () => {
     settings.dotPins = els.optDots.checked;
+    saveSettings();
+    applyLabelSetting();
+});
+
+els.optDotLabels.addEventListener('change', () => {
+    settings.dotLabels = els.optDotLabels.checked;
     saveSettings();
     applyLabelSetting();
 });
