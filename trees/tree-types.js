@@ -32,6 +32,7 @@ const treeTypes = [
     { id: 'asopalav', commonName: 'Asopalav', scientificName: 'Monoon longifolium', image: 'asopalav.jpg', color: '#00290e', icon: '🌴' },
     { id: 'badam', commonName: 'Badam', scientificName: 'Prunus dulcis', image: 'badam.jpg' },
     { id: 'laburnum', commonName: 'Laburnum', scientificName: 'Laburnum anagyroides', image: 'laburnum.jpg', color: '#dcfb17'},
+    { id: 'boab', commonName: 'Boab', scientificName: 'Adansonia digitata', image: 'boab.jpg', color: '#dcfb17'},
     { id: 'other', commonName: 'Tree', scientificName: 'other-tree', image: 'tree.jpg' }
     // { id: 'pink-trumpet', commonName: 'Pink Trumpet', scientificName: 'Tabebuia rosea', image: 'pink-trumpet.jpg' },
     // { id: 'devil-tree', commonName: 'Devil Tree', scientificName: 'Alstonia scholaris', image: 'devil-tree.jpg' },
