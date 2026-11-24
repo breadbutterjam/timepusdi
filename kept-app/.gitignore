@@ -1,0 +1,8 @@
+# Never publish photos or finished books by accident
+Chapter-*/
+*.heic
+*.HEIC
+*.heif
+node_modules/
+*.zip
+.DS_Store
