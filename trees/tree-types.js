@@ -27,7 +27,7 @@ const treeTypes = [
     { id: 'mango', commonName: 'Mango', scientificName: 'Mangifera indica', image: 'mango.jpg', color: '#ef6c00' },
     { id: 'banyan', commonName: 'Banyan', scientificName: 'Ficus benghalensis', image: 'banyan.jpg', color: '#7b1fa2' },
     { id: 'copperpod', commonName: 'Copperpod', scientificName: 'Peltophorum pterocarpum', image: 'copperpod.jpg', color: '#d81b60' },
-    { id: 'papaya', commonName: 'Papaya', scientificName: 'Carica papaya', image: 'papaya.jpg', color: '#ef6c00' },
+    { id: 'papaya', commonName: 'Papaya', scientificName: 'Carica papaya', image: 'papaya.jpg', color: '#007d0f' },
     { id: 'cocos-nucifera', commonName: 'Coconut tree', scientificName: 'Cocos nucifera', image: 'cocos-nucifera.jpg', color: '#00290e', icon: '🌴' },
     { id: 'asopalav', commonName: 'Asopalav', scientificName: 'Monoon longifolium', image: 'asopalav.jpg', color: '#00290e', icon: '🌴' },
     { id: 'badam', commonName: 'Badam', scientificName: 'Prunus dulcis', image: 'badam.jpg' },
