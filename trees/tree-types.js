@@ -34,6 +34,7 @@ const treeTypes = [
     { id: 'laburnum', commonName: 'Laburnum', scientificName: 'Laburnum anagyroides', image: 'laburnum.jpg', color: '#dcfb17'},
     { id: 'boab', commonName: 'Boab', scientificName: 'Adansonia digitata', image: 'boab.jpg', color: '#dcfb17'},
     { id: 'jamun', commonName: 'Jamun', scientificName: 'Syzygium cumini', image: 'jamun.jpg', color: '#00041f'},
+    { id: 'neem', commonName: 'Neem', scientificName: 'Azadirachta indica', image: 'neem.jpg', color: '#00b227'},
     { id: 'other', commonName: 'Tree', scientificName: 'other-tree', image: 'tree.jpg' }
     // { id: 'pink-trumpet', commonName: 'Pink Trumpet', scientificName: 'Tabebuia rosea', image: 'pink-trumpet.jpg' },
     // { id: 'devil-tree', commonName: 'Devil Tree', scientificName: 'Alstonia scholaris', image: 'devil-tree.jpg' },
